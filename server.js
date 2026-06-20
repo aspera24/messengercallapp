@@ -76,6 +76,16 @@ io.on("connection", socket => {
         }
     });
 
+    socket.on("call-user", ({ from, to, offer }) => {
+        const targetSocket = users[to];
+        if (targetSocket) {
+            io.to(targetSocket).emit("incoming-call", {
+                from,
+                offer
+            });
+        }
+    });
+
 });
 
 server.listen(3000, () => console.log("Server running"));

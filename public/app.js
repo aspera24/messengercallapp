@@ -2,7 +2,7 @@ const socket = io();
 
 let myId = "";
 let stream;
-let peer;
+let peers = {};
 let incomingData = null;
 
 
@@ -69,13 +69,12 @@ function register() {
 }
 
 async function call() {
-
     const target = document.getElementById("targetId").value;
 
-    peer = createPeer(target);
+    peers[target] = createPeer(target);
 
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
+    const offer = await peers[target].createOffer();
+    await peers[target].setLocalDescription(offer);
 
     socket.emit("call-user", {
         from: myId,
@@ -85,16 +84,11 @@ async function call() {
 }
 
 function createPeer(target) {
-
     const p = new RTCPeerConnection({
-        iceServers: [{
-            urls: "stun:stun.l.google.com:19302"
-        }]
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
 
-    stream.getTracks().forEach(track => {
-        p.addTrack(track, stream);
-    });
+    stream.getTracks().forEach(track => p.addTrack(track, stream));
 
     p.ontrack = e => {
         remote.srcObject = e.streams[0];
@@ -187,9 +181,11 @@ async function callAll() {
     const offer = await peer.createOffer();
     await peer.setLocalDescription(offer);
 
-    socket.emit("call-all", {
-        from: myId,
-        offer
+    socket.on("call-all", ({ from, offer }) => {
+        socket.broadcast.emit("incoming-call", {
+            from,
+            offer
+        });
     });
 }
 
