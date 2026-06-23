@@ -63,8 +63,14 @@ function setupUI() {
 
 // CAMERA
 window.onload = async () => {
+    await ensureMediaReady();
+};
+
+async function ensureMediaReady(attempt = 0) {
 
     try {
+        if (stream) return true;
+
         stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true
@@ -77,16 +83,23 @@ window.onload = async () => {
 
         setupMicLevel();
 
-        // 🔥 PROCESS QUEUED USERS AFTER STREAM READY
-        if (pendingUsers.length > 0) {
-            pendingUsers.forEach(processUsers);
-            pendingUsers = [];
-        }
+        console.log("[MEDIA] initialized");
+
+        return true;
 
     } catch (err) {
-        alert("Please allow camera & mic");
+
+        console.log("[MEDIA] failed attempt:", attempt);
+
+        if (attempt < 10) {
+            setTimeout(() => ensureMediaReady(attempt + 1), 1000);
+        } else {
+            alert("Camera/Mic failed. Please allow permissions.");
+        }
+
+        return false;
     }
-};
+}
 
 
 // MIC LEVEL
@@ -144,10 +157,15 @@ function startMeeting() {
 
 
 // JOIN SYSTEM
-socket.on("meeting-started", (data) => {
+socket.on("meeting-started", async (data) => {
 
     roomId = data.roomId;
     activeRoom = roomId;
+
+    // GUARANTEE MEDIA BEFORE JOIN
+    if (!stream) {
+        await ensureMediaReady();
+    }
 
     socket.emit("join-room", {
         roomId,
@@ -184,17 +202,25 @@ socket.on("meeting-ended", () => {
     roomId = null;
     activeRoom = null;
 
-    // close all peers
     for (let id in peers) {
         peers[id].close();
     }
 
     peers = {};
+    peerNames = {};
 
-    // clear UI
     document.getElementById("videos").innerHTML = "";
 
-    // optional: reset camera UI only (local stays)
+    // RESET MEDIA (IMPORTANT FIX)
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+        videoTrack = null;
+        audioTrack = null;
+    }
+
+    // AUTO RESTART CAMERA (optional but requested behavior)
+    setTimeout(() => ensureMediaReady(), 1000);
 });
 
 // USERS SYNC
@@ -235,7 +261,8 @@ async function processUsers(users) {
             roomId,
             to: user.id,
             from: myId,
-            offer
+            offer,
+            firstname: user.firstname
         });
     }
 }
@@ -243,13 +270,16 @@ async function processUsers(users) {
 // PEER CREATION
 function createPeer(userId) {
 
-    if (!stream) return null;
+    if (!stream) {
+        console.warn("Stream not ready, retry later");
+        setTimeout(() => createPeer(userId), 1000);
+        return null;
+    }
+
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
-        iceServers: [
-            { urls: "stun:stun.l.google.com:19302" }
-        ]
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
 
     stream.getTracks().forEach(track => {
@@ -257,7 +287,7 @@ function createPeer(userId) {
     });
 
     peer.ontrack = (event) => {
-        addRemoteVideo(userId, event.streams[0]);
+        addRemoteVideo(userId, event.streams[0], peerNames[userId]);
     };
 
     peer.onicecandidate = (event) => {
@@ -276,7 +306,7 @@ function createPeer(userId) {
 }
 
 // SIGNALING
-socket.on("offer", async ({ offer, from }) => {
+socket.on("offer", async ({ offer, from, firstname }) => {
 
     let peer = peers[from] || createPeer(from);
 
@@ -291,6 +321,11 @@ socket.on("offer", async ({ offer, from }) => {
         from: myId,
         answer
     });
+
+    // FORCE NAME SAVE HERE
+    if (firstname) {
+        peerNames[from] = firstname;
+    }
 });
 
 socket.on("answer", async ({ answer, from }) => {
@@ -310,7 +345,7 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
 });
 
 // UI VIDEO
-function addRemoteVideo(userId, stream) {
+function addRemoteVideo(userId, stream, name) {
 
     let wrapper = document.getElementById("wrap-" + userId);
 
@@ -326,7 +361,9 @@ function addRemoteVideo(userId, stream) {
 
         const tag = document.createElement("span");
         tag.className = "tag";
-        tag.innerText = peerNames[userId] || "User";
+
+        // DIRECT NAME FIRST (no dependency sa peerNames)
+        tag.innerText = name || peerNames[userId] || "User";
 
         wrapper.appendChild(video);
         wrapper.appendChild(tag);
