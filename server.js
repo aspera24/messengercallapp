@@ -196,6 +196,32 @@ io.on("connection", (socket) => {
         io.to(target.socketId).emit("ice-candidate", data);
     });
 
+
+    socket.on("end-meeting", ({ roomId, adminToken }) => {
+
+        if (!roomId) return;
+
+        const room = rooms[roomId];
+
+        if (!room) return;
+
+        if (room.adminToken !== adminToken) {
+            return socket.emit("error", "Not allowed");
+        }
+
+        console.log("[MEETING ENDED]", roomId);
+
+        activeMeeting = null;
+
+        // notify ALL users
+        io.emit("meeting-ended", { roomId });
+
+        // optional cleanup
+        delete rooms[roomId];
+    });
+
+    
+
     // ==========================
     // DISCONNECT CLEANUP (IMPORTANT FIX)
     // ==========================

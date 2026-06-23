@@ -90,7 +90,7 @@ input {
 /* VIDEO BOX */
 .video-box {
     position: relative;
-    background: black;
+    background: linear-gradient(black, black), url('user.svg');
     border-radius: 12px;
     overflow: hidden;
     aspect-ratio: 16/9;

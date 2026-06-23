@@ -19,9 +19,8 @@ const localVideo = document.getElementById("local");
 let currentUser = null;
 let myId = null;
 
-// ==========================
+
 // SESSION
-// ==========================
 fetch("/session")
     .then(res => res.json())
     .then(data => {
@@ -52,9 +51,8 @@ function initUser(data) {
     socket.emit("check-active-meeting");
 }
 
-// ==========================
+
 // UI
-// ==========================
 function setupUI() {
 
     if (currentUser.acc_type === "employee") {
@@ -62,9 +60,8 @@ function setupUI() {
     }
 }
 
-// ==========================
+
 // CAMERA
-// ==========================
 window.onload = async () => {
 
     try {
@@ -91,9 +88,8 @@ window.onload = async () => {
     }
 };
 
-// ==========================
+
 // MIC LEVEL
-// ==========================
 function setupMicLevel() {
 
     audioContext = new AudioContext();
@@ -130,9 +126,8 @@ function updateMicLevel() {
     });
 }
 
-// ==========================
+
 // ROOM EVENTS
-// ==========================
 function createRoomNow() {
 
     socket.emit("create-room", {
@@ -142,15 +137,13 @@ function createRoomNow() {
 
 function startMeeting() {
 
-    socket.emit("start-meeting", {
-        roomId,
-        adminToken: myId
+    socket.emit("create-room", {
+        admin: currentUser.firstname
     });
 }
 
-// ==========================
+
 // JOIN SYSTEM
-// ==========================
 socket.on("meeting-started", (data) => {
 
     roomId = data.roomId;
@@ -174,9 +167,37 @@ function joinRoomNow() {
     });
 }
 
-// ==========================
+function endMeeting() {
+
+    if (!roomId) return;
+
+    socket.emit("end-meeting", {
+        roomId,
+        adminToken: myId
+    });
+}
+
+socket.on("meeting-ended", () => {
+
+    alert("Meeting has ended");
+
+    roomId = null;
+    activeRoom = null;
+
+    // close all peers
+    for (let id in peers) {
+        peers[id].close();
+    }
+
+    peers = {};
+
+    // clear UI
+    document.getElementById("videos").innerHTML = "";
+
+    // optional: reset camera UI only (local stays)
+});
+
 // USERS SYNC
-// ==========================
 socket.on("user-joined-room", (user) => {
 
     if (user.id === myId) return;
@@ -186,7 +207,7 @@ socket.on("user-joined-room", (user) => {
     createPeer(user.id);
 });
 
-// 🔥 FIXED EXISTING USERS
+// FIXED EXISTING USERS
 socket.on("existing-users", (users) => {
 
     if (!stream) {
@@ -219,9 +240,7 @@ async function processUsers(users) {
     }
 }
 
-// ==========================
 // PEER CREATION
-// ==========================
 function createPeer(userId) {
 
     if (!stream) return null;
@@ -256,9 +275,7 @@ function createPeer(userId) {
     return peer;
 }
 
-// ==========================
 // SIGNALING
-// ==========================
 socket.on("offer", async ({ offer, from }) => {
 
     let peer = peers[from] || createPeer(from);
@@ -292,9 +309,7 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
     await peer.addIceCandidate(candidate);
 });
 
-// ==========================
 // UI VIDEO
-// ==========================
 function addRemoteVideo(userId, stream) {
 
     let wrapper = document.getElementById("wrap-" + userId);
@@ -322,9 +337,7 @@ function addRemoteVideo(userId, stream) {
     document.getElementById(userId).srcObject = stream;
 }
 
-// ==========================
 // CONTROLS
-// ==========================
 function toggleCamera() {
     videoTrack.enabled = !videoTrack.enabled;
 }
@@ -333,9 +346,7 @@ function toggleMic() {
     audioTrack.enabled = !audioTrack.enabled;
 }
 
-// ==========================
 // ERROR
-// ==========================
 socket.on("error", (msg) => {
     alert(msg);
 });
