@@ -3,65 +3,59 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Messenger Call</title>
+    <title>MeetFlow</title>
     <link rel="stylesheet" href="/style.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" href="data:,">
 </head>
 
 <body>
 
-    <div class="container">
+    <div class="app">
 
-        <h3>📞 Messenger Call</h3>
+        <!-- TOP BAR -->
+        <div class="topbar">
+            <h2>📞 MeetFlow</h2>
 
-        <!-- SETUP -->
-        <input id="myId" placeholder="Enter your ID">
+            <div class="actions">
+                <button onclick="startMeeting()">
+                    Start Meeting
+                </button>
+            </div>
+        </div>
 
-        <button class="primary" id="registerBtn" onclick="register()" disabled>
-            Register
-        </button>
-
-        <button class="success" onclick="initCamera()">
-            Enable Camera & Mic
-        </button>
-
-        <hr style="border:1px solid #1e293b;">
-
-        <!-- CALL -->
-        <input id="targetId" placeholder="Call User ID">
-
-        <button class="primary" id="callBtn" onclick="call()" disabled>
-            📞 Call User
-        </button>
-
-        <button class="call-all" onclick="callAll()">
-            🔥 Call All Users
-        </button>
-
+        <!-- VIDEO GRID -->
         <div class="video-grid">
 
-            <div class="video-box">
-                <video id="local" autoplay muted playsinline></video>
+            <div class="video-box" id="localBox">
+                <video id="local" autoplay muted></video>
+
+                <span class="tag">You</span>
+
+                <!-- CONTROLS -->
+                <div class="controls">
+                    <button id="camBtn" onclick="toggleCamera()">
+                        <i class="fa-solid fa-video"></i>
+                    </button>
+
+                    <button id="micBtn" onclick="toggleMic()">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+
+                <div class="mic-level">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
             </div>
 
-            <div class="video-box">
-                <video id="remote" autoplay playsinline></video>
-            </div>
-
+            <div id="videos"></div>
         </div>
 
     </div>
-
-    <!-- INCOMING CALL -->
-    <div id="incoming">
-        <h3>📲 Incoming Call</h3>
-        <button class="success" onclick="acceptCall()">Accept</button>
-        <button class="danger" onclick="rejectCall()">Reject</button>
-    </div>
-
-    <audio id="ringtone" loop>
-        <source src="https://actions.google.com/sounds/v1/alarms/phone_alerts_and_ringtone.ogg">
-    </audio>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="app.js"></script>

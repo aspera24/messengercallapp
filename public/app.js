@@ -1,50 +1,71 @@
 const socket = io();
 
-let myId = "";
-let stream;
+let stream = null;
+let roomId = null;
+let videoTrack;
+let audioTrack;
+let audioContext;
+let analyser;
+let dataArray;
+
 let peers = {};
-let incomingData = null;
+let peerNames = {};
 
+let activeRoom = null;
+let pendingUsers = [];
 
-const local = document.getElementById("local");
-const remote = document.getElementById("remote");
+const localVideo = document.getElementById("local");
 
-const registerBtn = document.getElementById("registerBtn");
-const callBtn = document.getElementById("callBtn");
+let currentUser = null;
+let myId = null;
 
-const incomingUI = document.getElementById("incoming");
-const ringtone = document.getElementById("ringtone");
+// ==========================
+// SESSION
+// ==========================
+fetch("/session")
+    .then(res => res.json())
+    .then(data => {
 
+        if (!data.logged) {
+            location.href = "/login.html";
+            return;
+        }
 
-let roomId = "room1"; // default room
-let peers = {}; // 🔥 multiple users
-
-function joinRoom() {
-
-    const userId = myId;
-
-    socket.emit("join-room", {
-        roomId,
-        userId
+        initUser(data);
     });
 
-    alert("Joined room: " + roomId);
-}
+function initUser(data) {
 
-async function roomCall() {
+    currentUser = data.user;
+    myId = currentUser.token;
 
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-
-    socket.emit("room-call", {
-        roomId,
-        from: myId,
-        offer
+    socket.emit("register", {
+        token: currentUser.token,
+        firstname: currentUser.firstname,
+        lastname: currentUser.lastname,
+        acc_type: currentUser.acc_type
     });
+
+    setupUI();
+
+    // 🔥 AUTO REJOIN IF REFRESHED
+    socket.emit("check-active-meeting");
 }
 
+// ==========================
+// UI
+// ==========================
+function setupUI() {
 
-async function initCamera() {
+    if (currentUser.acc_type === "employee") {
+        document.querySelector(".actions").style.display = "none";
+    }
+}
+
+// ==========================
+// CAMERA
+// ==========================
+window.onload = async () => {
 
     try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -52,148 +73,269 @@ async function initCamera() {
             audio: true
         });
 
-        local.srcObject = stream;
+        localVideo.srcObject = stream;
 
-        registerBtn.disabled = false;
-        callBtn.disabled = false;
+        videoTrack = stream.getVideoTracks()[0];
+        audioTrack = stream.getAudioTracks()[0];
+
+        setupMicLevel();
+
+        // 🔥 PROCESS QUEUED USERS AFTER STREAM READY
+        if (pendingUsers.length > 0) {
+            pendingUsers.forEach(processUsers);
+            pendingUsers = [];
+        }
 
     } catch (err) {
-        console.error(err);
-        alert("Camera/Mic denied. Please allow permission.");
+        alert("Please allow camera & mic");
+    }
+};
+
+// ==========================
+// MIC LEVEL
+// ==========================
+function setupMicLevel() {
+
+    audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 64;
+
+    source.connect(analyser);
+
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    updateMicLevel();
+}
+
+function updateMicLevel() {
+
+    requestAnimationFrame(updateMicLevel);
+
+    analyser.getByteFrequencyData(dataArray);
+
+    let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+    const box = document.getElementById("localBox");
+    const bars = document.querySelectorAll(".mic-level .bar");
+
+    if (avg > 10) box.classList.add("mic-active");
+    else box.classList.remove("mic-active");
+
+    let level = Math.min(5, Math.floor(avg / 20));
+
+    bars.forEach((bar, i) => {
+        bar.style.height = i < level ? (6 + i * 3) + "px" : "4px";
+    });
+}
+
+// ==========================
+// ROOM EVENTS
+// ==========================
+function createRoomNow() {
+
+    socket.emit("create-room", {
+        admin: currentUser.firstname
+    });
+}
+
+function startMeeting() {
+
+    socket.emit("start-meeting", {
+        roomId,
+        adminToken: myId
+    });
+}
+
+// ==========================
+// JOIN SYSTEM
+// ==========================
+socket.on("meeting-started", (data) => {
+
+    roomId = data.roomId;
+    activeRoom = roomId;
+
+    socket.emit("join-room", {
+        roomId,
+        userId: myId
+    });
+});
+
+function joinRoomNow() {
+
+    const token = document.getElementById("roomToken").value.trim();
+
+    roomId = token;
+
+    socket.emit("join-room", {
+        roomId,
+        userId: myId
+    });
+}
+
+// ==========================
+// USERS SYNC
+// ==========================
+socket.on("user-joined-room", (user) => {
+
+    if (user.id === myId) return;
+
+    peerNames[user.id] = user.firstname;
+
+    createPeer(user.id);
+});
+
+// 🔥 FIXED EXISTING USERS
+socket.on("existing-users", (users) => {
+
+    if (!stream) {
+        pendingUsers.push(users);
+        return;
+    }
+
+    processUsers(users);
+});
+
+async function processUsers(users) {
+
+    for (let user of users) {
+
+        if (user.id === myId) continue;
+
+        peerNames[user.id] = user.firstname;
+
+        const peer = createPeer(user.id);
+
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+
+        socket.emit("offer", {
+            roomId,
+            to: user.id,
+            from: myId,
+            offer
+        });
     }
 }
 
-function register() {
-    myId = document.getElementById("myId").value;
-    socket.emit("register", myId);
-}
+// ==========================
+// PEER CREATION
+// ==========================
+function createPeer(userId) {
 
-async function call() {
-    const target = document.getElementById("targetId").value;
+    if (!stream) return null;
+    if (peers[userId]) return peers[userId];
 
-    peers[target] = createPeer(target);
-
-    const offer = await peers[target].createOffer();
-    await peers[target].setLocalDescription(offer);
-
-    socket.emit("call-user", {
-        from: myId,
-        to: target,
-        offer
-    });
-}
-
-function createPeer(target) {
-    const p = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    const peer = new RTCPeerConnection({
+        iceServers: [
+            { urls: "stun:stun.l.google.com:19302" }
+        ]
     });
 
-    stream.getTracks().forEach(track => p.addTrack(track, stream));
+    stream.getTracks().forEach(track => {
+        peer.addTrack(track, stream);
+    });
 
-    p.ontrack = e => {
-        remote.srcObject = e.streams[0];
+    peer.ontrack = (event) => {
+        addRemoteVideo(userId, event.streams[0]);
     };
 
-    p.onicecandidate = e => {
-        if (e.candidate) {
+    peer.onicecandidate = (event) => {
+        if (event.candidate) {
             socket.emit("ice-candidate", {
-                to: target,
-                candidate: e.candidate
+                roomId,
+                to: userId,
+                from: myId,
+                candidate: event.candidate
             });
         }
     };
 
-    return p;
+    peers[userId] = peer;
+    return peer;
 }
 
-socket.on("incoming-call", data => {
+// ==========================
+// SIGNALING
+// ==========================
+socket.on("offer", async ({ offer, from }) => {
 
-    incomingData = data;
+    let peer = peers[from] || createPeer(from);
 
-    incomingUI.style.display = "block";
-
-    ringtone.play();
-
-});
-
-async function acceptCall() {
-
-    incomingUI.style.display = "none";
-    ringtone.pause();
-
-    peer = createPeer(incomingData.from);
-
-    await peer.setRemoteDescription(incomingData.offer);
-
-    // process queued ICE
-    for (const c of iceQueue) {
-        await peer.addIceCandidate(c);
-    }
-    iceQueue = [];
+    await peer.setRemoteDescription(offer);
 
     const answer = await peer.createAnswer();
     await peer.setLocalDescription(answer);
 
-    socket.emit("answer-call", {
-        to: incomingData.from,
+    socket.emit("answer", {
+        roomId,
+        to: from,
+        from: myId,
         answer
     });
-}
+});
 
-function rejectCall() {
-    incomingUI.style.display = "none";
-    ringtone.pause();
-    incomingData = null;
-}
+socket.on("answer", async ({ answer, from }) => {
 
-socket.on("call-answered", async answer => {
+    const peer = peers[from];
+    if (!peer) return;
+
     await peer.setRemoteDescription(answer);
 });
 
-let iceQueue = [];
+socket.on("ice-candidate", async ({ candidate, from }) => {
 
-socket.on("ice-candidate", async candidate => {
-
-    if (!peer || !peer.remoteDescription) {
-        iceQueue.push(candidate);
-        return;
-    }
+    const peer = peers[from];
+    if (!peer || !candidate) return;
 
     await peer.addIceCandidate(candidate);
 });
 
-async function callAll() {
+// ==========================
+// UI VIDEO
+// ==========================
+function addRemoteVideo(userId, stream) {
 
-    if (!stream) {
-        alert("Enable camera first!");
-        return;
+    let wrapper = document.getElementById("wrap-" + userId);
+
+    if (!wrapper) {
+        wrapper = document.createElement("div");
+        wrapper.className = "video-box";
+        wrapper.id = "wrap-" + userId;
+
+        const video = document.createElement("video");
+        video.id = userId;
+        video.autoplay = true;
+        video.playsInline = true;
+
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.innerText = peerNames[userId] || "User";
+
+        wrapper.appendChild(video);
+        wrapper.appendChild(tag);
+
+        document.getElementById("videos").appendChild(wrapper);
     }
 
-    if (!myId) {
-        alert("Please register first!");
-        return;
-    }
-
-    if (!peer) {
-        peer = createPeer("all");
-    }
-
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-
-    socket.on("call-all", ({ from, offer }) => {
-        socket.broadcast.emit("incoming-call", {
-            from,
-            offer
-        });
-    });
+    document.getElementById(userId).srcObject = stream;
 }
 
-socket.on("user-joined", async ({ userId }) => {
+// ==========================
+// CONTROLS
+// ==========================
+function toggleCamera() {
+    videoTrack.enabled = !videoTrack.enabled;
+}
 
-    console.log("New user joined:", userId);
+function toggleMic() {
+    audioTrack.enabled = !audioTrack.enabled;
+}
 
-    // create peer for new user
-    peers[userId] = createPeer(userId);
-
+// ==========================
+// ERROR
+// ==========================
+socket.on("error", (msg) => {
+    alert(msg);
 });

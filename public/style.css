@@ -1,146 +1,225 @@
 * {
-    padding: 0;
     margin: 0;
+    padding: 0;
     box-sizing: border-box;
+    font-family: Arial, sans-serif;
 }
 
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
     background: #0b1220;
     color: white;
+}
+
+/* APP WRAPPER */
+.app {
+    max-width: 1200px;
+    margin: auto;
+    padding: 16px;
+}
+
+/* TOP BAR (RESPONSIVE) */
+.topbar {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    min-height: 100vh;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
 }
 
-/* MAIN WRAPPER */
-.container {
-    width: 75%;
-    max-width: 1100px;
-    background: #111a2e;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-/* TITLE */
-h3 {
-    text-align: center;
-    margin-bottom: 15px;
+.topbar h2 {
     color: #60a5fa;
+    font-size: 18px;
 }
 
-/* INPUTS */
-input {
-    width: 100% !important;
-    padding: 12px;
-    margin: 6px 0;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-    background: #1e2a44;
-    color: white;
+/* BUTTONS WRAP ON MOBILE */
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 /* BUTTONS */
 button {
-    width: 100%;
-    padding: 12px;
-    margin: 6px 0;
+    padding: 10px 14px;
     border: none;
     border-radius: 10px;
     cursor: pointer;
     font-weight: bold;
-    transition: 0.2s;
+    font-size: 14px;
+}
+
+.primary {
+    background: #2563eb;
+    color: white;
+}
+
+.gray {
+    background: #334155;
+    color: white;
 }
 
 button:hover {
-    transform: scale(1.03);
+    opacity: 0.9;
 }
 
-/* COLORS */
-.primary { background: #2563eb; color: white; }
-.success { background: #16a34a; color: white; }
-.danger { background: #dc2626; color: white; }
-.gray { background: #334155; color: white; }
-.call-all { background: #f59e0b; color: black; }
+/* INPUT PANEL (RESPONSIVE STACK) */
+.panel {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
 
-/* VIDEO GRID CONTAINER */
+input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #1e293b;
+    color: white;
+    min-width: 120px;
+}
+
+/* VIDEO GRID - AUTO RESPONSIVE MAGIC */
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 🔥 5 columns desktop */
-    gap: 10px;
-    margin-top: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
 }
 
 /* VIDEO BOX */
 .video-box {
+    position: relative;
     background: black;
     border-radius: 12px;
     overflow: hidden;
     aspect-ratio: 16/9;
-    position: relative;
+    border: 4px solid #2563eb;
 }
 
+.controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: 0.2s;
+}
+
+.video-box:hover .controls {
+    opacity: 1;
+}
+
+.controls button {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.controls button:hover {
+    background: rgba(37, 99, 235, 0.9);
+    transform: scale(1.1);
+}
+
+.mic-level {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 18px;
+}
+
+.mic-level .bar {
+    width: 3px;
+    height: 4px;
+    background: #22c55e;
+    border-radius: 2px;
+    transition: 0.1s;
+    opacity: 0.3;
+}
+
+.mic-active .bar {
+    opacity: 1;
+}
+
+
+/* VIDEO */
 video {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-/* LOCAL VIDEO SPECIAL BORDER */
-#local {
-    border: 2px solid #2563eb;
+#videos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
 }
 
-/* CALL POPUP */
-#incoming {
-    position: fixed;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e293b;
-    padding: 20px;
-    border-radius: 14px;
-    text-align: center;
-    box-shadow: 0 0 20px rgba(0,0,0,0.6);
-    display: none;
-    width: 280px;
-    z-index: 999;
+/* USER TAG */
+.tag {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 11px;
 }
 
-#incoming button {
-    width: 45%;
-    margin: 5px;
-}
 
 /* =========================
-   📱 RESPONSIVE DESIGN
+   📱 MOBILE FIXES
 ========================= */
+/* MOBILE: always visible (no hover) */
+@media (max-width: 768px) {
 
-/* Tablet */
-@media (max-width: 900px) {
-    .video-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-/* Phone */
-@media (max-width: 600px) {
-    .container {
-        padding: 12px;
+    .panel {
+        flex-direction: column;
     }
 
-    .video-grid {
-        grid-template-columns: repeat(3, 1fr); /* 🔥 3 columns mobile */
+    button {
+        width: 100%;
     }
-}
 
-/* Very small phones */
-@media (max-width: 400px) {
+    .actions {
+        width: 100%;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
     .video-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .controls {
+        opacity: 1;
+    }
+}
+
+/* SMALL PHONES */
+@media (max-width: 480px) {
+
+    .video-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar h2 {
+        font-size: 16px;
     }
 }
