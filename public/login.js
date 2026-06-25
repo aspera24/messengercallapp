@@ -23,7 +23,7 @@ async function login() {
 
     if (data.success) {
 
-        location.href = "/index.html";
+        location.href = "/dashboard";
 
     } else {
 

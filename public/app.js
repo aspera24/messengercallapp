@@ -18,7 +18,24 @@ const localVideo = document.getElementById("local");
 
 let currentUser = null;
 let myId = null;
+let userMediaStates = {};
 
+
+
+async function loadUser() {
+
+    const res = await fetch("/session");
+    const data = await res.json();
+
+    if (!data.logged) {
+        location.href = "/auth";
+        return;
+    }
+
+    document.getElementById("uname").textContent = `Hi, ${data.user.firstname}`;
+}
+
+loadUser();
 
 // SESSION
 fetch("/session")
@@ -26,7 +43,7 @@ fetch("/session")
     .then(data => {
 
         if (!data.logged) {
-            location.href = "/login.html";
+            location.href = "/auth.html";
             return;
         }
 
@@ -45,12 +62,22 @@ function initUser(data) {
         acc_type: currentUser.acc_type
     });
 
+    setTimeout(() => {
+
+        if (videoTrack && audioTrack) {
+            socket.emit("media-status",
+                {
+                    camera: videoTrack.enabled,
+                    mic: audioTrack.enabled
+                }
+            );
+        }
+
+    }, 1000);
+
     setupUI();
 
-    // 🔥 AUTO REJOIN IF REFRESHED
-    socket.emit("check-active-meeting");
 }
-
 
 // UI
 function setupUI() {
@@ -58,23 +85,43 @@ function setupUI() {
     if (currentUser.acc_type === "employee") {
         document.querySelector(".actions").style.display = "none";
     }
+
+    updateMeetingButtons(false);
 }
-
-
 // CAMERA
 window.onload = async () => {
     await ensureMediaReady();
+
+    socket.emit(
+        "media-status",
+        {
+            camera:
+                videoTrack.enabled,
+            mic:
+                audioTrack.enabled
+        }
+    );
 };
 
 async function ensureMediaReady(attempt = 0) {
 
-    try {
-        if (stream) return true;
+    const loader =
+        document.getElementById("localLoading");
 
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+    if (stream) {
+        loader.style.display = "none";
+        return true;
+    }
+
+    loader.style.display = "flex";
+
+    try {
+
+        stream =
+            await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
 
         localVideo.srcObject = stream;
 
@@ -83,7 +130,7 @@ async function ensureMediaReady(attempt = 0) {
 
         setupMicLevel();
 
-        console.log("[MEDIA] initialized");
+        loader.style.display = "none";
 
         return true;
 
@@ -92,15 +139,49 @@ async function ensureMediaReady(attempt = 0) {
         console.log("[MEDIA] failed attempt:", attempt);
 
         if (attempt < 10) {
-            setTimeout(() => ensureMediaReady(attempt + 1), 1000);
+            setTimeout(
+                () => ensureMediaReady(attempt + 1),
+                1000
+            );
         } else {
-            alert("Camera/Mic failed. Please allow permissions.");
+
+            loader.innerHTML = `
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Camera Permission Denied</span>
+            `;
         }
 
         return false;
     }
 }
 
+let pendingRequestToken = null;
+
+socket.on("room-created", ({ roomId: newRoom }) => {
+
+    roomId = newRoom;
+
+    if (pendingRequestToken) {
+
+        socket.emit("request-user", {
+            roomId,
+            token: pendingRequestToken
+        });
+
+        pendingRequestToken = null;
+    }
+});
+
+function updateMeetingButtons(active) {
+
+    const endBtn =
+        document.getElementById("endBtn");
+
+    endBtn.style.display =
+        active
+            ? "block"
+            : "none";
+}
 
 // MIC LEVEL
 function setupMicLevel() {
@@ -139,30 +220,49 @@ function updateMicLevel() {
     });
 }
 
-
 // ROOM EVENTS
 function createRoomNow() {
 
     socket.emit("create-room", {
-        admin: currentUser.firstname
+        admin: currentUser.firstname,
+        participants: getSelectedUsers()
     });
 }
 
 function startMeeting() {
 
+    const participants =
+        getSelectedUsers();
+
+    if (participants.length === 0) {
+
+        alert(
+            "Please select at least one participant."
+        );
+
+        return;
+    }
+
     socket.emit("create-room", {
-        admin: currentUser.firstname
+        admin: currentUser.firstname,
+        participants
     });
 }
 
 
 // JOIN SYSTEM
+let joinedUsers = 0;
+
 socket.on("meeting-started", async (data) => {
 
     roomId = data.roomId;
     activeRoom = roomId;
 
-    // GUARANTEE MEDIA BEFORE JOIN
+    if (currentUser.acc_type === "admin") {
+        joinedUsers = 0;
+        updateMeetingButtons(false);
+    }
+
     if (!stream) {
         await ensureMediaReady();
     }
@@ -197,10 +297,12 @@ function endMeeting() {
 
 socket.on("meeting-ended", () => {
 
-    alert("Meeting has ended");
-
     roomId = null;
     activeRoom = null;
+
+    if (currentUser.acc_type === "admin") {
+        updateMeetingButtons(false);
+    }
 
     for (let id in peers) {
         peers[id].close();
@@ -223,14 +325,59 @@ socket.on("meeting-ended", () => {
     setTimeout(() => ensureMediaReady(), 1000);
 });
 
-// USERS SYNC
+socket.on("user-disconnected", (userId) => {
+
+    joinedUsers = Math.max(0, joinedUsers - 1);
+
+    if (currentUser.acc_type === "admin") {
+        updateMeetingButtons(joinedUsers > 0);
+    }
+
+    if (peers[userId]) {
+
+        peers[userId].close();
+
+        delete peers[userId];
+    }
+
+    delete peerNames[userId];
+    delete userMediaStates[userId];
+
+    const wrapper = document.getElementById(
+        "wrap-" + userId
+    );
+
+    if (wrapper) {
+        wrapper.remove();
+    }
+}
+);
+
 socket.on("user-joined-room", (user) => {
 
-    if (user.id === myId) return;
+    if (currentUser.acc_type === "admin") {
+        joinedUsers++;
+        updateMeetingButtons(joinedUsers > 0);
+    }
 
     peerNames[user.id] = user.firstname;
 
-    createPeer(user.id);
+    userMediaStates[user.id] =
+        user.media || {
+            camera: true,
+            mic: true
+        };
+
+    updateRemoteStatus(user.id);
+});
+
+socket.on("media-status-changed", ({ userId, camera, mic }) => {
+    userMediaStates[userId] = {
+        camera,
+        mic
+    };
+
+    updateRemoteStatus(userId);
 });
 
 // FIXED EXISTING USERS
@@ -246,15 +393,18 @@ socket.on("existing-users", (users) => {
 
 async function processUsers(users) {
 
-    for (let user of users) {
+    for (const user of users) {
 
         if (user.id === myId) continue;
+
+        if (peers[user.id]) continue;
 
         peerNames[user.id] = user.firstname;
 
         const peer = createPeer(user.id);
 
         const offer = await peer.createOffer();
+
         await peer.setLocalDescription(offer);
 
         socket.emit("offer", {
@@ -262,7 +412,7 @@ async function processUsers(users) {
             to: user.id,
             from: myId,
             offer,
-            firstname: user.firstname
+            firstname: currentUser.firstname
         });
     }
 }
@@ -287,7 +437,7 @@ function createPeer(userId) {
     });
 
     peer.ontrack = (event) => {
-        addRemoteVideo(userId, event.streams[0], peerNames[userId]);
+        addRemoteVideo(userId, event.streams[0]);
     };
 
     peer.onicecandidate = (event) => {
@@ -313,6 +463,14 @@ socket.on("offer", async ({ offer, from, firstname }) => {
     await peer.setRemoteDescription(offer);
 
     const answer = await peer.createAnswer();
+
+    if (
+        peer.signalingState !== "stable" &&
+        peer.signalingState !== "have-remote-offer"
+    ) {
+        return;
+    }
+
     await peer.setLocalDescription(answer);
 
     socket.emit("answer", {
@@ -333,6 +491,14 @@ socket.on("answer", async ({ answer, from }) => {
     const peer = peers[from];
     if (!peer) return;
 
+    if (peer.signalingState !== "have-local-offer") {
+        console.warn(
+            "Ignoring answer:",
+            peer.signalingState
+        );
+        return;
+    }
+
     await peer.setRemoteDescription(answer);
 });
 
@@ -344,15 +510,173 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
     await peer.addIceCandidate(candidate);
 });
 
+function getSelectedUsers() {
+
+    return [
+        ...document.querySelectorAll(
+            "#userList input:checked"
+        )
+    ].map(x => x.value);
+}
+
+async function loadUsers() {
+
+    const res = await fetch("/users");
+    const users = await res.json();
+
+    const container =
+        document.getElementById("userList");
+
+    container.innerHTML = "";
+
+    users.forEach(user => {
+
+        container.innerHTML += `
+            <div class="user-item">
+
+                <span>
+                    ${user.firstname} ${user.lastname}
+                </span>
+
+                <button
+                    id="req-${user.token}"
+                    onclick="requestUser('${user.token}')"
+                >
+                    Request
+                </button>
+
+            </div>
+        `;
+    });
+}
+
+loadUsers();
+
+async function requestUser(token) {
+
+    const btn =
+        document.getElementById(`req-${token}`);
+
+    btn.disabled = true;
+
+    btn.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Requesting...
+    `;
+
+    if (!roomId) {
+
+        socket.emit("create-room", {
+            admin: currentUser.firstname,
+            participants: []
+        });
+
+        pendingRequestToken = token;
+        return;
+    }
+
+    socket.emit("request-user", {
+        roomId,
+        token
+    });
+}
+
+let requestedRoom = null;
+
+socket.on("meeting-request", (data) => {
+    requestedRoom = data.roomId;
+    document.getElementById("meetingRequestText").innerText = `${data.admin} wants you to join the meeting.`;
+    document.getElementById("meetingRequestModal").style.display = "flex";
+});
+
+socket.on("request-accepted", ({ token }) => {
+
+    const btn =
+        document.getElementById(`req-${token}`);
+
+    if (!btn) return;
+
+    btn.disabled = false;
+    btn.innerHTML = "Request User";
+});
+
+socket.on("removed-from-meeting", () => {
+
+    roomId = null;
+
+    for (let id in peers) {
+
+        peers[id].close();
+
+        const wrapper =
+            document.getElementById(
+                "wrap-" + id
+            );
+
+        if (wrapper) {
+            wrapper.remove();
+        }
+    }
+
+    peers = {};
+    peerNames = {};
+    userMediaStates = {};
+
+    document.getElementById(
+        "videos"
+    ).innerHTML = "";
+
+    alert(
+        "You were removed from the meeting."
+    );
+});
+
+document.getElementById("acceptMeetingBtn").onclick = async () => {
+
+    document.getElementById(
+        "meetingRequestModal"
+    ).style.display = "none";
+
+    roomId = requestedRoom;
+
+    socket.emit("meeting-request-accepted");
+
+    if (!stream) {
+        await ensureMediaReady();
+    }
+
+    socket.emit("join-room", {
+        roomId,
+        userId: myId
+    });
+};
+
+document.getElementById("declineMeetingBtn").onclick = () => {
+    document.getElementById("meetingRequestModal").style.display = "none";
+    requestedRoom = null;
+};
+
+
 // UI VIDEO
-function addRemoteVideo(userId, stream, name) {
+function addRemoteVideo(userId, stream) {
 
     let wrapper = document.getElementById("wrap-" + userId);
 
     if (!wrapper) {
+
         wrapper = document.createElement("div");
         wrapper.className = "video-box";
         wrapper.id = "wrap-" + userId;
+
+        // LOADING
+        const loading = document.createElement("div");
+        loading.className = "video-loading";
+        loading.id = "loading-" + userId;
+
+        loading.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Connecting...</span>
+        `;
 
         const video = document.createElement("video");
         video.id = userId;
@@ -361,27 +685,265 @@ function addRemoteVideo(userId, stream, name) {
 
         const tag = document.createElement("span");
         tag.className = "tag";
+        tag.innerText = peerNames[userId] || userId;
 
-        // DIRECT NAME FIRST (no dependency sa peerNames)
-        tag.innerText = name || peerNames[userId] || "User";
+        // MIC LEVEL
+        const micLevel = document.createElement("div");
+        micLevel.className = "mic-level";
+        micLevel.id = "mic-" + userId;
 
+        micLevel.innerHTML = `
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        `;
+
+        const status = document.createElement("div");
+        status.className = "remote-status";
+        status.id = "status-" + userId;
+
+        wrapper.appendChild(loading);
         wrapper.appendChild(video);
         wrapper.appendChild(tag);
+        wrapper.appendChild(status);
+        wrapper.appendChild(micLevel);
 
-        document.getElementById("videos").appendChild(wrapper);
+        document
+            .getElementById("videos")
+            .appendChild(wrapper);
     }
 
-    document.getElementById(userId).srcObject = stream;
+    const tag = wrapper.querySelector(".tag");
+
+    if (peerNames[userId]) {
+        tag.innerText = peerNames[userId];
+    }
+
+    const remoteVideo = document.getElementById(userId);
+    remoteVideo.srcObject = stream;
+
+    // HIDE LOADER
+    const remoteLoader = document.getElementById(
+        "loading-" + userId
+    );
+
+    remoteVideo.onloadeddata = () => {
+
+        if (remoteLoader) {
+            remoteLoader.style.display = "none";
+        };
+
+    };
+
+    // SETUP MIC LEVEL ONLY ONCE
+    if (!remoteVideo.dataset.micReady) {
+
+        setupRemoteMicLevel(
+            userId,
+            stream
+        );
+
+        remoteVideo.dataset.micReady = "true";
+    }
+
+    if (
+        currentUser.acc_type === "admin" &&
+        !wrapper.querySelector(
+            ".remove-user-btn"
+        )
+    ) {
+
+        const removeBtn = document.createElement("button");
+
+        removeBtn.className = "remove-user-btn";
+
+        removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+
+        removeBtn.onclick = () => {
+
+            if (confirm("Remove this user?")) {
+                socket.emit(
+                    "remove-user",
+                    {
+                        roomId,
+                        userId
+                    }
+                );
+            }
+        };
+
+        wrapper.appendChild(
+            removeBtn
+        );
+    }
+
+    updateRemoteStatus(userId);
 }
+
+
+function setupRemoteMicLevel(userId, remoteStream) {
+
+    const ctx = new AudioContext();
+
+    const source = ctx.createMediaStreamSource(
+        remoteStream
+    );
+
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 64;
+
+    source.connect(analyser);
+
+    const dataArray =
+        new Uint8Array(
+            analyser.frequencyBinCount
+        );
+
+    function animate() {
+
+        const wrapper = document.getElementById(
+            "wrap-" + userId
+        );
+
+        if (!wrapper) return;
+
+        requestAnimationFrame(
+            animate
+        );
+
+        let avg = 0;
+
+        // CHECK IF REMOTE MIC IS ON
+        const state = userMediaStates[userId];
+
+        if (state?.mic) {
+
+            analyser.getByteFrequencyData(
+                dataArray
+            );
+
+            avg = dataArray.reduce(
+                (a, b) => a + b,
+                0
+            ) / dataArray.length;
+        }
+
+        const bars = document.querySelectorAll(
+            `#mic-${userId} .bar`
+        );
+
+        // SAME LOGIC SA IMONG LOCAL
+        if (state?.mic && avg > 10) {
+            wrapper.classList.add("mic-active");
+        } else {
+            wrapper.classList.remove("mic-active");
+        }
+
+        if (!state?.mic) {
+            bars.forEach(bar => {
+                bar.style.height = "4px";
+            });
+            return;
+        }
+
+        const level = Math.min(5, Math.floor(avg / 20));
+
+        bars.forEach(
+            (bar, i) => {
+
+                bar.style.height = i < level
+                    ? (6 + i * 3) + "px"
+                    : "4px";
+            }
+        );
+    }
+
+    animate();
+}
+
 
 // CONTROLS
 function toggleCamera() {
+
     videoTrack.enabled = !videoTrack.enabled;
+
+    socket.emit("media-status", {
+        camera: videoTrack.enabled,
+        mic: audioTrack.enabled
+    });
+
+    updateMediaStatus();
 }
 
 function toggleMic() {
+
     audioTrack.enabled = !audioTrack.enabled;
+
+    socket.emit("media-status", {
+        camera: videoTrack.enabled,
+        mic: audioTrack.enabled
+    });
+
+    updateMediaStatus();
 }
+
+function updateMediaStatus() {
+
+    const camIcon = document.querySelector("#camBtn i");
+    const micIcon = document.querySelector("#micBtn i");
+
+    // CAMERA ICON
+    if (videoTrack.enabled) {
+        camIcon.className = "fa-solid fa-video";
+    } else {
+        camIcon.className = "fa-solid fa-video-slash";
+    }
+
+    // MIC ICON
+    if (audioTrack.enabled) {
+        micIcon.className = "fa-solid fa-microphone";
+    } else {
+        micIcon.className = "fa-solid fa-microphone-slash";
+    }
+}
+
+
+function updateRemoteStatus(userId) {
+
+    const status = document.getElementById(
+        "status-" + userId
+    );
+
+    if (!status) return;
+
+    const state = userMediaStates[userId];
+
+    if (!state) return;
+
+    if (!state.camera) {
+
+        status.style.display = "flex";
+
+        status.innerHTML = `
+            <i class="fa-solid fa-video-slash"></i>
+            Camera Off
+        `;
+
+    } else {
+
+        status.style.display = "none";
+
+    }
+}
+
+function logout() {
+    if (confirm("Do you want to logout?")) {
+        return window.location.href = "/logout";
+    }
+}
+
 
 // ERROR
 socket.on("error", (msg) => {

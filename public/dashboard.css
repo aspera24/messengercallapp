@@ -1,0 +1,420 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: #2563eb transparent;
+}
+
+body {
+    background: #0b1220;
+    color: white;
+}
+
+/* APP WRAPPER */
+.app {
+    margin: auto;
+    position: relative;
+}
+
+/* TOP BAR (RESPONSIVE) */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: #132038;
+    height: 50px;
+    position: sticky;
+    top: 0;
+    padding: 0 10px;
+}
+
+.topbar h2 {
+    color: #60a5fa;
+    font-size: 18px;
+}
+
+/* BUTTONS WRAP ON MOBILE */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+    padding: 10px;
+}
+
+.actions #userList {
+    display: flex;
+    flex-direction: column;
+}
+
+/* BUTTONS */
+button {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.user-item {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.user-item span {
+    font-size: 14px;
+}
+
+.user-item button {
+    background: #2563eb;
+    color: white;
+}
+
+#endBtn {
+    width: 100%;
+    margin-top: 12px;
+    background: #dc2626;
+    color: white;
+}
+
+.primary {
+    background: #2563eb;
+    color: white;
+}
+
+.gray {
+    background: #334155;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+/* INPUT PANEL (RESPONSIVE STACK) */
+.panel {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #1e293b;
+    color: white;
+    min-width: 120px;
+}
+
+.centCont {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    height: calc(100vh - 50px);
+    overflow: hidden;
+}
+
+.leftCont {
+    background: #111827;
+    border-right: 1px solid #1f2937;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.actions {
+    padding: 16px;
+}
+
+.userListCont h3 {
+    margin-bottom: 12px;
+    color: #93c5fd;
+}
+
+
+/* VIDEO GRID - AUTO RESPONSIVE MAGIC */
+.video-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+/* VIDEO BOX */
+.video-box {
+    /* flex: 1 1 250px; */
+    width: 100%;
+
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    background: rgb(46, 46, 46);
+}
+
+.video-box.mic-active {
+    outline: 3px solid #2563eb;
+    outline-offset: -3px;
+}
+
+.video-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+
+    background: #111;
+    color: white;
+}
+
+.video-loading i {
+    font-size: 40px;
+}
+
+.video-loading span {
+    font-size: 14px;
+    opacity: .8;
+}
+
+.controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: 0.2s;
+    z-index: 1000;
+
+}
+
+.video-box:hover .controls {
+    opacity: 1;
+}
+
+.controls button {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.controls button:hover {
+    background: rgba(37, 99, 235, 0.9);
+    transform: scale(1.1);
+}
+
+.video-status {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #111;
+    color: white;
+    z-index: 5;
+}
+
+.video-status i {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.8;
+}
+
+.video-status span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.mic-level {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 18px;
+}
+
+.mic-level .bar {
+    width: 3px;
+    height: 4px;
+    background: #22c55e;
+    border-radius: 2px;
+    transition: 0.1s;
+    opacity: 0.3;
+}
+
+.mic-active .bar {
+    opacity: 1;
+}
+
+
+/* VIDEO */
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+video#local {
+    border-radius: 12px;
+}
+
+#videos {
+    padding: 15px;
+    overflow-y: auto;
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill,
+            minmax(320px, 1fr));
+    gap: 15px;
+    align-content: start;
+}
+
+#videos .video-box {
+    width: 100%;
+    aspect-ratio: 16/9;
+    min-height: 220px;
+}
+
+/* USER TAG */
+.tag {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.remove-user-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    background: #dc2626;
+    color: white;
+}
+
+.remove-user-btn:hover {
+    opacity: .9;
+}
+
+
+.meeting-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+}
+
+.meeting-modal-content {
+    width: 90%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, .25);
+    animation: modalPop .25s ease;
+}
+
+.meeting-modal-content h3 {
+    margin: 0 0 12px;
+    font-size: 22px;
+    color: #111827;
+}
+
+.meeting-modal-content h3 i {
+    color: #2563eb;
+    margin-right: 8px;
+}
+
+.meeting-modal-content p {
+    margin: 0 0 24px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.meeting-modal-content button {
+    min-width: 120px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color .2s ease,
+        transform .2s ease;
+}
+
+.meeting-modal-content button:hover {
+    transform: translateY(-2px);
+}
+
+#acceptMeetingBtn {
+    background: #22c55e;
+    color: white;
+    margin-right: 8px;
+}
+
+#acceptMeetingBtn:hover {
+    background: #16a34a;
+}
+
+#declineMeetingBtn {
+    background: #ef4444;
+    color: white;
+}
+
+#declineMeetingBtn:hover {
+    background: #dc2626;
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: scale(.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
