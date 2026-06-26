@@ -48,8 +48,13 @@ body {
 }
 
 .actions #userList {
-    display: flex;
-    flex-direction: column;
+    /* display: flex;
+    flex-direction: column; */
+    background: #0c111b;
+    height: calc(100vh - 350px);
+    padding: 5px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* BUTTONS */
@@ -71,7 +76,11 @@ button:disabled {
     background: #1e293b;
     border-radius: 10px;
     padding: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
 }
 
 .user-item span {
@@ -81,6 +90,7 @@ button:disabled {
 .user-item button {
     background: #2563eb;
     color: white;
+
 }
 
 #endBtn {
@@ -135,9 +145,6 @@ input {
     height: 100%;
 }
 
-.actions {
-    padding: 16px;
-}
 
 .userListCont h3 {
     margin-bottom: 12px;

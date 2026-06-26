@@ -1,10 +1,18 @@
 const mysql = require("mysql2");
 
+// const db = mysql.createPool({
+//   host: "localhost",
+//   user: "root",
+//   password: "",
+//   database: "meetflow",
+//   timezone: "+08:00"
+// });
+
 const db = mysql.createPool({
-  host: "localhost",
+  host: "mysql.railway.internal",
   user: "root",
-  password: "",
-  database: "meetflow",
+  password: "vpOHwWMKoHKAvjDOJNkemhOvrfowTdgT",
+  database: "railway",
   timezone: "+08:00"
 });
 

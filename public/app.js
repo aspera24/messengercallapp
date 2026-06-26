@@ -56,6 +56,7 @@ function initUser(data) {
     myId = currentUser.token;
 
     socket.emit("register", {
+        id: currentUser.id,
         token: currentUser.token,
         firstname: currentUser.firstname,
         lastname: currentUser.lastname,
@@ -105,8 +106,7 @@ window.onload = async () => {
 
 async function ensureMediaReady(attempt = 0) {
 
-    const loader =
-        document.getElementById("localLoading");
+    const loader = document.getElementById("localLoading");
 
     if (stream) {
         loader.style.display = "none";
@@ -117,11 +117,22 @@ async function ensureMediaReady(attempt = 0) {
 
     try {
 
-        stream =
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 24, max: 30 }
+            },
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: true,
+                autoGainControl: false,
+                suppressLocalAudioPlayback: true,
+
+                sampleRate: 48000,
+                channelCount: 1
+            }
+        });
 
         localVideo.srcObject = stream;
 
@@ -436,6 +447,23 @@ function createPeer(userId) {
         peer.addTrack(track, stream);
     });
 
+    // PRIORITIZE OPUS AUDIO
+    const transceiver = peer.getTransceivers()
+        .find(t => t.sender.track?.kind === "audio");
+
+    if (transceiver) {
+
+        const codecs = RTCRtpSender.getCapabilities("audio").codecs;
+
+        const opus = codecs.filter(codec =>
+            codec.mimeType.toLowerCase() === "audio/opus"
+        );
+
+        if (opus.length > 0) {
+            transceiver.setCodecPreferences(opus);
+        }
+    }
+
     peer.ontrack = (event) => {
         addRemoteVideo(userId, event.streams[0]);
     };
@@ -524,8 +552,7 @@ async function loadUsers() {
     const res = await fetch("/users");
     const users = await res.json();
 
-    const container =
-        document.getElementById("userList");
+    const container = document.getElementById("userList");
 
     container.innerHTML = "";
 
@@ -535,7 +562,7 @@ async function loadUsers() {
             <div class="user-item">
 
                 <span>
-                    ${user.firstname} ${user.lastname}
+                    ${user.firstname}
                 </span>
 
                 <button
@@ -591,13 +618,23 @@ socket.on("meeting-request", (data) => {
 
 socket.on("request-accepted", ({ token }) => {
 
-    const btn =
-        document.getElementById(`req-${token}`);
+    const btn = document.getElementById(`req-${token}`);
 
     if (!btn) return;
 
     btn.disabled = false;
-    btn.innerHTML = "Request User";
+    btn.innerHTML = "Request";
+});
+
+socket.on("request-declined", ({ token }) => {
+
+    const btn = document.getElementById(`req-${token}`);
+
+    if (!btn) return;
+
+    btn.disabled = false;
+    btn.innerHTML = "Request";
+
 });
 
 socket.on("removed-from-meeting", () => {
@@ -652,8 +689,13 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 };
 
 document.getElementById("declineMeetingBtn").onclick = () => {
+
     document.getElementById("meetingRequestModal").style.display = "none";
+
+    socket.emit("meeting-request-declined");
+
     requestedRoom = null;
+
 };
 
 
@@ -771,6 +813,8 @@ function addRemoteVideo(userId, stream) {
                         userId
                     }
                 );
+
+
             }
         };
 
