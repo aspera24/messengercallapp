@@ -126,7 +126,7 @@ async function ensureMediaReady(attempt = 0) {
             audio: {
                 echoCancellation: false,
                 noiseSuppression: true,
-                autoGainControl: true,
+                autoGainControl: false,
                 suppressLocalAudioPlayback: true,
 
                 sampleRate: 48000,
