@@ -1,24 +1,152 @@
+/* ===============================
+   TABLET
+=================================*/
+@media (max-width: 1024px) {
 
-/* =========================
-   📱 MOBILE FIXES
-========================= */
-/* MOBILE: always visible (no hover) */
+    .centCont {
+        grid-template-columns: 230px 1fr;
+    }
+
+    .video-box {
+        max-height: 350px;
+    }
+
+    #videos {
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .actions #userList {
+        height: calc(100vh - 300px);
+    }
+}
+
+
+/* ===============================
+   LARGE PHONE
+=================================*/
 @media (max-width: 768px) {
+
+    .topbar {
+        height: auto;
+        padding: 10px;
+    }
+
+    .topbar h2 {
+        font-size: 16px;
+    }
+
+    .centCont {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+    }
+
+    .leftCont {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #1f2937;
+    }
+
+    .actions #userList {
+        height: 220px;
+    }
+
+    .video-grid {
+        padding: 8px;
+    }
+
+    .video-box {
+        max-height: 260px;
+    }
+
+    #videos {
+        gap: 8px;
+        padding: 8px;
+    }
 
     .panel {
         flex-direction: column;
     }
 
+    .panel input,
+    .panel button {
+        width: 100%;
+    }
 
-    .controls {
-        opacity: 1;
+    .user-item {
+        align-items: center;
+    }
+
+    .user-item button {
+        font-size: 12px;
+        padding: 8px 10px;
     }
 }
 
-/* SMALL PHONES */
+
+/* ===============================
+   SMALL PHONE
+=================================*/
 @media (max-width: 480px) {
 
+    body {
+        font-size: 14px;
+    }
+
+    .topbar {
+        padding: 8px;
+    }
+
     .topbar h2 {
-        font-size: 16px;
+        font-size: 15px;
+    }
+
+    .actions {
+        padding: 8px;
+    }
+
+    .actions #userList {
+        height: 180px;
+    }
+
+    #videos {
+        gap: 6px;
+        padding: 6px;
+    }
+
+    .video-box {
+        max-height: 200px;
+        border-radius: 10px;
+    }
+
+    .controls button,
+    .remove-user-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 12px;
+    }
+
+    .tag {
+        font-size: 10px;
+    }
+
+    .meeting-modal-content {
+        width: 95%;
+        padding: 18px;
+    }
+
+    .meeting-modal-content h3 {
+        font-size: 18px;
+    }
+
+    .meeting-modal-content button {
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    #acceptMeetingBtn {
+        margin-right: 0;
     }
 }
