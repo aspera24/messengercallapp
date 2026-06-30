@@ -37,24 +37,6 @@ async function loadUser() {
 
 loadUser();
 
-function updateVideoGrid() {
-
-    const container = document.getElementById("videos");
-
-    const total =
-        document.querySelectorAll("#videos .video-box").length;
-
-    if (total === 0) return;
-
-    let cols = Math.ceil(Math.sqrt(total));
-    let rows = Math.ceil(total / cols);
-
-    container.style.setProperty("--cols", cols);
-    container.style.setProperty("--rows", rows);
-}
-
-window.addEventListener("resize", updateVideoGrid);
-
 
 
 // SESSION
@@ -344,7 +326,6 @@ socket.on("meeting-ended", () => {
 
     document.getElementById("videos").innerHTML = "";
 
-    updateVideoGrid();
 
     // RESET MEDIA (IMPORTANT FIX)
     if (stream) {
@@ -392,7 +373,6 @@ socket.on("user-disconnected", (userId) => {
 
     if (wrapper) {
         wrapper.remove();
-        updateVideoGrid();
     }
 }
 );
@@ -702,7 +682,6 @@ socket.on("removed-from-meeting", () => {
 
         if (wrapper) {
             wrapper.remove();
-            updateVideoGrid();
         }
     }
 
@@ -807,7 +786,6 @@ function addRemoteVideo(userId, stream) {
             .getElementById("videos")
             .appendChild(wrapper);
 
-        updateVideoGrid();
     }
 
     const tag = wrapper.querySelector(".tag");

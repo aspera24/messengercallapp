@@ -3,7 +3,7 @@
 =================================*/
 @media (max-width: 1024px) {
 
-    .centCont {
+    /* .centCont {
         grid-template-columns: 230px 1fr;
     }
 
@@ -14,7 +14,7 @@
     #videos {
         gap: 10px;
         padding: 10px;
-    }
+    } */
 
     .actions #userList {
         height: calc(100vh - 300px);
