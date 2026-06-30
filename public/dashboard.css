@@ -311,7 +311,7 @@ video#local {
 .video-box {
     width: 100%;
     aspect-ratio: 16 / 9;
-    max-height: 350px;
+    max-height: clamp(180px, 40vh, 350px);
 }
 
 /* USER TAG */
