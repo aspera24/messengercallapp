@@ -374,8 +374,9 @@ socket.on("user-disconnected", (userId) => {
     if (wrapper) {
         wrapper.remove();
     }
-}
-);
+
+    loadUsers();
+});
 
 socket.on("user-joined-room", (user) => {
 
@@ -403,6 +404,7 @@ socket.on("user-joined-room", (user) => {
         };
 
     updateRemoteStatus(user.id);
+    loadUsers();
 });
 
 socket.on("media-status-changed", ({ userId, camera, mic }) => {
@@ -582,21 +584,29 @@ async function loadUsers() {
     users.forEach(user => {
 
         container.innerHTML += `
-            <div class="user-item">
+        <div class="user-item">
 
-                <span>
-                    ${user.firstname}
-                </span>
+            <span>${user.firstname}</span>
 
-                <button class="reqBtn"
-                    id="req-${user.token}"
-                    onclick="requestUser('${user.token}')"
-                >
-                    <i class="fa-solid fa-paper-plane"></i>
-                    Request
-                </button>
+            <button
+                class="reqBtn"
+                id="req-${user.token}"
+                onclick="requestUser('${user.token}')"
+                ${user.joined ? "disabled" : ""}
+            >
+                ${user.joined
+                ? `
+                        <i class="fa-solid fa-circle-check"></i>
+                        Joined
+                        `
+                : `
+                        <i class="fa-solid fa-paper-plane"></i>
+                        Request
+                        `
+            }
+            </button>
 
-            </div>
+        </div>
         `;
     });
 }
@@ -1027,6 +1037,17 @@ function logout() {
 
 
 // ERROR
-socket.on("error", (msg) => {
-    alert(msg);
+socket.on("request-error", ({ token, message }) => {
+
+    alert(message);
+
+    const btn = document.getElementById(`req-${token}`);
+
+    if (!btn) return;
+
+    btn.disabled = false;
+    btn.innerHTML = `
+        <i class="fa-solid fa-paper-plane"></i>
+        Request
+    `;
 });

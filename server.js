@@ -37,6 +37,7 @@ const onlineUsers = {}; // token -> {socketId, user}
 const rooms = {};       // roomId -> admin data
 const acceptedUsers = {};
 const pendingRequests = {};
+const joinedUsersInMeeting = {};
 
 // SOCKET
 io.on("connection", (socket) => {
@@ -82,7 +83,10 @@ io.on("connection", (socket) => {
         const target = onlineUsers[token];
 
         if (!target) {
-            return socket.emit("error", "User is offline.");
+            return socket.emit("request-error", {
+                token,
+                message: "User is offline."
+            });
         }
 
         pendingRequests[token] = socket.data.user.token;
@@ -373,6 +377,10 @@ io.on("connection", (socket) => {
 
         socket.join(roomId);
 
+        joinedUsersInMeeting[user.token] = true;
+
+        console.log(joinedUsersInMeeting);
+
         db.query(
             `SELECT id
             FROM meetings
@@ -497,6 +505,10 @@ io.on("connection", (socket) => {
             if (targetSocket) {
 
                 targetSocket.leave(roomId);
+
+                delete joinedUsersInMeeting[userId];
+
+                console.log(joinedUsersInMeeting);
 
                 db.query(
                     `SELECT id
@@ -642,6 +654,10 @@ io.on("connection", (socket) => {
 
         activeMeeting = null;
 
+        Object.keys(joinedUsersInMeeting).forEach(token => {
+            delete joinedUsersInMeeting[token];
+        });
+
         io.emit("meeting-ended", {
             roomId
         });
@@ -661,6 +677,10 @@ io.on("connection", (socket) => {
         const user = socket.data.user;
 
         if (user) {
+
+            if (user?.token) {
+                delete joinedUsersInMeeting[user.token];
+            }
 
             socket.to(activeMeeting?.roomId).emit(
                 "user-disconnected",
@@ -745,8 +765,13 @@ io.on("connection", (socket) => {
 
         }
 
+
+
     });
 });
+
+
+
 
 app.get("/users", (req, res) => {
 
@@ -767,7 +792,12 @@ app.get("/users", (req, res) => {
                 return res.status(500).json(err);
             }
 
-            res.json(result);
+            const users = result.map(user => ({
+                ...user,
+                joined: !!joinedUsersInMeeting[user.token]
+            }));
+
+            res.json(users);
         }
     );
 });
