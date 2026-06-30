@@ -58,8 +58,8 @@
     }
 
     #videos {
-        gap: 8px;
-        padding: 8px;
+        grid-template-columns: 1fr;
+        grid-auto-rows: 220px;
     }
 
     .panel {

@@ -296,15 +296,11 @@ video#local {
 
 #videos {
     display: grid;
-    gap: 15px;
+    gap: 10px;
+    padding: 10px;
 
-    grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-    overflow-y: auto;
-    overflow-x: hidden;
-    grid-auto-rows: minmax(420px, 1fr);
-
-    height: 100%;
-    padding: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    grid-auto-rows: minmax(180px, auto);
 }
 
 #videos .video-box{
