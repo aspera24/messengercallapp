@@ -90,7 +90,7 @@ button:disabled {
 .user-item button {
     background: #2563eb;
     color: white;
-
+    font-size: 10px;
 }
 
 #endBtn {
@@ -161,7 +161,7 @@ input {
 
 /* VIDEO BOX */
 .video-box {
-    /* flex: 1 1 250px; */
+    flex: 1 1 250px;
     width: 100%;
 
     position: relative;
@@ -272,7 +272,7 @@ input {
 .mic-level .bar {
     width: 3px;
     height: 4px;
-    background: #22c55e;
+    background: #2563eb;
     border-radius: 2px;
     transition: 0.1s;
     opacity: 0.3;
@@ -295,20 +295,23 @@ video#local {
 }
 
 #videos {
-    padding: 15px;
-    overflow-y: auto;
-
     display: grid;
-    grid-template-columns: repeat(auto-fill,
-            minmax(320px, 1fr));
     gap: 15px;
-    align-content: start;
+    padding: 15px;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: auto;
+
+    grid-template-columns: repeat(var(--cols, 1), 1fr);
+    grid-template-rows: repeat(var(--rows, 1), 1fr);
 }
 
-#videos .video-box {
+.video-box {
     width: 100%;
-    aspect-ratio: 16/9;
-    min-height: 220px;
+    aspect-ratio: 16 / 9;
+    max-height: 350px;
 }
 
 /* USER TAG */
@@ -396,13 +399,13 @@ video#local {
 }
 
 #acceptMeetingBtn {
-    background: #22c55e;
+    background: #2563eb;
     color: white;
     margin-right: 8px;
 }
 
 #acceptMeetingBtn:hover {
-    background: #16a34a;
+    background: #2057cc;
 }
 
 #declineMeetingBtn {

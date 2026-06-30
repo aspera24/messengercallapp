@@ -18,10 +18,6 @@
 /* SMALL PHONES */
 @media (max-width: 480px) {
 
-    .video-grid {
-        grid-template-columns: 1fr;
-    }
-
     .topbar h2 {
         font-size: 16px;
     }

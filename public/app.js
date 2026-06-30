@@ -37,6 +37,26 @@ async function loadUser() {
 
 loadUser();
 
+function updateVideoGrid() {
+
+    const container = document.getElementById("videos");
+
+    const total =
+        document.querySelectorAll("#videos .video-box").length;
+
+    if (total === 0) return;
+
+    let cols = Math.ceil(Math.sqrt(total));
+    let rows = Math.ceil(total / cols);
+
+    container.style.setProperty("--cols", cols);
+    container.style.setProperty("--rows", rows);
+}
+
+window.addEventListener("resize", updateVideoGrid);
+
+
+
 // SESSION
 fetch("/session")
     .then(res => res.json())
@@ -324,6 +344,8 @@ socket.on("meeting-ended", () => {
 
     document.getElementById("videos").innerHTML = "";
 
+    updateVideoGrid();
+
     // RESET MEDIA (IMPORTANT FIX)
     if (stream) {
         stream.getTracks().forEach(t => t.stop());
@@ -342,6 +364,16 @@ socket.on("user-disconnected", (userId) => {
 
     if (currentUser.acc_type === "admin") {
         updateMeetingButtons(joinedUsers > 0);
+
+        const btn = document.getElementById(`req-${userId.token}`);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <i class="fa-solid fa-paper-plane"></i>
+                Request
+            `;
+        }
     }
 
     if (peers[userId]) {
@@ -360,6 +392,7 @@ socket.on("user-disconnected", (userId) => {
 
     if (wrapper) {
         wrapper.remove();
+        updateVideoGrid();
     }
 }
 );
@@ -369,6 +402,16 @@ socket.on("user-joined-room", (user) => {
     if (currentUser.acc_type === "admin") {
         joinedUsers++;
         updateMeetingButtons(joinedUsers > 0);
+
+        const btn = document.getElementById(`req-${user.token}`);
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+            <i class="fa-solid fa-circle-check"></i>
+            Joined
+        `;
+        }
     }
 
     peerNames[user.id] = user.firstname;
@@ -565,10 +608,11 @@ async function loadUsers() {
                     ${user.firstname}
                 </span>
 
-                <button
+                <button class="reqBtn"
                     id="req-${user.token}"
                     onclick="requestUser('${user.token}')"
                 >
+                    <i class="fa-solid fa-paper-plane"></i>
                     Request
                 </button>
 
@@ -623,7 +667,10 @@ socket.on("request-accepted", ({ token }) => {
     if (!btn) return;
 
     btn.disabled = false;
-    btn.innerHTML = "Request";
+    btn.innerHTML = `
+        <i class="fa-solid fa-paper-plane"></i>
+        Request
+    `;
 });
 
 socket.on("request-declined", ({ token }) => {
@@ -633,7 +680,10 @@ socket.on("request-declined", ({ token }) => {
     if (!btn) return;
 
     btn.disabled = false;
-    btn.innerHTML = "Request";
+    btn.innerHTML = `
+                <i class="fa-solid fa-paper-plane"></i>
+                Request
+            `;
 
 });
 
@@ -652,6 +702,7 @@ socket.on("removed-from-meeting", () => {
 
         if (wrapper) {
             wrapper.remove();
+            updateVideoGrid();
         }
     }
 
@@ -755,6 +806,8 @@ function addRemoteVideo(userId, stream) {
         document
             .getElementById("videos")
             .appendChild(wrapper);
+
+        updateVideoGrid();
     }
 
     const tag = wrapper.querySelector(".tag");
@@ -771,12 +824,18 @@ function addRemoteVideo(userId, stream) {
         "loading-" + userId
     );
 
-    remoteVideo.onloadeddata = () => {
+    // remoteVideo.onloadeddata = () => {
 
+    //     if (remoteLoader) {
+    //         remoteLoader.style.display = "none";
+    //     };
+
+    // };
+
+    remoteVideo.oncanplay = () => {
         if (remoteLoader) {
             remoteLoader.style.display = "none";
         };
-
     };
 
     // SETUP MIC LEVEL ONLY ONCE
