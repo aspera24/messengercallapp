@@ -297,21 +297,20 @@ video#local {
 #videos {
     display: grid;
     gap: 15px;
-    padding: 15px;
 
-    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+    overflow-y: auto;
+    overflow-x: hidden;
+    grid-auto-rows: minmax(420px, 1fr);
+
     height: 100%;
-
-    overflow: auto;
-
-    grid-template-columns: repeat(var(--cols, 1), 1fr);
-    grid-template-rows: repeat(var(--rows, 1), 1fr);
+    padding: 15px;
 }
 
-.video-box {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    max-height: clamp(180px, 40vh, 350px);
+#videos .video-box{
+    width:100%;
+    height:100%;
+    aspect-ratio:16/9;
 }
 
 /* USER TAG */
