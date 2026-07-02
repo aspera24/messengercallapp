@@ -8,8 +8,8 @@
 }
 
 body {
-    background: #ffffff;
-    color: #1e293b;
+    background:#f5f7fb;
+    color:#1e293b;
 }
 
 /* APP WRAPPER */
@@ -114,7 +114,6 @@ button:disabled {
 }
 
 button:hover {
-    opacity: 0.9;
     background: #cbd5e1;
 }
 
@@ -361,12 +360,12 @@ video#local {
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    background: #dc2626;
+    background: #1616169d;
     color: white;
 }
 
 .remove-user-btn:hover {
-    opacity: .9;
+    background: #161616d2;
 }
 
 

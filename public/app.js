@@ -21,6 +21,9 @@ let myId = null;
 let userMediaStates = {};
 
 const globalAudioContext = new AudioContext();
+const remoteAudioNodes = {};
+const remoteAnimationFrames = {};
+
 
 
 async function loadUser() {
@@ -95,18 +98,14 @@ function setupUI() {
 // CAMERA
 window.onload = async () => {
     await ensureMediaReady();
-
     if (audioContext?.state === "suspended") {
         await audioContext.resume();
     }
 
-    socket.emit(
-        "media-status",
+    socket.emit("media-status",
         {
-            camera:
-                videoTrack.enabled,
-            mic:
-                audioTrack.enabled
+            camera: videoTrack.enabled,
+            mic: audioTrack.enabled
         }
     );
 };
@@ -191,13 +190,14 @@ socket.on("room-created", ({ roomId: newRoom }) => {
 
 function updateMeetingButtons(active) {
 
-    const endBtn =
-        document.getElementById("endBtn");
+    const endBtn = document.getElementById("endBtn");
 
-    endBtn.style.display =
-        active
-            ? "block"
-            : "none";
+    if (currentUser?.acc_type !== "admin") {
+        endBtn.style.display = "none";
+        return;
+    }
+
+    endBtn.style.display = active ? "block" : "none";
 }
 
 // MIC LEVEL
@@ -288,10 +288,23 @@ socket.on("meeting-started", async (data) => {
         }
     }
 
+    for (const id in peers) {
+        peers[id].close();
+    }
+
+    peers = {};
+    peerNames = {};
+
     socket.emit("join-room", {
         roomId,
         userId: myId
     });
+
+    socket.emit("media-status", {
+        camera: videoTrack.enabled,
+        mic: audioTrack.enabled
+    });
+
 });
 
 function joinRoomNow() {
@@ -303,6 +316,11 @@ function joinRoomNow() {
     socket.emit("join-room", {
         roomId,
         userId: myId
+    });
+
+    socket.emit("media-status", {
+        camera: videoTrack.enabled,
+        mic: audioTrack.enabled
     });
 }
 
@@ -327,6 +345,20 @@ socket.on("meeting-ended", () => {
 
     for (let id in peers) {
         peers[id].close();
+
+        Object.values(remoteAudioNodes).forEach(node => {
+            try {
+                node.source.disconnect();
+                node.analyser.disconnect();
+            } catch (e) { }
+
+            cancelAnimationFrame(id);
+        });
+
+        Object.keys(remoteAudioNodes).forEach(id => {
+            delete remoteAudioNodes[id];
+            delete remoteAnimationFrames[id];
+        });
     }
 
     peers = {};
@@ -369,6 +401,12 @@ socket.on("user-disconnected", (userId) => {
                 Request
             `;
         }
+
+    }
+
+    if (remoteAnimationFrames[userId]) {
+        cancelAnimationFrame(remoteAnimationFrames[userId]);
+        delete remoteAnimationFrames[userId];
     }
 
     if (peers[userId]) {
@@ -381,6 +419,15 @@ socket.on("user-disconnected", (userId) => {
     delete peerNames[userId];
     delete userMediaStates[userId];
 
+    if (remoteAudioNodes[userId]) {
+        try {
+            remoteAudioNodes[userId].source.disconnect();
+            remoteAudioNodes[userId].analyser.disconnect();
+        } catch (e) { }
+
+        delete remoteAudioNodes[userId];
+    }
+
     const wrapper = document.getElementById(
         "wrap-" + userId
     );
@@ -390,6 +437,11 @@ socket.on("user-disconnected", (userId) => {
     }
 
     loadUsers();
+});
+
+socket.on("room-info", data => {
+    joinedUsers = data.participants;
+    updateMeetingButtons(joinedUsers > 0);
 });
 
 socket.on("user-joined-room", (user) => {
@@ -517,6 +569,17 @@ function createPeer(userId) {
     }
 
     peer.ontrack = (event) => {
+
+        const video = document.getElementById(userId);
+
+        if (
+            video &&
+            video.srcObject &&
+            video.srcObject.id === event.streams[0].id
+        ) {
+            return;
+        }
+
         addRemoteVideo(userId, event.streams[0]);
     };
 
@@ -710,9 +773,9 @@ socket.on("request-declined", ({ token }) => {
 
     btn.disabled = false;
     btn.innerHTML = `
-                <i class="fa-solid fa-paper-plane"></i>
-                Request
-            `;
+        <i class="fa-solid fa-paper-plane"></i>
+        Request
+    `;
 
 });
 
@@ -732,6 +795,14 @@ socket.on("removed-from-meeting", () => {
         if (wrapper) {
             wrapper.remove();
         }
+
+        Object.values(remoteAnimationFrames).forEach(id => {
+            cancelAnimationFrame(id);
+        });
+
+        Object.keys(remoteAnimationFrames).forEach(id => {
+            delete remoteAnimationFrames[id];
+        });
     }
 
     peers = {};
@@ -767,6 +838,11 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
     socket.emit("join-room", {
         roomId,
         userId: myId
+    });
+
+    socket.emit("media-status", {
+        camera: videoTrack.enabled,
+        mic: audioTrack.enabled
     });
 };
 
@@ -847,8 +923,32 @@ function addRemoteVideo(userId, stream) {
     }
 
     const remoteVideo = document.getElementById(userId);
-    remoteVideo.srcObject = stream;
-    remoteVideo.volume = 0.7;
+    delete remoteVideo.dataset.micReady;
+
+    if (remoteVideo.srcObject !== stream) {
+
+        remoteVideo.srcObject = stream;
+
+        delete remoteVideo.dataset.micReady;
+
+        remoteVideo.onplaying = () => {
+
+            if (remoteLoader)
+                remoteLoader.style.display = "none";
+
+            if (!remoteVideo.dataset.micReady) {
+
+                setupRemoteMicLevel(userId, stream);
+
+                remoteVideo.dataset.micReady = "true";
+            }
+
+        };
+
+        remoteVideo.play().catch(console.error);
+    }
+
+
 
 
     // HIDE LOADER
@@ -856,32 +956,18 @@ function addRemoteVideo(userId, stream) {
         "loading-" + userId
     );
 
-    // remoteVideo.onloadeddata = () => {
+    remoteVideo.onloadeddata = () => {
 
-    //     if (remoteLoader) {
-    //         remoteLoader.style.display = "none";
-    //     };
-
-    // };
-
-    remoteVideo.oncanplay = () => {
         if (remoteLoader) {
             remoteLoader.style.display = "none";
         };
+
     };
 
-    // SETUP MIC LEVEL ONLY ONCE
-    if (!remoteVideo.dataset.micReady) {
 
-        setupRemoteMicLevel(
-            userId,
-            stream
-        );
-
-        remoteVideo.dataset.micReady = "true";
-        remoteVideo.muted = false;
-        remoteVideo.controls = false;
-    }
+    remoteVideo.muted = false;
+    remoteVideo.volume = 0.7;
+    remoteVideo.controls = false;
 
     if (
         currentUser.acc_type === "admin" &&
@@ -920,56 +1006,95 @@ function addRemoteVideo(userId, stream) {
 }
 
 
-function setupRemoteMicLevel(userId, remoteStream) {
+async function setupRemoteMicLevel(userId, remoteStream) {
 
-    globalAudioContext.createMediaStreamSource(
-        remoteStream
-    );
+    if (remoteAnimationFrames[userId]) {
+        cancelAnimationFrame(remoteAnimationFrames[userId]);
+        delete remoteAnimationFrames[userId];
+    }
 
+    console.log("Analyser stream:", remoteStream.id);
+
+    if (globalAudioContext.state === "suspended") {
+        await globalAudioContext.resume();
+    }
+
+    // Remove old nodes 
+    if (remoteAudioNodes[userId]) {
+        try {
+            remoteAudioNodes[userId].source.disconnect();
+            remoteAudioNodes[userId].analyser.disconnect();
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    const source = globalAudioContext.createMediaStreamSource(remoteStream);
     const analyser = globalAudioContext.createAnalyser();
-    analyser.fftSize = 64;
 
     source.connect(analyser);
+
+    remoteAudioNodes[userId] = {
+        source,
+        analyser
+    };
 
     const dataArray =
         new Uint8Array(
             analyser.frequencyBinCount
         );
 
-    function animate() {
+    async function animate() {
 
-        const wrapper = document.getElementById(
-            "wrap-" + userId
-        );
+        if (globalAudioContext.state !== "running") {
+            await globalAudioContext.resume();
+        }
 
-        if (!wrapper) return;
+        remoteAnimationFrames[userId] = requestAnimationFrame(animate);
 
-        requestAnimationFrame(
-            animate
-        );
+        const wrapper = document.getElementById("wrap-" + userId);
+
+        if (!wrapper) {
+            return;
+        }
+
+
+        const track = remoteStream.getAudioTracks()[0];
+
+        if (!track) {
+            return;
+        }
+
+        if (track.muted) {
+
+            bars.forEach(bar => {
+                bar.style.height = "4px";
+            });
+
+            wrapper.classList.remove("mic-active");
+
+            return;
+
+        }
+
 
         let avg = 0;
 
         // CHECK IF REMOTE MIC IS ON
-        const state = userMediaStates[userId];
+        const state = userMediaStates[userId] || {
+            mic: true,
+            camera: true
+        };
 
-        if (state?.mic) {
+        analyser.getByteFrequencyData(dataArray);
 
-            analyser.getByteFrequencyData(
-                dataArray
-            );
-
-            avg = dataArray.reduce(
-                (a, b) => a + b,
-                0
-            ) / dataArray.length;
-        }
+        avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
         const bars = document.querySelectorAll(
             `#mic-${userId} .bar`
         );
 
-        // SAME LOGIC SA IMONG LOCAL
+
         if (state?.mic && avg > 10) {
             wrapper.classList.add("mic-active");
         } else {
@@ -993,6 +1118,7 @@ function setupRemoteMicLevel(userId, remoteStream) {
                     : "4px";
             }
         );
+
     }
 
     animate();

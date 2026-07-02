@@ -1,30 +1,18 @@
-/* ===============================
-   TABLET
-=================================*/
+/* TABLET */
 @media (max-width: 1024px) {
-
-    /* .centCont {
-        grid-template-columns: 230px 1fr;
-    }
-
-    .video-box {
-        max-height: 300px;
-    }
-
-    #videos {
-        gap: 10px;
-        padding: 10px;
-    } */
 
     .actions #userList {
         height: calc(100vh - 300px);
     }
+
+    #videos {
+        grid-auto-rows: 310px;
+    }
+
 }
 
 
-/* ===============================
-   LARGE PHONE
-=================================*/
+/* LARGE PHONE */
 @media (max-width: 768px) {
 
     .topbar {
@@ -58,8 +46,7 @@
     }
 
     #videos {
-        grid-template-columns: 1fr;
-        grid-auto-rows: 220px;
+        grid-auto-rows: 410px;
     }
 
     .panel {
@@ -82,9 +69,7 @@
 }
 
 
-/* ===============================
-   SMALL PHONE
-=================================*/
+/* SMALL PHONE */
 @media (max-width: 480px) {
 
     body {

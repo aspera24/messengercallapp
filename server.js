@@ -38,6 +38,7 @@ const rooms = {};       // roomId -> admin data
 const acceptedUsers = {};
 const pendingRequests = {};
 const joinedUsersInMeeting = {};
+const port = 3000;
 
 // SOCKET
 io.on("connection", (socket) => {
@@ -50,10 +51,12 @@ io.on("connection", (socket) => {
 
         if (!user?.token) return;
 
-        userMediaState[user.token] = {
-            camera: true,
-            mic: true
-        };
+        if (!userMediaState[user.token]) {
+            userMediaState[user.token] = {
+                camera: true,
+                mic: true
+            };
+        }
 
         // prevent duplicate overwrite issues
         onlineUsers[user.token] = {
@@ -434,10 +437,8 @@ io.on("connection", (socket) => {
 
         }
 
-        socket.emit(
-            "existing-users",
-            clients
-        );
+        socket.emit("existing-users", clients);
+        socket.emit("room-info", { participants: clients.length });
 
         socket.to(roomId).emit(
             "user-joined-room",
@@ -460,6 +461,7 @@ io.on("connection", (socket) => {
         if (!target) return;
 
         io.to(target.socketId).emit("offer", data);
+        console.log("OFFER", data.from, "->", data.to);
     });
 
     socket.on("answer", (data) => {
@@ -467,6 +469,7 @@ io.on("connection", (socket) => {
         if (!target) return;
 
         io.to(target.socketId).emit("answer", data);
+        console.log("ANSWER", data.from, "->", data.to);
     });
 
     socket.on("ice-candidate", (data) => {
@@ -803,9 +806,8 @@ app.get("/users", (req, res) => {
 });
 
 
-// ==========================
+
 // START SERVER
-// ==========================
-server.listen(3000, () => {
-    console.log("Server running on http://localhost:3000");
+server.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
 });
