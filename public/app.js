@@ -486,6 +486,19 @@ function createPeer(userId) {
         peer.addTrack(track, stream);
     });
 
+    const sender = peer.getSenders()
+        .find(s => s.track?.kind === "audio");
+
+    if (sender) {
+        const params = sender.getParameters();
+
+        params.encodings = [{
+            maxBitrate: 32000
+        }];
+
+        sender.setParameters(params);
+    }
+
     // PRIORITIZE OPUS AUDIO
     const transceiver = peer.getTransceivers()
         .find(t => t.sender.track?.kind === "audio");
@@ -524,11 +537,11 @@ function createPeer(userId) {
 
     peer.oniceconnectionstatechange = () => {
         console.log(peer.iceConnectionState);
-    };
+        if (peer.iceConnectionState === "failed") {
+            peer.restartIce();
+        }
 
-    if (peer.iceConnectionState === "failed") {
-        peer.restartIce();
-    }
+    };
 
     peers[userId] = peer;
     return peer;
@@ -835,6 +848,8 @@ function addRemoteVideo(userId, stream) {
 
     const remoteVideo = document.getElementById(userId);
     remoteVideo.srcObject = stream;
+    remoteVideo.volume = 0.7;
+
 
     // HIDE LOADER
     const remoteLoader = document.getElementById(
@@ -864,6 +879,8 @@ function addRemoteVideo(userId, stream) {
         );
 
         remoteVideo.dataset.micReady = "true";
+        remoteVideo.muted = false;
+        remoteVideo.controls = false;
     }
 
     if (
@@ -909,7 +926,7 @@ function setupRemoteMicLevel(userId, remoteStream) {
         remoteStream
     );
 
-    const analyser = ctx.createAnalyser();
+    const analyser = globalAudioContext.createAnalyser();
     analyser.fftSize = 64;
 
     source.connect(analyser);
