@@ -20,6 +20,7 @@ let currentUser = null;
 let myId = null;
 let userMediaStates = {};
 
+const globalAudioContext = new AudioContext();
 
 
 async function loadUser() {
@@ -95,6 +96,10 @@ function setupUI() {
 window.onload = async () => {
     await ensureMediaReady();
 
+    if (audioContext?.state === "suspended") {
+        await audioContext.resume();
+    }
+
     socket.emit(
         "media-status",
         {
@@ -129,8 +134,7 @@ async function ensureMediaReady(attempt = 0) {
                 echoCancellation: false,
                 noiseSuppression: true,
                 autoGainControl: false,
-                suppressLocalAudioPlayback: true,
-
+                voiceIsolation: true,
                 sampleRate: 48000,
                 channelCount: 1
             }
@@ -278,6 +282,10 @@ socket.on("meeting-started", async (data) => {
 
     if (!stream) {
         await ensureMediaReady();
+
+        if (audioContext?.state === "suspended") {
+            await audioContext.resume();
+        }
     }
 
     socket.emit("join-room", {
@@ -336,7 +344,13 @@ socket.on("meeting-ended", () => {
     }
 
     // AUTO RESTART CAMERA (optional but requested behavior)
-    setTimeout(() => ensureMediaReady(), 1000);
+    setTimeout(async () => {
+        await ensureMediaReady();
+
+        if (audioContext?.state === "suspended") {
+            await audioContext.resume();
+        }
+    }, 1000);
 });
 
 socket.on("user-disconnected", (userId) => {
@@ -503,6 +517,18 @@ function createPeer(userId) {
             });
         }
     };
+
+    peer.onconnectionstatechange = () => {
+        console.log(peer.connectionState);
+    };
+
+    peer.oniceconnectionstatechange = () => {
+        console.log(peer.iceConnectionState);
+    };
+
+    if (peer.iceConnectionState === "failed") {
+        peer.restartIce();
+    }
 
     peers[userId] = peer;
     return peer;
@@ -720,6 +746,9 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 
     if (!stream) {
         await ensureMediaReady();
+        if (audioContext?.state === "suspended") {
+            await audioContext.resume();
+        }
     }
 
     socket.emit("join-room", {
@@ -876,9 +905,7 @@ function addRemoteVideo(userId, stream) {
 
 function setupRemoteMicLevel(userId, remoteStream) {
 
-    const ctx = new AudioContext();
-
-    const source = ctx.createMediaStreamSource(
+    globalAudioContext.createMediaStreamSource(
         remoteStream
     );
 
