@@ -28,53 +28,55 @@
         <div class="centCont">
             <div class="leftCont">
                 <!-- VIDEO GRID -->
-                <div class="video-grid">
+                <div class="leftInnerCont">
+                    <div class="video-grid">
 
-                    <div class="video-box" id="localBox">
+                        <div class="video-box" id="localBox">
 
-                        <div class="video-loading" id="localLoading">
-                            <i class="fa-solid fa-video fa-beat-fade"></i>
-                            <span>Connecting Camera...</span>
+                            <div class="video-loading" id="localLoading">
+                                <i class="fa-solid fa-video fa-beat-fade"></i>
+                                <span>Connecting Camera...</span>
+                            </div>
+
+                            <video id="local" autoplay muted playsinline></video>
+
+                            <div class="video-status" id="localStatus">
+                                <i class="fa-solid fa-user"></i>
+                                <span id="statusText">Camera Off</span>
+                            </div>
+
+                            <span class="tag">You</span>
+
+                            <!-- CONTROLS -->
+                            <div class="controls">
+                                <button id="camBtn" onclick="toggleCamera()">
+                                    <i class="fa-solid fa-video"></i>
+                                </button>
+
+                                <button id="micBtn" onclick="toggleMic()">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
+
+                            <div class="mic-level">
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                            </div>
                         </div>
 
-                        <video id="local" autoplay muted playsinline></video>
-
-                        <div class="video-status" id="localStatus">
-                            <i class="fa-solid fa-user"></i>
-                            <span id="statusText">Camera Off</span>
-                        </div>
-
-                        <span class="tag">You</span>
-
-                        <!-- CONTROLS -->
-                        <div class="controls">
-                            <button id="camBtn" onclick="toggleCamera()">
-                                <i class="fa-solid fa-video"></i>
-                            </button>
-
-                            <button id="micBtn" onclick="toggleMic()">
-                                <i class="fa-solid fa-microphone"></i>
-                            </button>
-                        </div>
-
-                        <div class="mic-level">
-                            <div class="bar"></div>
-                            <div class="bar"></div>
-                            <div class="bar"></div>
-                            <div class="bar"></div>
-                            <div class="bar"></div>
-                        </div>
+                        <button id="endBtn" onclick="endMeeting()" style="display:none;background:red;color:white;">
+                            End Meeting
+                        </button>
                     </div>
 
-                    <button id="endBtn" onclick="endMeeting()" style="display:none;background:red;color:white;">
-                        End Meeting
-                    </button>
-                </div>
-
-                <div class="actions">
-                    <div class="userListCont">
-                        <h3>Employees</h3>
-                        <div id="userList"></div>
+                    <div class="actions">
+                        <div class="userListCont">
+                            <h3>Employees</h3>
+                            <div id="userList"></div>
+                        </div>
                     </div>
                 </div>
             </div>
