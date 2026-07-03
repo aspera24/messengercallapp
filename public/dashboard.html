@@ -12,11 +12,14 @@
 </head>
 
 <body>
-
+    <div id="overlay" onclick="toggleSidebar()"></div>
     <div class="app">
 
         <!-- TOP BAR -->
         <div class="topbar">
+            <button id="menuBtn" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
             <h2>📞 MeetFlow</h2>
             <h3 id="uname">User Name</h3>
             <button onclick="logout()">
@@ -72,15 +75,21 @@
                         </button>
                     </div>
 
-                    <div class="actions">
-                        <div class="userListCont">
-                            <h3>Employees</h3>
-                            <div id="userList"></div>
-                        </div>
+
+                    <div class="userListCont">
+                        <h3>Employees</h3>
+                        <div id="userList"></div>
                     </div>
+
                 </div>
             </div>
-            <div id="videos"></div>
+            <div class="rightCont">
+                <div id="videos"></div>
+                <div id="meetingTimer" class="meeting-timer" style="display:none;">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>00:00:00</span>
+                </div>
+            </div>
         </div>
     </div>
 

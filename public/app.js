@@ -24,7 +24,18 @@ const globalAudioContext = new AudioContext();
 const remoteAudioNodes = {};
 const remoteAnimationFrames = {};
 
+let meetingStartTime = null;
+let meetingTimerInterval = null;
 
+
+
+function toggleSidebar() {
+
+    document.querySelector(".leftCont").classList.toggle("show");
+
+    document.querySelector("#overlay").classList.toggle("show");
+
+}
 
 async function loadUser() {
 
@@ -41,6 +52,48 @@ async function loadUser() {
 
 loadUser();
 
+
+
+function startMeetingTimer(startedAt) {
+
+    clearInterval(meetingTimerInterval);
+
+    meetingStartTime = startedAt || Date.now();
+
+    const timer = document.getElementById("meetingTimer");
+
+    timer.style.display = "flex";
+
+    meetingTimerInterval = setInterval(() => {
+
+        const diff = Date.now() - meetingStartTime;
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        timer.querySelector("span").textContent =
+            `${String(hours).padStart(2, "0")}:` +
+            `${String(minutes).padStart(2, "0")}:` +
+            `${String(seconds).padStart(2, "0")}`;
+
+    }, 1000);
+
+}
+
+function stopMeetingTimer() {
+
+    clearInterval(meetingTimerInterval);
+
+    meetingStartTime = null;
+
+    const timer = document.getElementById("meetingTimer");
+
+    timer.querySelector("span").textContent = "00:00:00";
+
+    timer.style.display = "none";
+
+}
 
 
 // SESSION
@@ -90,7 +143,11 @@ function initUser(data) {
 function setupUI() {
 
     if (currentUser.acc_type === "employee") {
-        document.querySelector(".actions").style.display = "none";
+        document.querySelector(".userListCont").style.display = "none";
+    }
+
+    if (currentUser?.acc_type === "admin") {
+        loadUsers();
     }
 
     updateMeetingButtons(false);
@@ -108,6 +165,7 @@ window.onload = async () => {
             mic: audioTrack.enabled
         }
     );
+
 };
 
 async function ensureMediaReady(attempt = 0) {
@@ -275,6 +333,9 @@ socket.on("meeting-started", async (data) => {
     roomId = data.roomId;
     activeRoom = roomId;
 
+    startMeetingTimer(data.startedAt);
+
+
     if (currentUser.acc_type === "admin") {
         joinedUsers = 0;
         updateMeetingButtons(false);
@@ -334,7 +395,7 @@ function endMeeting() {
     });
 }
 
-socket.on("meeting-ended", () => {
+socket.on("meeting-ended", ({ joinedUsers }) => {
 
     roomId = null;
     activeRoom = null;
@@ -383,6 +444,21 @@ socket.on("meeting-ended", () => {
             await audioContext.resume();
         }
     }, 1000);
+
+    joinedUsers.forEach(token => {
+
+        const btn = document.getElementById(`req-${token}`);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <i class="fa-solid fa-paper-plane"></i>
+            `;
+        }
+
+    });
+
+    stopMeetingTimer();
 });
 
 socket.on("user-disconnected", (userId) => {
@@ -398,7 +474,6 @@ socket.on("user-disconnected", (userId) => {
             btn.disabled = false;
             btn.innerHTML = `
                 <i class="fa-solid fa-paper-plane"></i>
-                Request
             `;
         }
 
@@ -436,7 +511,9 @@ socket.on("user-disconnected", (userId) => {
         wrapper.remove();
     }
 
-    loadUsers();
+    if (currentUser?.acc_type === "admin") {
+        loadUsers();
+    }
 });
 
 socket.on("room-info", data => {
@@ -470,7 +547,9 @@ socket.on("user-joined-room", (user) => {
         };
 
     updateRemoteStatus(user.id);
-    loadUsers();
+    if (currentUser?.acc_type === "admin") {
+        loadUsers();
+    }
 });
 
 socket.on("media-status-changed", ({ userId, camera, mic }) => {
@@ -699,11 +778,9 @@ async function loadUsers() {
                 ${user.joined
                 ? `
                         <i class="fa-solid fa-circle-check"></i>
-                        Joined
                         `
                 : `
                         <i class="fa-solid fa-paper-plane"></i>
-                        Request
                         `
             }
             </button>
@@ -713,7 +790,7 @@ async function loadUsers() {
     });
 }
 
-loadUsers();
+
 
 async function requestUser(token) {
 
@@ -724,7 +801,6 @@ async function requestUser(token) {
 
     btn.innerHTML = `
         <i class="fa-solid fa-spinner fa-spin"></i>
-        Requesting...
     `;
 
     if (!roomId) {
@@ -761,7 +837,6 @@ socket.on("request-accepted", ({ token }) => {
     btn.disabled = false;
     btn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
-        Request
     `;
 });
 
@@ -774,7 +849,6 @@ socket.on("request-declined", ({ token }) => {
     btn.disabled = false;
     btn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
-        Request
     `;
 
 });
@@ -816,6 +890,8 @@ socket.on("removed-from-meeting", () => {
     alert(
         "You were removed from the meeting."
     );
+
+    stopMeetingTimer();
 });
 
 document.getElementById("acceptMeetingBtn").onclick = async () => {
@@ -1005,7 +1081,6 @@ function addRemoteVideo(userId, stream) {
     updateRemoteStatus(userId);
 }
 
-
 async function setupRemoteMicLevel(userId, remoteStream) {
 
     if (remoteAnimationFrames[userId]) {
@@ -1124,7 +1199,6 @@ async function setupRemoteMicLevel(userId, remoteStream) {
     animate();
 }
 
-
 // CONTROLS
 function toggleCamera() {
 
@@ -1169,7 +1243,6 @@ function updateMediaStatus() {
         micIcon.className = "fa-solid fa-microphone-slash";
     }
 }
-
 
 function updateRemoteStatus(userId) {
 
@@ -1218,6 +1291,5 @@ socket.on("request-error", ({ token, message }) => {
     btn.disabled = false;
     btn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
-        Request
     `;
 });

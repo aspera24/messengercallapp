@@ -76,7 +76,8 @@ io.on("connection", (socket) => {
             )
         ) {
             socket.emit("meeting-started", {
-                roomId: activeMeeting.roomId
+                roomId: activeMeeting.roomId,
+                startedAt: activeMeeting.startedAt
             });
         }
     });
@@ -250,7 +251,8 @@ io.on("connection", (socket) => {
         activeMeeting = {
             roomId,
             adminToken: socket.data.user.token,
-            participants
+            participants,
+            startedAt: Date.now()
         };
 
         console.log("[ROOM CREATED]", roomId);
@@ -319,7 +321,8 @@ io.on("connection", (socket) => {
         });
 
         socket.emit("meeting-started", {
-            roomId
+            roomId,
+            startedAt: activeMeeting.startedAt
         });
 
         startMeetingBroadcast(roomId);
@@ -345,7 +348,10 @@ io.on("connection", (socket) => {
 
             io.to(target.socketId).emit(
                 "meeting-started",
-                { roomId }
+                {
+                    roomId,
+                    startedAt: activeMeeting.startedAt
+                }
             );
         });
     }
@@ -581,9 +587,18 @@ io.on("connection", (socket) => {
                         [result[0].id]);
                 });
 
-            io.emit("meeting-ended", { roomId });
+            const joined = Object.keys(joinedUsersInMeeting);
+
+            Object.keys(joinedUsersInMeeting).forEach(token => {
+                delete joinedUsersInMeeting[token];
+            });
 
             activeMeeting = null;
+
+            io.emit("meeting-ended", {
+                roomId,
+                joinedUsers: joined
+            });
 
             delete rooms[roomId];
         }
@@ -655,14 +670,17 @@ io.on("connection", (socket) => {
             }
         );
 
-        activeMeeting = null;
+        const joined = Object.keys(joinedUsersInMeeting);
 
         Object.keys(joinedUsersInMeeting).forEach(token => {
             delete joinedUsersInMeeting[token];
         });
 
+        activeMeeting = null;
+
         io.emit("meeting-ended", {
-            roomId
+            roomId,
+            joinedUsers: joined
         });
 
         delete rooms[roomId];
