@@ -688,7 +688,24 @@ io.on("connection", (socket) => {
     });
 
 
+    socket.on("delete-user", ({ token }) => {
 
+        db.query(
+            "DELETE FROM users WHERE token=?",
+            [token],
+            (err) => {
+
+                if (err) {
+                    socket.emit("delete-user-failed");
+                    return;
+                }
+
+                io.emit("user-deleted", token);
+
+            }
+        );
+
+    });
 
 
 

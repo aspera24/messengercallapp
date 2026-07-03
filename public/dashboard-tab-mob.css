@@ -13,6 +13,14 @@
         padding: 20px;
     }
 
+    .leftCont {
+        width: 100%;
+        height: calc(100% - 30px);
+        margin: auto 0;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
     .rightCont {
         height: calc(100% - 30px);
         width: calc(100% - 30px);
@@ -74,13 +82,13 @@
     .leftCont {
         position: fixed;
         left: -100%;
-        top: 65px;
+        top: 75px;
         width: 250px;
-        height: calc(100% - 65px);
+        height: calc(100% - 85px);
         z-index: 999;
         transition: .3s;
         margin: 0;
-        border-radius: 0;
+
     }
 
     .leftCont.show {

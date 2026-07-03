@@ -29,7 +29,7 @@ let meetingTimerInterval = null;
 
 
 
-function toggleSidebar() {
+window.toggleSidebar = function () {
 
     document.querySelector(".leftCont").classList.toggle("show");
 
@@ -447,13 +447,18 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
 
     joinedUsers.forEach(token => {
 
-        const btn = document.getElementById(`req-${token}`);
+        const reqBtn = document.getElementById(`req-${token}`);
+        const deleteBtn = document.getElementById(`delete-${token}`);
 
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = `
-                <i class="fa-solid fa-paper-plane"></i>
-            `;
+        if (reqBtn) {
+            reqBtn.disabled = false;
+            reqBtn.innerHTML = `
+            <i class="fa-solid fa-paper-plane"></i>
+        `;
+        }
+
+        if (deleteBtn) {
+            deleteBtn.disabled = false;
         }
 
     });
@@ -533,7 +538,6 @@ socket.on("user-joined-room", (user) => {
             btn.disabled = true;
             btn.innerHTML = `
             <i class="fa-solid fa-circle-check"></i>
-            Joined
         `;
         }
     }
@@ -769,22 +773,26 @@ async function loadUsers() {
 
             <span>${user.firstname}</span>
 
-            <button
-                class="reqBtn"
-                id="req-${user.token}"
-                onclick="requestUser('${user.token}')"
-                ${user.joined ? "disabled" : ""}
-            >
-                ${user.joined
+            <div class="userAction">
+                <button
+                    class="reqBtn"
+                    id="req-${user.token}"
+                    onclick="requestUser('${user.token}')"
+                    ${user.joined ? "disabled" : ""}
+                >
+                    ${user.joined
                 ? `
                         <i class="fa-solid fa-circle-check"></i>
-                        `
+                    `
                 : `
                         <i class="fa-solid fa-paper-plane"></i>
-                        `
+                    `
             }
-            </button>
+                </button>
 
+                <button class="deleteBtn" id="delete-${user.token}" ${user.joined ? "disabled" : ""}
+                    onclick="deleteUser('${user.token}')"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
         </div>
         `;
     });
@@ -820,6 +828,19 @@ async function requestUser(token) {
     });
 }
 
+async function deleteUser(token) {
+    if (!confirm("Delete this employee?")) return;
+    socket.emit("delete-user", { token });
+}
+
+socket.on("user-deleted", (token) => {
+
+    document.querySelector(`#delete-${token}`)
+        ?.closest(".user-item")
+        ?.remove();
+
+});
+
 let requestedRoom = null;
 
 socket.on("meeting-request", (data) => {
@@ -830,24 +851,26 @@ socket.on("meeting-request", (data) => {
 
 socket.on("request-accepted", ({ token }) => {
 
-    const btn = document.getElementById(`req-${token}`);
+    const reqBtn = document.getElementById(`req-${token}`);
+    const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (!btn) return;
+    if (reqBtn) reqBtn.disabled = false;
+    if (deleteBtn) deleteBtn.disabled = false;
 
-    btn.disabled = false;
-    btn.innerHTML = `
+    reqBtn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
     `;
 });
 
 socket.on("request-declined", ({ token }) => {
 
-    const btn = document.getElementById(`req-${token}`);
+    const reqBtn = document.getElementById(`req-${token}`);
+    const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (!btn) return;
+    if (reqBtn) reqBtn.disabled = false;
+    if (deleteBtn) deleteBtn.disabled = false;
 
-    btn.disabled = false;
-    btn.innerHTML = `
+    reqBtn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
     `;
 
@@ -1284,12 +1307,13 @@ socket.on("request-error", ({ token, message }) => {
 
     alert(message);
 
-    const btn = document.getElementById(`req-${token}`);
+    const reqBtn = document.getElementById(`req-${token}`);
+    const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (!btn) return;
+    if (reqBtn) reqBtn.disabled = false;
+    if (deleteBtn) deleteBtn.disabled = false;
 
-    btn.disabled = false;
-    btn.innerHTML = `
+    reqBtn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
     `;
 });

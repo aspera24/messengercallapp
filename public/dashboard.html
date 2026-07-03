@@ -20,7 +20,12 @@
             <button id="menuBtn" onclick="toggleSidebar()">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <h2>📞 MeetFlow</h2>
+            <h2>
+                <div class="logo">
+                    MF
+                </div>
+                MeetFlow
+            </h2>
             <h3 id="uname">User Name</h3>
             <button onclick="logout()">
                 <i class="fa-solid fa-right-from-bracket"></i>
@@ -32,6 +37,7 @@
             <div class="leftCont">
                 <!-- VIDEO GRID -->
                 <div class="leftInnerCont">
+                    <canvas id="effectCanvas" style="display:none"></canvas>
                     <div class="video-grid">
 
                         <div class="video-box" id="localBox">
@@ -70,7 +76,8 @@
                             </div>
                         </div>
 
-                        <button id="endBtn" onclick="endMeeting()" style="display:none;background:red;color:white;">
+                        <button id="endBtn" onclick="endMeeting()">
+                            <i class="fa-solid fa-phone-slash"></i>
                             End Meeting
                         </button>
                     </div>
