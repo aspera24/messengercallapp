@@ -35,11 +35,17 @@ async function login() {
 
         const data = await res.json();
 
-        const session = await fetch("/session", {
-            credentials: "include"
-        })
-
         if (data.success) {
+
+            await chrome.storage.local.set({
+                token: data.token
+            });
+
+            const session = await fetch("/session", {
+                headers: {
+                    Authorization: `Bearer ${data.token}`
+                }
+            });
 
             location.href = "/dashboard";
 
@@ -47,7 +53,6 @@ async function login() {
 
             alert("Invalid username or password.");
 
-            // Restore button
             loginBtn.disabled = false;
             loginBtn.innerHTML = originalHTML;
         }
@@ -55,7 +60,7 @@ async function login() {
     } catch (err) {
 
         alert("Unable to connect to the server.");
-
+        console.log(`login logs : ${err}`)
         // Restore button
         loginBtn.disabled = false;
         loginBtn.innerHTML = originalHTML;

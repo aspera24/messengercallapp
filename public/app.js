@@ -39,16 +39,16 @@ window.toggleSidebar = function () {
 
 async function loadUser() {
 
-    const res = await fetch("/session", {
-        credentials: "include"
-    });
+    // const res = await fetch("/session", {
+    //     credentials: "include"
+    // });
 
-    const data = await res.json();
+    // const data = await res.json();
 
-    if (!data.logged) {
-        location.href = "/auth";
-        return;
-    }
+    // if (!data.logged) {
+    //     location.href = "/auth";
+    //     return;
+    // }
 
     document.getElementById("uname").textContent = `Hi, ${data.user.firstname}`;
 }

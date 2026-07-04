@@ -96,6 +96,7 @@ router.post("/login", (req, res) => {
             };
 
             
+            
             req.session.save((err) => {
 
                 if (err) {
@@ -106,6 +107,7 @@ router.post("/login", (req, res) => {
 
                 res.json({
                     success: true,
+                    token: user.token,
                     user: req.session.user
                 });
 
@@ -119,16 +121,36 @@ router.post("/login", (req, res) => {
 
 // SESSION
 router.get("/session", (req, res) => {
-    if (!req.session.user) {
+
+    const auth = req.headers.authorization;
+
+    if (!auth) {
         return res.json({
             logged: false
         });
     }
-   
-    res.json({
-        logged: true,
-        user: req.session.user
-    });
+
+    const token = auth.replace("Bearer ", "");
+
+    db.query(
+        "SELECT id, firstname, lastname, username, acc_type FROM users WHERE token = ?",
+        [token],
+        (err, result) => {
+
+            if (err || result.length === 0) {
+                return res.json({
+                    logged: false
+                });
+            }
+
+            res.json({
+                logged: true,
+                user: result[0]
+            });
+
+        }
+    );
+
 });
 
 
