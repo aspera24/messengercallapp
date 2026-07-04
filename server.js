@@ -15,7 +15,8 @@ const server = http.createServer(app);
 const allowedOrigins = [
     "https://bplc-staff.doitcebutech.com",
     "https://meetflow-j39a.onrender.com",
-    "https://www.google.com"
+    "https://www.google.com" ,
+    "http://localhost:3000",
 ];
 
 
@@ -34,8 +35,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: "none",
-        secure: true,
+        sameSite: "lax",
+        secure: false,
         httpOnly: true
     }
 }));

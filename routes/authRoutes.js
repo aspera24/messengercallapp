@@ -27,7 +27,6 @@ router.get("/auth", (req, res) => {
 
 // DASHBOARD PAGE
 router.get("/dashboard", (req, res) => {
-
     if (!req.session?.user) {
         return res.redirect("/auth");
     }
@@ -86,6 +85,7 @@ router.post("/login", (req, res) => {
                 });
             }
 
+
             req.session.user = {
                 id: user.id,
                 firstname: user.firstname,
@@ -95,10 +95,23 @@ router.post("/login", (req, res) => {
                 token: user.token
             };
 
-            res.json({
-                success: true,
-                user: req.session.user
+            
+            req.session.save((err) => {
+
+                if (err) {
+                    return res.status(500).json({
+                        success: false
+                    });
+                }
+
+                res.json({
+                    success: true,
+                    user: req.session.user
+                });
+
             });
+
+            
         }
     );
 });
@@ -106,13 +119,12 @@ router.post("/login", (req, res) => {
 
 // SESSION
 router.get("/session", (req, res) => {
-
-    if (!req.session?.user) {
+    if (!req.session.user) {
         return res.json({
             logged: false
         });
     }
-
+   
     res.json({
         logged: true,
         user: req.session.user

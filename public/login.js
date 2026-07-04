@@ -35,13 +35,9 @@ async function login() {
 
         const data = await res.json();
 
-        console.log(data);
-
         const session = await fetch("/session", {
             credentials: "include"
-        });
-
-        console.log(await session.json());
+        })
 
         if (data.success) {
 
