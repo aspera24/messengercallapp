@@ -54,6 +54,9 @@ router.get("/auth/check", (req, res) => {
 // LOGIN
 router.post("/login", (req, res) => {
 
+    console.log("LOGIN REQUEST RECEIVED");
+    console.log(req.body);
+
     const { username, password } = req.body;
 
     db.query(
