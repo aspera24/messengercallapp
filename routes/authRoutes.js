@@ -125,4 +125,17 @@ router.get("/logout", (req, res) => {
     });
 });
 
+
+
+// WIDGET
+router.get("/widget", (req, res) => {
+
+    if (!req.session?.user) {
+        return res.sendFile(process.cwd() + "/public/auth.html");
+    }
+
+    res.sendFile(process.cwd() + "/public/dashboard.html");
+
+});
+
 module.exports = router;

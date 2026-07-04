@@ -39,7 +39,10 @@ window.toggleSidebar = function () {
 
 async function loadUser() {
 
-    const res = await fetch("/session");
+    const res = await fetch("/session", {
+        credentials: "include"
+    });
+
     const data = await res.json();
 
     if (!data.logged) {
@@ -97,8 +100,9 @@ function stopMeetingTimer() {
 
 
 // SESSION
-fetch("/session")
-    .then(res => res.json())
+fetch("/session"), {
+    credentials: "include"
+}.then(res => res.json())
     .then(data => {
 
         if (!data.logged) {
@@ -759,7 +763,10 @@ function getSelectedUsers() {
 
 async function loadUsers() {
 
-    const res = await fetch("/users");
+    const res = await fetch("/users", {
+        credentials: "include"
+    });
+    
     const users = await res.json();
 
     const container = document.getElementById("userList");

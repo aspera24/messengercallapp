@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <style>
+        html,
+        body {
+
+            margin: 0;
+
+            padding: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            overflow: hidden;
+
+            font-family: Arial;
+
+            background: #ffffff;
+
+        }
+
+        .header {
+
+            height: 55px;
+
+            background: #2563eb;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            padding: 0 15px;
+
+            color: white;
+
+            font-weight: bold;
+
+        }
+
+        .close {
+
+            cursor: pointer;
+
+            font-size: 22px;
+
+        }
+
+        .body {
+
+            height: calc(100% - 55px);
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            font-size: 18px;
+
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <span>MeetFlow</span>
+
+        <span class="close">✕</span>
+
+    </div>
+
+    <div class="body">
+
+        MeetFlow Widget
+
+    </div>
+
+    <script src="widget.js"></script>
+
+</body>
+
+</html>
