@@ -127,6 +127,27 @@ button:active {
     transform: scale(.98);
 }
 
+button:disabled {
+    opacity: .8;
+    cursor: not-allowed;
+}
+
+.fa-spinner {
+    animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+
 @media(max-width:500px) {
 
     .login-box {
