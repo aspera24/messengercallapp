@@ -35,6 +35,14 @@ async function login() {
 
         const data = await res.json();
 
+        console.log(data);
+
+        const session = await fetch("/session", {
+            credentials: "include"
+        });
+
+        console.log(await session.json());
+
         if (data.success) {
 
             location.href = "/dashboard";
@@ -60,6 +68,6 @@ async function login() {
 
 
 document.getElementById("loginForm").addEventListener("submit", function (e) {
-    e.preventDefault(); 
+    e.preventDefault();
     login();
 });
