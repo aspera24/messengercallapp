@@ -3,6 +3,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const session = require("express-session");
 const db = require("./config/db.config");
+const cors = require("cors");
 
 const userMediaState = {};
 
@@ -12,7 +13,10 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    cors: { origin: "*" }
+    cors: {
+        origin: "https://meetflow-j39a.onrender.com",
+        credentials: true
+    }
 });
 
 const authRoutes = require("./routes/authRoutes");
@@ -27,6 +31,11 @@ app.use(session({
         secure: true,
         httpOnly: true
     }
+}));
+
+app.use(cors({
+    origin: "https://meetflow-j39a.onrender.com",
+    credentials: true
 }));
 
 app.use(express.json());
