@@ -14,7 +14,8 @@ const server = http.createServer(app);
 
 const allowedOrigins = [
     "https://bplc-staff.doitcebutech.com",
-    "https://meetflow-j39a.onrender.com"
+    "https://meetflow-j39a.onrender.com",
+    "https://www.google.com"
 ];
 
 
