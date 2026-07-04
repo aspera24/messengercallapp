@@ -27,7 +27,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "inject.js"
+                "widget.min.js"
             ],
             "matches": [
                 "<all_urls>"
