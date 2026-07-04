@@ -100,18 +100,25 @@ function stopMeetingTimer() {
 
 
 // SESSION
-fetch("/session"), {
+fetch("/session", {
     credentials: "include"
-}.then(res => res.json())
+})
+    .then(res => res.json())
     .then(data => {
 
         if (!data.logged) {
-            location.href = "/auth.html";
+            location.href = "/auth";
             return;
         }
 
         initUser(data);
+
+    })
+    .catch(err => {
+        console.error(err);
     });
+
+    
 
 function initUser(data) {
 
@@ -766,7 +773,7 @@ async function loadUsers() {
     const res = await fetch("/users", {
         credentials: "include"
     });
-    
+
     const users = await res.json();
 
     const container = document.getElementById("userList");
