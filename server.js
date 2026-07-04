@@ -12,9 +12,15 @@ let activeMeeting = null;
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+    "https://bplc-staff.doitcebutech.com",
+    "https://meetflow-j39a.onrender.com"
+];
+
+
 const io = new Server(server, {
     cors: {
-        origin: "https://meetflow-j39a.onrender.com",
+        origin: allowedOrigins,
         credentials: true
     }
 });
@@ -33,10 +39,21 @@ app.use(session({
     }
 }));
 
+
 app.use(cors({
-    origin: "https://meetflow-j39a.onrender.com",
+    origin(origin, callback) {
+
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+
+    },
     credentials: true
 }));
+
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
