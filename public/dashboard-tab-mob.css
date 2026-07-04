@@ -56,6 +56,12 @@
 
 }
 
+@media (max-width: 807px) {
+    #videos {
+        grid-auto-rows: 250px;
+    }
+}
+
 
 /* ===========================
    SMALL TABLET
@@ -104,8 +110,8 @@
         width: 100%;
         height: auto;
         padding: 12px;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        grid-auto-rows: 160px;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-auto-rows: 300px;
     }
 
 
@@ -154,12 +160,6 @@
    VERY SMALL PHONES
 =========================== */
 @media (max-width:380px) {
-
-    #videos {
-
-        grid-auto-rows: 190px;
-
-    }
 
     .topbar h2 {
 
