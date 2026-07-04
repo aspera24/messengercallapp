@@ -37,6 +37,30 @@ window.toggleSidebar = function () {
 
 }
 
+async function checkAuth() {
+
+    const { token } = await chrome.storage.local.get("token");
+
+    if (!token) {
+        location.href = "/login";
+        return;
+    }
+
+    const res = await fetch("https://meetflow-j39a.onrender.com/session", {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    const data = await res.json();
+
+    if (!data.logged) {
+        location.href = "/login";
+    }
+}
+
+checkAuth();
+
 async function loadUser() {
 
     // const res = await fetch("/session", {
@@ -118,7 +142,7 @@ fetch("/session", {
         console.error(err);
     });
 
-    
+
 
 function initUser(data) {
 
