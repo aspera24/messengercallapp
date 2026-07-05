@@ -37,47 +37,47 @@ window.toggleSidebar = function () {
 
 }
 
-async function checkAuth() {
+// async function checkAuth() {
 
-    const { token } = await chrome.storage.local.get("token");
+//     const { token } = await chrome.storage.local.get("token");
 
-    if (!token) {
-        location.href = "/login";
-        return;
-    }
+//     if (!token) {
+//         location.href = "/login";
+//         return;
+//     }
 
-    const res = await fetch("https://meetflow-j39a.onrender.com/session", {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    });
+//     const res = await fetch("https://meetflow-j39a.onrender.com/session", {
+//         headers: {
+//             Authorization: `Bearer ${token}`
+//         }
+//     });
 
-    const data = await res.json();
+//     const data = await res.json();
 
-    if (!data.logged) {
-        location.href = "/login";
-    }
-}
+//     if (!data.logged) {
+//         location.href = "/login";
+//     }
+// }
 
-checkAuth();
+// checkAuth();
 
-async function loadUser() {
+// async function loadUser() {
 
-    // const res = await fetch("/session", {
-    //     credentials: "include"
-    // });
+//     // const res = await fetch("/session", {
+//     //     credentials: "include"
+//     // });
 
-    // const data = await res.json();
+//     // const data = await res.json();
 
-    // if (!data.logged) {
-    //     location.href = "/auth";
-    //     return;
-    // }
+//     // if (!data.logged) {
+//     //     location.href = "/auth";
+//     //     return;
+//     // }
 
-    document.getElementById("uname").textContent = `Hi, ${data.user.firstname}`;
-}
+//     document.getElementById("uname").textContent = `Hi, ${data.user.firstname}`;
+// }
 
-loadUser();
+// loadUser();
 
 
 
@@ -124,23 +124,23 @@ function stopMeetingTimer() {
 
 
 // SESSION
-fetch("/session", {
-    credentials: "include"
-})
-    .then(res => res.json())
-    .then(data => {
+// fetch("/session", {
+//     credentials: "include"
+// })
+//     .then(res => res.json())
+//     .then(data => {
 
-        if (!data.logged) {
-            location.href = "/auth";
-            return;
-        }
+//         if (!data.logged) {
+//             location.href = "/auth";
+//             return;
+//         }
 
-        initUser(data);
+//         initUser(data);
 
-    })
-    .catch(err => {
-        console.error(err);
-    });
+//     })
+//     .catch(err => {
+//         console.error(err);
+//     });
 
 
 
@@ -794,9 +794,7 @@ function getSelectedUsers() {
 
 async function loadUsers() {
 
-    const res = await fetch("/users", {
-        credentials: "include"
-    });
+    const res = await fetch("/users");
 
     const users = await res.json();
 

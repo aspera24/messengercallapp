@@ -4,50 +4,69 @@ const db = require("../config/db.config");
 
 
 // HOME
+// router.get("/", (req, res) => {
+
+//     if (req.session?.user) {
+//         return res.redirect("/dashboard");
+//     }
+
+//     res.redirect("/auth");
+// });
+
 router.get("/", (req, res) => {
-
-    if (req.session?.user) {
-        return res.redirect("/dashboard");
-    }
-
     res.redirect("/auth");
 });
 
 
 // LOGIN PAGE
+// router.get("/auth", (req, res) => {
+
+//     if (req.session?.user) {
+//         return res.redirect("/dashboard");
+//     }
+
+//     res.sendFile(process.cwd() + "/public/auth.html");
+// });
+
 router.get("/auth", (req, res) => {
 
-    if (req.session?.user) {
-        return res.redirect("/dashboard");
-    }
+    console.log("AUTH ROUTE CALLED");
 
     res.sendFile(process.cwd() + "/public/auth.html");
+
 });
 
-
 // DASHBOARD PAGE
+// router.get("/dashboard", (req, res) => {
+//     if (!req.session?.user) {
+//         return res.redirect("/auth");
+//     }
+
+//     res.sendFile(process.cwd() + "/public/dashboard.html");
+// });
+
 router.get("/dashboard", (req, res) => {
-    if (!req.session?.user) {
-        return res.redirect("/auth");
-    }
+
+    console.log("DASHBOARD ROUTE CALLED");
 
     res.sendFile(process.cwd() + "/public/dashboard.html");
+
 });
 
 
 // AUTH CHECK
-router.get("/auth/check", (req, res) => {
+// router.get("/auth/check", (req, res) => {
 
-    if (req.session?.user) {
-        return res.json({
-            authenticated: true
-        });
-    }
+//     if (req.session?.user) {
+//         return res.json({
+//             authenticated: true
+//         });
+//     }
 
-    res.status(401).json({
-        authenticated: false
-    });
-});
+//     res.status(401).json({
+//         authenticated: false
+//     });
+// });
 
 
 // LOGIN
@@ -86,33 +105,44 @@ router.post("/login", (req, res) => {
             }
 
 
-            req.session.user = {
-                id: user.id,
-                firstname: user.firstname,
-                lastname: user.lastname,
-                username: user.username,
-                acc_type: user.acc_type,
-                token: user.token
-            };
+            // req.session.user = {
+            //     id: user.id,
+            //     firstname: user.firstname,
+            //     lastname: user.lastname,
+            //     username: user.username,
+            //     acc_type: user.acc_type,
+            //     token: user.token
+            // };
 
 
 
-            req.session.save((err) => {
+            // req.session.save((err) => {
 
-                if (err) {
-                    return res.status(500).json({
-                        success: false
-                    });
+            //     if (err) {
+            //         return res.status(500).json({
+            //             success: false
+            //         });
+            //     }
+
+            //     res.json({
+            //         success: true,
+            //         token: user.token,
+            //         user: req.session.user
+            //     });
+
+            // });
+
+            res.json({
+                success: true,
+                token: user.token,
+                user: {
+                    id: user.id,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    username: user.username,
+                    acc_type: user.acc_type
                 }
-
-                res.json({
-                    success: true,
-                    token: user.token,
-                    user: req.session.user
-                });
-
             });
-
 
         }
     );
@@ -165,14 +195,19 @@ router.get("/logout", (req, res) => {
 
 
 // WIDGET
-router.get("/widget", (req, res) => {
+// router.get("/widget", (req, res) => {
 
-    if (!req.session?.user) {
-        return res.sendFile(process.cwd() + "/public/auth.html");
-    }
+//     if (!req.session?.user) {
+//         return res.sendFile(process.cwd() + "/public/auth.html");
+//     }
 
-    res.sendFile(process.cwd() + "/public/dashboard.html");
+//     res.sendFile(process.cwd() + "/public/dashboard.html");
 
-});
+// });
+
+// router.get("/widget", (req, res) => {
+//     res.sendFile(process.cwd() + "/public/widget/widget.html");
+// });
+
 
 module.exports = router;

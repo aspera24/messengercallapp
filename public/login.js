@@ -26,7 +26,6 @@ async function login() {
             headers: {
                 "Content-Type": "application/json"
             },
-            credentials: "include",
             body: JSON.stringify({
                 username,
                 password
@@ -36,21 +35,8 @@ async function login() {
         const data = await res.json();
 
         if (data.success) {
-
-            await chrome.storage.local.set({
-                token: data.token
-            });
-
-            const session = await fetch("/session", {
-                headers: {
-                    Authorization: `Bearer ${data.token}`
-                }
-            });
-
             location.href = "/dashboard";
-
         } else {
-
             alert("Invalid username or password.");
 
             loginBtn.disabled = false;
@@ -58,10 +44,10 @@ async function login() {
         }
 
     } catch (err) {
+        console.error("LOGIN ERROR:", err);
 
-        alert("Unable to connect to the server.");
-        console.log(`login logs : ${err}`)
-        // Restore button
+        alert(err.message);
+
         loginBtn.disabled = false;
         loginBtn.innerHTML = originalHTML;
     }
