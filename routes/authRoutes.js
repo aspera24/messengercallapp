@@ -206,7 +206,7 @@ router.get("/logout", (req, res) => {
 // });
 
 router.get("/widget", (req, res) => {
-    res.sendFile(process.cwd() + "/public/widget/widget.html");
+    res.sendFile(process.cwd() + "/public/widget/dashboard.html");
 });
 
 
