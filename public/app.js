@@ -18,6 +18,39 @@ const localVideo = document.getElementById("local");
 
 let currentUser = null;
 let myId = null;
+
+async function loadCurrentUser() {
+
+    try {
+
+        const res = await fetch("/me", {
+            credentials: "include"
+        });
+
+        if (!res.ok) {
+            location.href = "/auth";
+            return;
+        }
+
+        const data = await res.json();
+
+        initUser(data);
+
+        document.getElementById("uname").textContent =
+            `Hi, ${currentUser.firstname}`;
+
+    } catch (err) {
+
+        console.error(err);
+
+        location.href = "/auth";
+
+    }
+
+}
+loadCurrentUser();
+
+
 let userMediaStates = {};
 
 const globalAudioContext = new AudioContext();
@@ -149,13 +182,7 @@ function initUser(data) {
     currentUser = data.user;
     myId = currentUser.token;
 
-    socket.emit("register", {
-        id: currentUser.id,
-        token: currentUser.token,
-        firstname: currentUser.firstname,
-        lastname: currentUser.lastname,
-        acc_type: currentUser.acc_type
-    });
+    socket.emit("register");
 
     setTimeout(() => {
 
@@ -794,7 +821,9 @@ function getSelectedUsers() {
 
 async function loadUsers() {
 
-    const res = await fetch("/users");
+    const res = await fetch("/users", {
+        credentials: "include"
+    });
 
     const users = await res.json();
 

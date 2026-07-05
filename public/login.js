@@ -23,6 +23,7 @@ async function login() {
 
         const res = await fetch("/login", {
             method: "POST",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json"
             },

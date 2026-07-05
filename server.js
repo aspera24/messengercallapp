@@ -1,21 +1,21 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const session = require("express-session");
 const db = require("./config/db.config");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const { parseCookie } = require("cookie");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const userMediaState = {};
-
 let activeMeeting = null;
-
 const app = express();
 const server = http.createServer(app);
 
 const allowedOrigins = [
     "https://bplc-staff.doitcebutech.com",
     "https://meetflow-j39a.onrender.com",
-    "https://www.google.com" ,
+    "https://www.google.com",
     "http://localhost:3000",
 ];
 
@@ -29,34 +29,7 @@ const io = new Server(server, {
 
 const authRoutes = require("./routes/authRoutes");
 
-app.use(session({
-    secret: "meetflow-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: "lax",
-        secure: false,
-        httpOnly: true
-    }
-}));
-
-
-// app.use(cors({
-//     origin(origin, callback) {
-
-//         if (!origin || allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error("Not allowed by CORS"));
-//         }
-
-//     },
-//     credentials: true
-// }));
-
-
-
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -71,13 +44,61 @@ const pendingRequests = {};
 const joinedUsersInMeeting = {};
 const port = 3000;
 
+io.use((socket, next) => {
+
+    const cookies = parseCookie(
+        socket.handshake.headers.cookie || ""
+    );
+
+    const token = cookies.meetflow_session;
+
+    if (!token) {
+        return next(new Error("Unauthorized"));
+    }
+
+    db.query(
+        `
+        SELECT
+            users.id,
+            users.firstname,
+            users.lastname,
+            users.username,
+            users.acc_type,
+            users.token
+        FROM sessions
+        INNER JOIN users
+            ON sessions.user_id = users.id
+        WHERE
+            sessions.token = ?
+            AND sessions.expires_at > NOW()
+        `,
+        [token],
+        (err, result) => {
+
+            if (err || result.length === 0) {
+                return next(new Error("Unauthorized"));
+            }
+
+            socket.data.user = result[0];
+
+            next();
+
+        }
+    );
+
+});
+
 // SOCKET
 io.on("connection", (socket) => {
 
     console.log("Connected:", socket.id);
 
     // REGISTER (FIXED SAFE)
-    socket.on("register", (user) => {
+    socket.on("register", () => {
+
+        const user = socket.data.user;
+
+        if (!user) return;
 
 
         if (!user?.token) return;
@@ -842,7 +863,7 @@ io.on("connection", (socket) => {
 
 
 
-app.get("/users", (req, res) => {
+app.get("/users", authMiddleware, (req, res) => {
 
     db.query(
         `

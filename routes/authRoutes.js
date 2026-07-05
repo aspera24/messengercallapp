@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db.config");
+const crypto = require("crypto");
+const authMiddleware = require("../middleware/authMiddleware");
 
 
 // HOME
@@ -45,13 +47,16 @@ router.get("/auth", (req, res) => {
 //     res.sendFile(process.cwd() + "/public/dashboard.html");
 // });
 
-router.get("/dashboard", (req, res) => {
+router.get("/dashboard", authMiddleware, (req, res) => {
 
-    console.log("DASHBOARD ROUTE CALLED");
+    console.log("LOGGED USER:", req.user);
 
-    res.sendFile(process.cwd() + "/public/dashboard.html");
+    res.sendFile(
+        process.cwd() + "/public/dashboard.html"
+    );
 
-});
+}
+);
 
 
 // AUTH CHECK
@@ -67,6 +72,14 @@ router.get("/dashboard", (req, res) => {
 //         authenticated: false
 //     });
 // });
+router.get("/me", authMiddleware, (req, res) => {
+
+    res.json({
+        success: true,
+        user: req.user
+    });
+
+});
 
 
 // LOGIN
@@ -132,17 +145,55 @@ router.post("/login", (req, res) => {
 
             // });
 
-            res.json({
-                success: true,
-                token: user.token,
-                user: {
-                    id: user.id,
-                    firstname: user.firstname,
-                    lastname: user.lastname,
-                    username: user.username,
-                    acc_type: user.acc_type
+            const sessionToken = crypto.randomUUID();
+
+            const expiresAt = new Date(
+                Date.now() + (24 * 60 * 60 * 1000)
+            );
+
+            db.query(
+                `INSERT INTO sessions
+                (user_id, token, expires_at)
+                VALUES (?, ?, ?)`,
+                [
+                    user.id,
+                    sessionToken,
+                    expiresAt
+                ],
+                (err) => {
+
+                    if (err) {
+                        console.error(err);
+
+                        return res.status(500).json({
+                            success: false
+                        });
+                    }
+
+                    res.cookie(
+                        "meetflow_session",
+                        sessionToken,
+                        {
+                            httpOnly: true,
+                            secure: false,
+                            sameSite: "lax",
+                            maxAge: 24 * 60 * 60 * 1000
+                        }
+                    );
+
+                    res.json({
+                        success: true,
+                        user: {
+                            id: user.id,
+                            firstname: user.firstname,
+                            lastname: user.lastname,
+                            username: user.username,
+                            acc_type: user.acc_type
+                        }
+                    });
+
                 }
-            });
+            );
 
         }
     );
@@ -185,11 +236,26 @@ router.get("/session", (req, res) => {
 
 
 // LOGOUT
-router.get("/logout", (req, res) => {
+router.get("/logout", authMiddleware, (req, res) => {
 
-    req.session.destroy(() => {
-        res.redirect("/auth");
-    });
+    const token = req.cookies.meetflow_session;
+
+    db.query(
+        "DELETE FROM sessions WHERE token = ?",
+        [token],
+        (err) => {
+
+            if (err) {
+                return res.status(500).send("Logout failed.");
+            }
+
+            res.clearCookie("meetflow_session");
+
+            res.redirect("/auth");
+
+        }
+    );
+
 });
 
 
