@@ -205,9 +205,9 @@ router.get("/logout", (req, res) => {
 
 // });
 
-// router.get("/widget", (req, res) => {
-//     res.sendFile(process.cwd() + "/public/widget/widget.html");
-// });
+router.get("/widget", (req, res) => {
+    res.sendFile(process.cwd() + "/public/widget/widget.html");
+});
 
 
 module.exports = router;
