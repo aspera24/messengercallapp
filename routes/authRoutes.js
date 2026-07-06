@@ -3,75 +3,27 @@ const router = express.Router();
 const db = require("../config/db.config");
 const crypto = require("crypto");
 const authMiddleware = require("../middleware/authMiddleware");
+const guestMiddleware = require("../middleware/guestMiddleware");
 
-
-// HOME
-// router.get("/", (req, res) => {
-
-//     if (req.session?.user) {
-//         return res.redirect("/dashboard");
-//     }
-
-//     res.redirect("/auth");
-// });
-
-router.get("/", (req, res) => {
+router.get("/", guestMiddleware, (req, res) => {
     res.redirect("/auth");
 });
 
-
-// LOGIN PAGE
-// router.get("/auth", (req, res) => {
-
-//     if (req.session?.user) {
-//         return res.redirect("/dashboard");
-//     }
-
-//     res.sendFile(process.cwd() + "/public/auth.html");
-// });
-
-router.get("/auth", (req, res) => {
-
+router.get("/auth", guestMiddleware, (req, res) => {
     console.log("AUTH ROUTE CALLED");
-
     res.sendFile(process.cwd() + "/public/auth.html");
-
 });
 
-// DASHBOARD PAGE
-// router.get("/dashboard", (req, res) => {
-//     if (!req.session?.user) {
-//         return res.redirect("/auth");
-//     }
-
-//     res.sendFile(process.cwd() + "/public/dashboard.html");
-// });
 
 router.get("/dashboard", authMiddleware, (req, res) => {
-
     console.log("LOGGED USER:", req.user);
-
     res.sendFile(
         process.cwd() + "/public/dashboard.html"
     );
-
 }
 );
 
 
-// AUTH CHECK
-// router.get("/auth/check", (req, res) => {
-
-//     if (req.session?.user) {
-//         return res.json({
-//             authenticated: true
-//         });
-//     }
-
-//     res.status(401).json({
-//         authenticated: false
-//     });
-// });
 router.get("/me", authMiddleware, (req, res) => {
 
     res.json({
@@ -200,41 +152,6 @@ router.post("/login", (req, res) => {
 });
 
 
-// SESSION
-router.get("/session", (req, res) => {
-
-    const auth = req.headers.authorization;
-
-    if (!auth) {
-        return res.json({
-            logged: false
-        });
-    }
-
-    const token = auth.replace("Bearer ", "");
-
-    db.query(
-        "SELECT id, firstname, lastname, username, acc_type FROM users WHERE token = ?",
-        [token],
-        (err, result) => {
-
-            if (err || result.length === 0) {
-                return res.json({
-                    logged: false
-                });
-            }
-
-            res.json({
-                logged: true,
-                user: result[0]
-            });
-
-        }
-    );
-
-});
-
-
 // LOGOUT
 router.get("/logout", authMiddleware, (req, res) => {
 
@@ -261,16 +178,6 @@ router.get("/logout", authMiddleware, (req, res) => {
 
 
 // WIDGET
-// router.get("/widget", (req, res) => {
-
-//     if (!req.session?.user) {
-//         return res.sendFile(process.cwd() + "/public/auth.html");
-//     }
-
-//     res.sendFile(process.cwd() + "/public/dashboard.html");
-
-// });
-
 router.get("/widget", (req, res) => {
     res.sendFile(process.cwd() + "/public/dashboard.html");
 });
