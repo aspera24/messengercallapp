@@ -127,8 +127,8 @@ router.post("/login", (req, res) => {
                         sessionToken,
                         {
                             httpOnly: true,
-                            secure: true,
-                            sameSite: none,
+                            secure: false,
+                            sameSite: "lax",
                             maxAge: 24 * 60 * 60 * 1000
                         }
                     );
