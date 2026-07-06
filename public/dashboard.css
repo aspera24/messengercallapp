@@ -27,7 +27,6 @@ body {
 
 .topbar {
     height: 65px;
-    padding: 0 30px;
     background: rgba(15, 23, 42, .9);
     backdrop-filter: blur(18px);
     border-bottom: 1px solid rgba(255, 255, 255, .08);
@@ -54,7 +53,6 @@ body {
 .topbar .logo {
     width: 40px;
     height: 40px;
-    margin: auto;
     border-radius: 50%;
     display: flex;
     justify-content: center;
@@ -72,7 +70,8 @@ body {
     font-size: 22px;
     font-weight: 700;
     display: flex;
-    
+    width: 100%;
+    margin-left: 10px;
     align-items: center;
 }
 
@@ -80,6 +79,9 @@ body {
     color: #cbd5e1;
     font-size: 15px;
     font-weight: 500;
+    width: 100%;
+    margin-right: 10px;
+    text-align: right;
 }
 
 /* BUTTONS WRAP ON MOBILE */

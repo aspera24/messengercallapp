@@ -78,6 +78,9 @@
         justify-content: center;
         width: 42px;
         height: 42px;
+        margin-left: 10px;
+        background: transparent;
+        color: white;
     }
 
     .centCont {
