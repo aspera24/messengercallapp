@@ -10,7 +10,7 @@
         "system.display"
     ],
     "side_panel": {
-        "default_path": "panel.html"
+        "default_path": "dashboard.html"
     },
     "host_permissions": [
         "<all_urls>",
