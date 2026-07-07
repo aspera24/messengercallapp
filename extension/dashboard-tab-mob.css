@@ -1,0 +1,179 @@
+/* ===========================
+   LARGE LAPTOP
+=========================== */
+@media (max-width: 1200px) {
+
+    .centCont {
+        grid-template-columns: 300px minmax(0, 1fr);
+    }
+
+    #videos {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-auto-rows: 190px;
+        padding: 20px;
+    }
+
+    .leftCont {
+        width: 100%;
+        height: calc(100% - 30px);
+        margin: auto 0;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .rightCont {
+        height: calc(100% - 30px);
+        width: calc(100% - 30px);
+    }
+
+}
+
+
+/* ===========================
+   TABLET
+=========================== */
+@media (max-width: 992px) {
+
+    .centCont {
+        grid-template-columns: 260px minmax(0, 1fr);
+    }
+
+    .leftCont {
+        padding: 15px;
+    }
+
+    #videos {
+        padding: 15px;
+        gap: 8px;
+
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-auto-rows: 170px;
+    }
+
+    .topbar h2 {
+        font-size: 18px;
+    }
+
+}
+
+@media (max-width: 807px) {
+    #videos {
+        grid-auto-rows: 250px;
+    }
+}
+
+
+/* ===========================
+   SMALL TABLET
+=========================== */
+@media (max-width:768px) {
+    .rightCont {
+        height: calc(100% - 20px);
+        width: calc(100% - 20px);
+    }
+
+    #menuBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        margin-left: 10px;
+        background: transparent;
+        color: white;
+    }
+
+    .centCont {
+        display: flex;
+        height: calc(100dvh - 65px);
+    }
+
+    .leftCont {
+        position: fixed;
+        left: -100%;
+        top: 75px;
+        width: 250px;
+        height: calc(100% - 85px);
+        z-index: 999;
+        transition: .3s;
+        margin: 0;
+
+    }
+
+    .leftCont.show {
+        left: 0;
+    }
+
+    .leftInnerCont {
+        max-height: none;
+        overflow: visible;
+    }
+
+    #videos {
+        width: 100%;
+        height: auto;
+        padding: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-auto-rows: 300px;
+    }
+
+
+    #overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .5);
+        z-index: 998;
+    }
+
+    #overlay.show {
+        display: block;
+    }
+
+}
+
+
+/* ===========================
+   MOBILE
+=========================== */
+@media (max-width:576px) {
+
+    .leftCont {
+        padding: 10px;
+    }
+
+    .controls {
+        opacity: 1;
+    }
+
+
+
+    .video-box {
+
+        border-radius: 12px;
+
+    }
+
+
+
+
+}
+
+
+/* ===========================
+   VERY SMALL PHONES
+=========================== */
+@media (max-width:380px) {
+
+    .topbar h2 {
+
+        font-size: 16px;
+
+    }
+
+    .topbar h3 {
+
+        font-size: 13px;
+
+    }
+
+}
