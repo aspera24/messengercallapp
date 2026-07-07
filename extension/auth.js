@@ -36,7 +36,7 @@ async function login() {
         const data = await res.json();
 
         if (data.success) {
-            location.href = "/dashboard";
+            location.replace("dashboard.html");
         } else {
             alert("Invalid username or password.");
 

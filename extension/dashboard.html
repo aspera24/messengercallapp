@@ -35,7 +35,7 @@
                 <div class="leftInnerCont">
                     <canvas id="effectCanvas" style="display:none"></canvas>
                     <div class="video-grid">
-                        
+
                         <div class="video-box" id="localBox">
 
                             <div class="video-loading" id="localLoading">
@@ -82,7 +82,6 @@
                     <div class="userListCont">
                         <div class="listBar">
                             <h3>Employees</h3>
-                            <button><i class="fa-solid fa-plus"></i></button>
                         </div>
                         <div id="userList"></div>
                     </div>
@@ -95,10 +94,14 @@
                 </button>
             </div>
             <div class="rightCont">
-                <div id="videos"></div>
-                <div id="meetingTimer" class="meeting-timer" style="display:none;">
-                    <i class="fa-regular fa-clock"></i>
-                    <span>00:00:00</span>
+                <div class="videos-container">
+                    <p>View all participants' live camera feeds in real time. Active speakers and newly joined
+                        participants will appear here during the meeting.</p>
+                    <div id="videos"></div>
+                    <div id="meetingTimer" class="meeting-timer" style="display:none;">
+                        <i class="fa-regular fa-clock"></i>
+                        <span>00:00:00</span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -25,7 +25,7 @@ function openMeetFlow() {
 
     chrome.windows.create({
 
-        url: "https://meetflow-j39a.onrender.com/dashboard",
+        url: "https://meetflow-j39a.onrender.com",
 
         type: "popup",
 

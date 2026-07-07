@@ -30,7 +30,7 @@ async function loadCurrentUser() {
         });
 
         if (!res.ok) {
-            location.href = "/auth";
+            location.replace("auth.html");
             return;
         }
 
@@ -45,7 +45,7 @@ async function loadCurrentUser() {
 
         console.error(err);
 
-        location.href = "/auth";
+        location.replace("auth.html");
 
     }
 
@@ -791,8 +791,7 @@ async function loadUsers() {
 
         container.innerHTML += `
             <div class="user-item">
-
-                <span>${user.firstname}</span>
+                <span>${user.firstname.split(" ")[0]}</span>
 
                 <div class="userAction">
                     <button
@@ -1350,10 +1349,20 @@ document
     .getElementById("logoutBtn")
     .addEventListener("click", logout);
 
-function logout() {
-    if (confirm("Do you want to logout?")) {
-        return window.location.href = "/logout";
-    }
+async function logout() {
+
+    if (!confirm("Do you want to logout?"))
+        return;
+
+    await fetch(
+        "https://meetflow-j39a.onrender.com/logout",
+        {
+            credentials: "include"
+        }
+    );
+
+    location.replace("auth.html");
+
 }
 
 
