@@ -12,12 +12,12 @@
 </head>
 
 <body>
-    <div id="overlay" onclick="toggleSidebar()"></div>
+    <div id="overlay"></div>
     <div class="app">
 
         <!-- TOP BAR -->
         <div class="topbar">
-            <button id="menuBtn" onclick="toggleSidebar()">
+            <button id="menuBtn">
                 <i class="fa-solid fa-bars"></i>
             </button>
             <h2>
@@ -35,7 +35,7 @@
                 <div class="leftInnerCont">
                     <canvas id="effectCanvas" style="display:none"></canvas>
                     <div class="video-grid">
-
+                        
                         <div class="video-box" id="localBox">
 
                             <div class="video-loading" id="localLoading">
@@ -54,11 +54,11 @@
 
                             <!-- CONTROLS -->
                             <div class="controls">
-                                <button id="camBtn" onclick="toggleCamera()">
+                                <button id="camBtn">
                                     <i class="fa-solid fa-video"></i>
                                 </button>
 
-                                <button id="micBtn" onclick="toggleMic()">
+                                <button id="micBtn">
                                     <i class="fa-solid fa-microphone"></i>
                                 </button>
                             </div>
@@ -72,7 +72,7 @@
                             </div>
                         </div>
 
-                        <button id="endBtn" onclick="endMeeting()">
+                        <button id="endBtn">
                             <i class="fa-solid fa-phone-slash"></i>
                             End Meeting
                         </button>
@@ -89,7 +89,7 @@
 
                 </div>
 
-                <button onclick="logout()">
+                <button id="logoutBtn">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Logout
                 </button>
@@ -127,7 +127,7 @@
 
     </div>
 
-    <script src="https://meetflow-j39a.onrender.com/socket.io/socket.io.js"></script>
+    <script src="socket.io.min.js"></script>
     <script src="dashboard.js"></script>
 
 </body>

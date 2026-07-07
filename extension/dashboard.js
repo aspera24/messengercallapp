@@ -1,4 +1,6 @@
-const socket = io();
+const socket = io("https://meetflow-j39a.onrender.com", {
+    withCredentials: true
+});
 
 let stream = null;
 let roomId = null;
@@ -23,21 +25,31 @@ async function loadCurrentUser() {
 
     try {
 
+        // const res = await fetch("https://meetflow-j39a.onrender.com/me", {
+        //     credentials: "include"
+        // });
+
+        // if (!res.ok) {
+        //     location.href = "/auth";
+        //     return;
+        // }
+
+        // const data = await res.json();
+
+        // initUser(data);
+
+        // document.getElementById("uname").textContent =
+        //     `Hi, ${currentUser.firstname}`;
+
         const res = await fetch("https://meetflow-j39a.onrender.com/me", {
             credentials: "include"
         });
 
-        if (!res.ok) {
-            location.href = "/auth";
-            return;
-        }
+        console.log(res.status);
+        console.log(res.headers.get("content-type"));
 
-        const data = await res.json();
-
-        initUser(data);
-
-        document.getElementById("uname").textContent =
-            `Hi, ${currentUser.firstname}`;
+        const text = await res.text();
+        console.log(text);
 
     } catch (err) {
 
@@ -48,6 +60,7 @@ async function loadCurrentUser() {
     }
 
 }
+
 loadCurrentUser();
 
 
@@ -61,6 +74,13 @@ let meetingStartTime = null;
 let meetingTimerInterval = null;
 
 
+document.getElementById("menuBtn").onclick = () => {
+    toggleSidebar();
+}
+
+document.getElementById("overlay").onclick = () => {
+    toggleSidebar();
+}
 
 window.toggleSidebar = function () {
 
@@ -149,15 +169,12 @@ function setupUI() {
 
     updateMeetingButtons(false);
 }
+
+
 // CAMERA
 window.onload = async () => {
 
-    const ready = await ensureMediaReady();
-
-    if (!ready) {
-        console.log("Media initialization failed.");
-        return;
-    }
+    await ensureMediaReady();
 
     if (audioContext?.state === "suspended") {
         await audioContext.resume();
@@ -169,6 +186,7 @@ window.onload = async () => {
     });
 
 };
+
 
 async function ensureMediaReady(attempt = 0) {
 
@@ -389,6 +407,10 @@ function joinRoomNow() {
         camera: videoTrack.enabled,
         mic: audioTrack.enabled
     });
+}
+
+document.getElementById("endBtn").onclick = () => {
+    endMeeting();
 }
 
 function endMeeting() {
@@ -778,32 +800,53 @@ async function loadUsers() {
     users.forEach(user => {
 
         container.innerHTML += `
-        <div class="user-item">
+            <div class="user-item">
 
-            <span>${user.firstname}</span>
+                <span>${user.firstname}</span>
 
-            <div class="userAction">
-                <button
-                    class="reqBtn"
-                    id="req-${user.token}"
-                    onclick="requestUser('${user.token}')"
-                    ${user.joined ? "disabled" : ""}
-                >
-                    ${user.joined
-                ? `
-                        <i class="fa-solid fa-circle-check"></i>
-                    `
-                : `
-                        <i class="fa-solid fa-paper-plane"></i>
-                    `
+                <div class="userAction">
+                    <button
+                        class="reqBtn"
+                        data-token="${user.token}"
+                        id="req-${user.token}"
+                        ${user.joined ? "disabled" : ""}
+                    >
+                        ${user.joined
+                ? `<i class="fa-solid fa-circle-check"></i>`
+                : `<i class="fa-solid fa-paper-plane"></i>`
             }
-                </button>
+                    </button>
 
-                <button class="deleteBtn" id="delete-${user.token}" ${user.joined ? "disabled" : ""}
-                    onclick="deleteUser('${user.token}')"><i class="fa-solid fa-trash-can"></i></button>
+                    <button
+                        class="deleteBtn"
+                        data-token="${user.token}"
+                        id="delete-${user.token}"
+                        ${user.joined ? "disabled" : ""}
+                    >
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+
             </div>
-        </div>
         `;
+
+
+        container.addEventListener("click", (e) => {
+
+            const reqBtn = e.target.closest(".reqBtn");
+
+            if (reqBtn) {
+                requestUser(reqBtn.dataset.token);
+                return;
+            }
+
+            const deleteBtn = e.target.closest(".deleteBtn");
+
+            if (deleteBtn) {
+                deleteUser(deleteBtn.dataset.token);
+            }
+
+        });
     });
 }
 
@@ -1231,6 +1274,15 @@ async function setupRemoteMicLevel(userId, remoteStream) {
     animate();
 }
 
+
+document.getElementById("camBtn").onclick = () => {
+    toggleCamera();
+}
+
+document.getElementById("micBtn").onclick = () => {
+    toggleMic();
+}
+
 // CONTROLS
 function toggleCamera() {
 
@@ -1303,6 +1355,10 @@ function updateRemoteStatus(userId) {
 
     }
 }
+
+document
+    .getElementById("logoutBtn")
+    .addEventListener("click", logout);
 
 function logout() {
     if (confirm("Do you want to logout?")) {
