@@ -2,6 +2,9 @@ const db = require("../config/db.config");
 
 module.exports = (req, res, next) => {
 
+    console.log("Cookies:", req.cookies);
+    console.log("Token:", req.cookies.meetflow_session);
+
     const token = req.cookies.meetflow_session;
 
     if (!token) {

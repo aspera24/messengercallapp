@@ -26,7 +26,7 @@ module.exports = (req, res, next) => {
 
             if (err || result.length === 0) {
                 res.clearCookie("meetflow_session");
-                return next();
+                return res.redirect("/auth");
             }
 
             console.log("REDIRECT TO DASHBOARD");

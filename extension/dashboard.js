@@ -25,31 +25,21 @@ async function loadCurrentUser() {
 
     try {
 
-        // const res = await fetch("https://meetflow-j39a.onrender.com/me", {
-        //     credentials: "include"
-        // });
-
-        // if (!res.ok) {
-        //     location.href = "/auth";
-        //     return;
-        // }
-
-        // const data = await res.json();
-
-        // initUser(data);
-
-        // document.getElementById("uname").textContent =
-        //     `Hi, ${currentUser.firstname}`;
-
         const res = await fetch("https://meetflow-j39a.onrender.com/me", {
             credentials: "include"
         });
 
-        console.log(res.status);
-        console.log(res.headers.get("content-type"));
+        if (!res.ok) {
+            location.href = "/auth";
+            return;
+        }
 
-        const text = await res.text();
-        console.log(text);
+        const data = await res.json();
+
+        initUser(data);
+
+        document.getElementById("uname").textContent =
+            `Hi, ${currentUser.firstname}`;
 
     } catch (err) {
 
