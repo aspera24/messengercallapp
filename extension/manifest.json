@@ -2,13 +2,20 @@
     "manifest_version": 3,
     "name": "MeetFlow",
     "version": "1.0.0",
-    "description": "MeetFlow Widget",
     "permissions": [
         "storage",
-        "notifications"
+        "notifications",
+        "tabs",
+        "sidePanel",
+        "system.display"
     ],
+    "side_panel": {
+        "default_path": "panel.html"
+    },
     "host_permissions": [
-        "<all_urls>"
+        "<all_urls>",
+        "https://meetflow-j39a.onrender.com/*",
+        "http://localhost:3000/*"
     ],
     "background": {
         "service_worker": "background.js"
@@ -19,8 +26,7 @@
                 "<all_urls>"
             ],
             "js": [
-                "content.js",
-                "widget.min.js"
+                "content.js"
             ],
             "run_at": "document_idle"
         }
@@ -28,7 +34,11 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "widget.min.js"
+                "dashboard.html",
+                "dashboard.js",
+                "dashboard.css",
+                "images/*",
+                "icons/*"
             ],
             "matches": [
                 "<all_urls>"
