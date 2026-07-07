@@ -150,24 +150,28 @@ function setupUI() {
     updateMeetingButtons(false);
 }
 // CAMERA
-window.onload = async () => {
+// window.onload = async () => {
 
-    const ready = await ensureMediaReady();
+//     const ready = await ensureMediaReady();
 
-    if (!ready) {
-        console.log("Media initialization failed.");
-        return;
-    }
+//     if (!ready) {
+//         console.log("Media initialization failed.");
+//         return;
+//     }
 
-    if (audioContext?.state === "suspended") {
-        await audioContext.resume();
-    }
+//     if (audioContext?.state === "suspended") {
+//         await audioContext.resume();
+//     }
 
-    socket.emit("media-status", {
-        camera: videoTrack?.enabled ?? false,
-        mic: audioTrack?.enabled ?? false
-    });
+//     socket.emit("media-status", {
+//         camera: videoTrack?.enabled ?? false,
+//         mic: audioTrack?.enabled ?? false
+//     });
 
+// };
+
+document.getElementById("btnCamera").onclick = async () => {
+    await ensureMediaReady();
 };
 
 async function ensureMediaReady(attempt = 0) {
