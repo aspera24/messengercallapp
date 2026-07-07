@@ -25,12 +25,17 @@ function openMeetFlow() {
 
     chrome.windows.create({
 
-        url: chrome.runtime.getURL("dashboard.html"),
+        url: "https://meetflow-j39a.onrender.com/dashboard",
 
         type: "popup",
 
         width: 420,
+
         height: 720
+
+    }, (window) => {
+
+        meetflowWindowId = window.id;
 
     });
 

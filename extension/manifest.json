@@ -34,11 +34,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "dashboard.html",
-                "dashboard.js",
-                "dashboard.css",
-                "images/*",
-                "icons/*"
+                "widget.min.js"
             ],
             "matches": [
                 "<all_urls>"

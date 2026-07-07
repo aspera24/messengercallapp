@@ -70,49 +70,6 @@ window.toggleSidebar = function () {
 
 }
 
-// async function checkAuth() {
-
-//     const { token } = await chrome.storage.local.get("token");
-
-//     if (!token) {
-//         location.href = "/login";
-//         return;
-//     }
-
-//     const res = await fetch("https://meetflow-j39a.onrender.com/session", {
-//         headers: {
-//             Authorization: `Bearer ${token}`
-//         }
-//     });
-
-//     const data = await res.json();
-
-//     if (!data.logged) {
-//         location.href = "/login";
-//     }
-// }
-
-// checkAuth();
-
-// async function loadUser() {
-
-//     // const res = await fetch("/session", {
-//     //     credentials: "include"
-//     // });
-
-//     // const data = await res.json();
-
-//     // if (!data.logged) {
-//     //     location.href = "/auth";
-//     //     return;
-//     // }
-
-//     document.getElementById("uname").textContent = `Hi, ${data.user.firstname}`;
-// }
-
-// loadUser();
-
-
 
 function startMeetingTimer(startedAt) {
 
@@ -155,28 +112,6 @@ function stopMeetingTimer() {
 
 }
 
-
-// SESSION
-// fetch("/session", {
-//     credentials: "include"
-// })
-//     .then(res => res.json())
-//     .then(data => {
-
-//         if (!data.logged) {
-//             location.href = "/auth";
-//             return;
-//         }
-
-//         initUser(data);
-
-//     })
-//     .catch(err => {
-//         console.error(err);
-//     });
-
-
-
 function initUser(data) {
 
     currentUser = data.user;
@@ -216,17 +151,22 @@ function setupUI() {
 }
 // CAMERA
 window.onload = async () => {
-    await ensureMediaReady();
+
+    const ready = await ensureMediaReady();
+
+    if (!ready) {
+        console.log("Media initialization failed.");
+        return;
+    }
+
     if (audioContext?.state === "suspended") {
         await audioContext.resume();
     }
 
-    socket.emit("media-status",
-        {
-            camera: videoTrack.enabled,
-            mic: audioTrack.enabled
-        }
-    );
+    socket.emit("media-status", {
+        camera: videoTrack?.enabled ?? false,
+        mic: audioTrack?.enabled ?? false
+    });
 
 };
 
@@ -271,6 +211,10 @@ async function ensureMediaReady(attempt = 0) {
         return true;
 
     } catch (err) {
+        console.error("[MEDIA ERROR]", err);
+
+        console.error(err.name);
+        console.error(err.message);
 
         console.log("[MEDIA] failed attempt:", attempt);
 
