@@ -4,11 +4,12 @@
     box-sizing: border-box;
     font-family: Arial, sans-serif;
     scrollbar-width: thin;
-    scrollbar-color: #525252 transparent !important;
+    scrollbar-color: #c4c4c4 transparent !important;
+    font-family: sans-serif, Arial, Helvetica, sans-serif;
 }
 
 body {
-    background: #0f172a;
+    background: #f8f8f8;
     color: #f8fafc;
     overflow-y: auto;
 }
@@ -37,13 +38,10 @@ body {
     align-items: center;
     z-index: 1000;
     overflow: hidden;
-    background:rgba(17,24,39,.75);
-    backdrop-filter:blur(18px);
+    background: rgba(17, 24, 39, .75);
+    backdrop-filter: blur(18px);
 
-    border:1px solid rgba(255,255,255,.06);
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,.25);
+    border: 1px solid rgba(255, 255, 255, .06);
 }
 
 #menuBtn {
@@ -118,7 +116,7 @@ button:hover:disabled {
 }
 
 .user-item {
-    background: #1e293b;
+    background: #e7f0fd;
     border: 1px solid rgba(255, 255, 255, .05);
     border-radius: 14px;
     padding: 8px;
@@ -131,9 +129,9 @@ button:hover:disabled {
 
 
 .user-item span {
-    color: white;
+    color: rgb(31, 54, 104);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: normal;
 }
 
 .user-item button {
@@ -146,13 +144,6 @@ button:hover:disabled {
     transition: .1s;
 }
 
-.user-item .reqBtn {
-    background: #2563eb;
-}
-
-.user-item .deleteBtn {
-    background: #f77700;
-}
 
 button:not(:disabled):hover {
     opacity: .8;
@@ -162,13 +153,22 @@ button:not(:disabled):hover {
 #endBtn {
     width: 100%;
     margin-top: 12px;
-    background: #202a41;
+    background: rgb(255, 60, 0);
     color: white;
     border-radius: 8px;
     padding: 12px;
     transform: none;
 }
 
+#callAllBtn {
+    width: 100%;
+    margin-top: 5px;
+    background: rgb(0, 110, 255);
+    color: white;
+    border-radius: 8px;
+    padding: 12px;
+    transform: none;
+}
 
 .primary {
     background: #2563eb;
@@ -211,28 +211,24 @@ input:focus {
 .centCont {
     display: grid;
     grid-template-columns: 340px minmax(0, 1fr);
-
     height: calc(100dvh - 65px);
-
     overflow: hidden;
-
-    background: #020617;
+    background: #ffffff;
 }
 
 .leftCont {
     width: 95%;
     height: calc(100% - 60px);
     margin: auto 0 auto 30px;
-    background: #111827;
+    background: #ffffff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.13);
     border-right: 1px solid rgba(255, 255, 255, .05);
     border-radius: 0;
-    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     border-radius: 20px;
     min-height: 0;
-    /* important */
     overflow: hidden;
 }
 
@@ -251,6 +247,7 @@ input:focus {
     display: flex;
     flex-direction: column;
     overflow: auto;
+    padding: 10px;
 }
 
 .listBar {
@@ -273,41 +270,169 @@ input:focus {
 }
 
 .userListCont h3 {
-    color: white;
     font-size: 18px;
     padding: 15px 0;
+    color: #111827;
+    font-weight: normal;
+    letter-spacing: 2px;
 }
 
-/* VIDEO GRID - AUTO RESPONSIVE MAGIC */
+
+.dt-layout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.dt-layout-table {
+    background: rgb(255, 255, 255);
+    overflow: hidden;
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.13);
+}
+
+.dt-layout-start,
+.dt-layout-end {
+    width: 50%;
+    font-size: 10px;
+    color: rgb(133, 133, 133);
+}
+
+.dt-layout-end {
+    text-align: right;
+}
+
+.dt-length select {
+    width: 50px;
+    height: 30px;
+    border: 1px solid rgb(199, 199, 199);
+    border-radius: 8px;
+    font-size: 8px;
+    outline: none;
+    cursor: pointer;
+}
+
+.dt-search input {
+    width: 100px;
+    min-width: 0;
+    height: 30px;
+    border: 1px solid rgb(199, 199, 199);
+    font-size: 12px;
+    margin-left: 5px;
+    border-radius: 8px;
+}
+
+.dt-search input:hover {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+}
+
+.dt-search input:focus {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+}
+
+#userTable {
+    width: 100% !important;
+    color: rgb(80, 80, 80);
+    border-collapse: collapse;
+}
+
+#userTable thead th {
+    background: #f7f7f7;
+    color: #555;
+    border: none !important;
+    padding: 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#userTable thead th:first-child {
+    text-align: left;
+}
+
+#userTable thead th:first-child:hover {
+    background: #f0f0f0;
+}
+
+#userTable thead th:last-child {
+    width: 10px;
+    cursor: default;
+}
+
+#userTable tbody td {
+    border: none !important;
+    vertical-align: middle;
+    padding: 10px;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+
+#userTable tbody td:last-of-type {
+    text-align: center;
+}
+
+#userTable tbody td button {
+    display: contents;
+}
+
+.reqBtn {
+    color: rgb(0, 110, 255);
+}
+
+.deleteBtn {
+    color: rgb(255, 60, 0);
+}
+
+.reqBtn:disabled,
+.deleteBtn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.dataTables_filter input {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.dt-paging nav {
+    display: flex;
+    justify-content: right;
+}
+
+.dt-paging nav button {
+    margin: 0 2px;
+    font-size: 10px;
+    font-weight: normal;
+
+}
+
+.dataTables_wrapper .paginate_button.current {
+    background: #2563eb !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 8px;
+}
+
+
 .video-grid {
     display: flex;
     flex-direction: column;
-    /* gap: 12px;
-
-    flex: 0 0 auto; */
 }
 
 /* VIDEO BOX */
 .video-grid .video-box {
-    border-radius: 18px;
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, .05);
     overflow: hidden;
-    /* box-shadow: 0 20px 50px rgba(0, 0, 0, .35); */
     position: relative;
     height: 150px;
 }
 
-.video-grid .video-box:hover {
-    transform: translateY(-2px);
-    transition: .25s;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, .5);
-}
-
-.video-box.mic-active {
+/* .video-box.mic-active {
     outline: 3px solid #2563eb;
     outline-offset: -3px;
-}
+} */
 
 .video-loading {
     position: absolute;
@@ -396,18 +521,24 @@ input:focus {
 
 .mic-level {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    bottom: 5px;
+    right: 5px;
     display: flex;
     gap: 2px;
     align-items: flex-end;
     height: 18px;
+    padding: 5px;
+    background: rgba(39, 39, 39, 0.63);
+}
+
+.userlevel {
+    border-bottom-right-radius: 10px;
 }
 
 .mic-level .bar {
     width: 3px;
     height: 4px;
-    background: #2563eb;
+    background: #62b5ec;
     border-radius: 2px;
     transition: 0.1s;
     opacity: 0.3;
@@ -426,13 +557,40 @@ video {
     transform: scaleX(-1);
 }
 
-video#local {
-    border-radius: 12px;
+.rightCont {
+    position: relative;
+    background: #ffffff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.13);
+    height: calc(100% - 60px);
+    width: calc(100% - 60px);
+    margin: auto auto;
+    overflow: hidden;
+    padding-right: 2px;
+    box-sizing: border-box;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
+.rightCont p {
+    font-size: 14px;
+    color: rgb(156, 156, 156);
+    padding: 0 20px 10px;
+    text-align: center;
+}
+
+.rightCont .videos-container {
+    width: 100%;
+    height: 95%;
+    overflow-y: auto;
+    margin: auto;
+}
+
 
 #videos {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 26px);
     padding: 25px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -447,12 +605,9 @@ video#local {
 
 #videos .video-box {
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, .05);
     overflow: hidden;
-    background: #111827;
     transition: .25s;
     position: relative;
-    box-shadow: 10px 0px 25px rgba(37, 99, 235, .4);
 }
 
 #videos .video-box:hover {
@@ -590,15 +745,6 @@ video#local {
 }
 
 
-.rightCont {
-    position: relative;
-    background: #111827;
-    height: calc(100% - 60px);
-    width: calc(100% - 60px);
-    margin: auto auto;
-    overflow: auto;
-    border-radius: 20px;
-}
 
 .meeting-timer {
     display: flex;
@@ -616,6 +762,18 @@ video#local {
     font-size: 15px;
 
     width: fit-content;
-
+    color: red;
     margin: 15px auto 0;
+}
+
+.logoutBtn {
+    color: white;
+    background: rgb(49, 49, 49);
+    border-radius: 0px;
+}
+
+
+.logoutBtn:not(:disabled):hover {
+    opacity: .8;
+    transform: scale(1);
 }

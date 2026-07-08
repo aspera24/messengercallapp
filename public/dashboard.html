@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="/dashboard-tab-mob.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" href="data:,">
+
+    <!-- <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"> -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
 </head>
 
 <body>
@@ -71,33 +75,52 @@
                                 <div class="bar"></div>
                             </div>
                         </div>
-
-                        <button id="endBtn" onclick="endMeeting()">
-                            <i class="fa-solid fa-phone-slash"></i>
-                            End Meeting
-                        </button>
                     </div>
 
 
                     <div class="userListCont">
+                        <button id="endBtn" onclick="endMeeting()">
+                            <i class="fa-solid fa-phone-slash"></i>
+                            End Meeting
+                        </button>
+
+                        <button id="callAllBtn" onclick="callAllUsers()">
+                            <i class="fa-solid fa-phone"></i>
+                            Call All
+                        </button>
+                        
                         <div class="listBar">
                             <h3>Employees</h3>
                         </div>
-                        <div id="userList"></div>
+
+                        <table id="userTable" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th width="150">Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody></tbody>
+                        </table>
                     </div>
 
                 </div>
 
-                <button onclick="logout()">
+                <button class="logoutBtn" onclick="logout()">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Logout
                 </button>
             </div>
             <div class="rightCont">
-                <div id="videos"></div>
-                <div id="meetingTimer" class="meeting-timer" style="display:none;">
-                    <i class="fa-regular fa-clock"></i>
-                    <span>00:00:00</span>
+                <div class="videos-container">
+                    <p>View all participants' live camera feeds in real time. Active speakers and newly joined
+                        participants will appear here during the meeting.</p>
+                    <div id="videos"></div>
+                    <div id="meetingTimer" class="meeting-timer" style="display:none;">
+                        <i class="fa-regular fa-clock"></i>
+                        <span>00:00:00</span>
+                    </div>
                 </div>
             </div>
         </div>

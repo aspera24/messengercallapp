@@ -48,6 +48,7 @@ async function loadCurrentUser() {
     }
 
 }
+
 loadCurrentUser();
 
 
@@ -139,16 +140,25 @@ function initUser(data) {
 // UI
 function setupUI() {
 
-    if (currentUser.acc_type === "employee") {
-        document.querySelector(".userListCont").style.display = "none";
-    }
+    const callAllBtn = document.getElementById("callAllBtn");
 
-    if (currentUser?.acc_type === "admin") {
+    if (currentUser.acc_type !== "admin") {
+
+        document.querySelector(".userListCont").style.display = "none";
+
+        callAllBtn?.remove();
+
+    } else {
+
         loadUsers();
+
     }
 
     updateMeetingButtons(false);
 }
+
+
+
 // CAMERA
 window.onload = async () => {
 
@@ -235,21 +245,54 @@ async function ensureMediaReady(attempt = 0) {
     }
 }
 
-let pendingRequestToken = null;
+let pendingRequestTokens = [];
+let pendingCallAll = false;
 
 socket.on("room-created", ({ roomId: newRoom }) => {
 
     roomId = newRoom;
 
-    if (pendingRequestToken) {
+    if (pendingRequestTokens.length) {
 
-        socket.emit("request-user", {
-            roomId,
-            token: pendingRequestToken
+        pendingRequestTokens.forEach(token => {
+
+            socket.emit("request-user", {
+                roomId,
+                token
+            });
+
         });
 
-        pendingRequestToken = null;
+        pendingRequestTokens = [];
     }
+
+    if (pendingCallAll) {
+
+        socket.emit("request-all-users", {
+            roomId
+        });
+
+        pendingCallAll = false;
+    }
+
+});
+
+socket.on("calling-all-users", (tokens) => {
+
+    tokens.forEach(token => {
+
+        const btn =
+            document.getElementById(`req-${token}`);
+
+        if (!btn) return;
+
+        btn.disabled = true;
+
+        btn.innerHTML =
+            `<i class="fa-solid fa-spinner fa-spin"></i>`;
+
+    });
+
 });
 
 function updateMeetingButtons(active) {
@@ -339,9 +382,6 @@ socket.on("meeting-started", async (data) => {
     roomId = data.roomId;
     activeRoom = roomId;
 
-    startMeetingTimer(data.startedAt);
-
-
     if (currentUser.acc_type === "admin") {
         joinedUsers = 0;
         updateMeetingButtons(false);
@@ -372,6 +412,10 @@ socket.on("meeting-started", async (data) => {
         mic: audioTrack.enabled
     });
 
+});
+
+socket.on("meeting-timer-start", ({ startedAt }) => {
+    startMeetingTimer(startedAt);
 });
 
 function joinRoomNow() {
@@ -410,31 +454,39 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         updateMeetingButtons(false);
     }
 
+    // Close all peers
     for (let id in peers) {
         peers[id].close();
-
-        Object.values(remoteAudioNodes).forEach(node => {
-            try {
-                node.source.disconnect();
-                node.analyser.disconnect();
-            } catch (e) { }
-
-            cancelAnimationFrame(id);
-        });
-
-        Object.keys(remoteAudioNodes).forEach(id => {
-            delete remoteAudioNodes[id];
-            delete remoteAnimationFrames[id];
-        });
     }
+
+    // Disconnect all audio analysers
+    Object.values(remoteAudioNodes).forEach(node => {
+        try {
+            node.source.disconnect();
+            node.analyser.disconnect();
+        } catch (e) { }
+    });
+
+    // Stop all animation frames
+    Object.values(remoteAnimationFrames).forEach(frameId => {
+        cancelAnimationFrame(frameId);
+    });
+
+    // Clear objects
+    Object.keys(remoteAudioNodes).forEach(id => {
+        delete remoteAudioNodes[id];
+    });
+
+    Object.keys(remoteAnimationFrames).forEach(id => {
+        delete remoteAnimationFrames[id];
+    });
 
     peers = {};
     peerNames = {};
 
     document.getElementById("videos").innerHTML = "";
 
-
-    // RESET MEDIA (IMPORTANT FIX)
+    // RESET MEDIA
     if (stream) {
         stream.getTracks().forEach(t => t.stop());
         stream = null;
@@ -442,13 +494,25 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         audioTrack = null;
     }
 
-    // AUTO RESTART CAMERA (optional but requested behavior)
+    // Restart local media
     setTimeout(async () => {
+
         await ensureMediaReady();
+
+        if (videoTrack) videoTrack.enabled = true;
+        if (audioTrack) audioTrack.enabled = true;
+
+        updateMediaStatus();
+
+        socket.emit("media-status", {
+            camera: true,
+            mic: true
+        });
 
         if (audioContext?.state === "suspended") {
             await audioContext.resume();
         }
+
     }, 1000);
 
     joinedUsers.forEach(token => {
@@ -459,8 +523,8 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         if (reqBtn) {
             reqBtn.disabled = false;
             reqBtn.innerHTML = `
-            <i class="fa-solid fa-paper-plane"></i>
-        `;
+                <i class="fa-solid fa-paper-plane"></i>
+            `;
         }
 
         if (deleteBtn) {
@@ -470,6 +534,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
     });
 
     stopMeetingTimer();
+
 });
 
 socket.on("user-disconnected", (userId) => {
@@ -763,6 +828,10 @@ function getSelectedUsers() {
     ].map(x => x.value);
 }
 
+
+
+let table;
+
 async function loadUsers() {
 
     const res = await fetch("/users", {
@@ -771,42 +840,88 @@ async function loadUsers() {
 
     const users = await res.json();
 
-    const container = document.getElementById("userList");
+    if (table) {
+        table.destroy();
+        $("#userTable tbody").empty();
+    }
 
-    container.innerHTML = "";
+    table = new DataTable("#userTable", {
 
-    users.forEach(user => {
+        data: users,
 
-        container.innerHTML += `
-        <div class="user-item">
+        columns: [
 
-            <span>${user.firstname}</span>
+            {
+                data: "firstname"
+            },
 
-            <div class="userAction">
-                <button
-                    class="reqBtn"
-                    id="req-${user.token}"
-                    onclick="requestUser('${user.token}')"
-                    ${user.joined ? "disabled" : ""}
-                >
-                    ${user.joined
-                ? `
-                        <i class="fa-solid fa-circle-check"></i>
-                    `
-                : `
-                        <i class="fa-solid fa-paper-plane"></i>
-                    `
+            {
+                data: null,
+                orderable: false,
+                render: function (data) {
+
+                    return `
+
+                        <button
+                            class="reqBtn"
+                            id="req-${data.token}"
+                            onclick="requestUser('${data.token}')"
+                            ${data.joined ? "disabled" : ""}
+                        >
+
+                        ${data.joined
+                            ? '<i class="fa-solid fa-circle-check"></i>'
+                            : '<i class="fa-solid fa-paper-plane"></i>'
+                        }
+
+                        </button>
+
+                        <button
+                            class="deleteBtn"
+                            id="delete-${data.token}"
+                            onclick="deleteUser('${data.token}')"
+                            ${data.joined ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+
+                    `;
+                }
             }
-                </button>
 
-                <button class="deleteBtn" id="delete-${user.token}" ${user.joined ? "disabled" : ""}
-                    onclick="deleteUser('${user.token}')"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-        </div>
-        `;
+        ],
+
+        pageLength: 5,
+        lengthMenu: [
+            [5, 10, 25, 50, -1],
+            [5, 10, 25, 50, "All"]
+        ],
+        responsive: true,
+        searching: true,
+        ordering: true,
+        info: true,
+        lengthChange: true,
+        pagingType: "simple",
+        columnDefs: [
+            {
+                targets: 0,
+                width: "250px"
+            },
+            {
+                targets: 1,
+                width: "10px"
+            }
+        ],
+        language: {
+            paginate: {
+                previous: "Prev",
+                next: "Next"
+            }
+        }
+
     });
-}
 
+}
 
 
 async function requestUser(token) {
@@ -841,6 +956,27 @@ async function deleteUser(token) {
     if (!confirm("Delete this employee?")) return;
     socket.emit("delete-user", { token });
 }
+
+function callAllUsers() {
+
+    if (!roomId) {
+
+        socket.emit("create-room", {
+            admin: currentUser.firstname,
+            participants: []
+        });
+
+        pendingCallAll = true;
+        return;
+    }
+
+    socket.emit("request-all-users", {
+        roomId
+    });
+
+}
+
+
 
 socket.on("user-deleted", (token) => {
 
@@ -901,23 +1037,56 @@ socket.on("removed-from-meeting", () => {
         if (wrapper) {
             wrapper.remove();
         }
-
-        Object.values(remoteAnimationFrames).forEach(id => {
-            cancelAnimationFrame(id);
-        });
-
-        Object.keys(remoteAnimationFrames).forEach(id => {
-            delete remoteAnimationFrames[id];
-        });
     }
+
+    Object.values(remoteAnimationFrames).forEach(id => {
+        cancelAnimationFrame(id);
+    });
+
+    Object.keys(remoteAnimationFrames).forEach(id => {
+        delete remoteAnimationFrames[id];
+    });
 
     peers = {};
     peerNames = {};
     userMediaStates = {};
 
-    document.getElementById(
-        "videos"
-    ).innerHTML = "";
+    document.getElementById("videos").innerHTML = "";
+
+    // Reset local media
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+
+        stream = null;
+        videoTrack = null;
+        audioTrack = null;
+    }
+
+    // Restart camera & microphone
+    setTimeout(async () => {
+
+        await ensureMediaReady();
+
+        if (audioContext?.state === "suspended") {
+            await audioContext.resume();
+        }
+
+        if (videoTrack) {
+            videoTrack.enabled = true;
+        }
+
+        if (audioTrack) {
+            audioTrack.enabled = true;
+        }
+
+        updateMediaStatus();
+
+        socket.emit("media-status", {
+            camera: true,
+            mic: true
+        });
+
+    }, 500);
 
     alert(
         "You were removed from the meeting."
@@ -997,7 +1166,7 @@ function addRemoteVideo(userId, stream) {
 
         // MIC LEVEL
         const micLevel = document.createElement("div");
-        micLevel.className = "mic-level";
+        micLevel.className = "mic-level userlevel";
         micLevel.id = "mic-" + userId;
 
         micLevel.innerHTML = `

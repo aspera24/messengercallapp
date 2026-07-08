@@ -71,19 +71,34 @@
                                 <div class="bar"></div>
                             </div>
                         </div>
-
-                        <button id="endBtn">
-                            <i class="fa-solid fa-phone-slash"></i>
-                            End Meeting
-                        </button>
                     </div>
 
 
                     <div class="userListCont">
+                        <button id="endBtn">
+                            <i class="fa-solid fa-phone-slash"></i>
+                            End Meeting
+                        </button>
+
+                        <button id="callAllBtn">
+                            <i class="fa-solid fa-phone"></i>
+                            Call All
+                        </button>
+
                         <div class="listBar">
                             <h3>Employees</h3>
                         </div>
-                        <div id="userList"></div>
+
+                        <table id="userTable" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th width="150">Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody></tbody>
+                        </table>
                     </div>
 
                 </div>

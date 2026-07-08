@@ -136,6 +136,12 @@ io.on("connection", (socket) => {
 
     socket.on("request-user", ({ roomId, token }) => {
 
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") {
+            return;
+        }
+
         const target = onlineUsers[token];
 
         if (!target) {
@@ -287,6 +293,12 @@ io.on("connection", (socket) => {
     // CREATE ROOM
     socket.on("create-room", ({ participants = [] }) => {
 
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") {
+            return;
+        }
+
         const roomId =
             "ROOM-" +
             Math.random()
@@ -297,6 +309,7 @@ io.on("connection", (socket) => {
         rooms[roomId] = {
             adminToken: socket.data.user.token,
             adminSocketId: socket.id,
+            admin: socket.data.user.firstname,
             participants
         };
 
@@ -440,6 +453,19 @@ io.on("connection", (socket) => {
 
         joinedUsersInMeeting[user.token] = true;
 
+        if (
+            activeMeeting &&
+            user.acc_type === "employee" &&
+            !activeMeeting.timerStarted
+        ) {
+            activeMeeting.timerStarted = true;
+            activeMeeting.startedAt = Date.now();
+
+            io.to(roomId).emit("meeting-timer-start", {
+                startedAt: activeMeeting.startedAt
+            });
+        }
+
         console.log(joinedUsersInMeeting);
 
         db.query(
@@ -538,6 +564,12 @@ io.on("connection", (socket) => {
     });
 
     socket.on("remove-user", async ({ roomId, userId }) => {
+
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") {
+            return;
+        }
 
         const room = rooms[roomId];
 
@@ -659,6 +691,12 @@ io.on("connection", (socket) => {
 
     socket.on("end-meeting", ({ roomId, adminToken }) => {
 
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") {
+            return;
+        }
+
         if (!roomId) return;
 
         const room = rooms[roomId];
@@ -742,6 +780,12 @@ io.on("connection", (socket) => {
 
     socket.on("delete-user", ({ token }) => {
 
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") {
+            return;
+        }
+
         db.query(
             "DELETE FROM users WHERE token=?",
             [token],
@@ -759,6 +803,58 @@ io.on("connection", (socket) => {
 
     });
 
+
+
+    socket.on("request-all-users", ({ roomId }) => {
+
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") {
+            return;
+        }
+
+        const room = rooms[roomId];
+
+        if (!room) return;
+
+        for (const token in onlineUsers) {
+
+
+            if (token === room.adminToken)
+                continue;
+
+            if (room.participants.includes(token))
+                continue;
+
+            if (pendingRequests[token])
+                continue;
+
+            const target = onlineUsers[token];
+
+            if (!target)
+                continue;
+
+            pendingRequests[token] = socket.data.user.token;
+
+            db.query(
+                `INSERT INTO meeting_requests
+                (room_token, from_user_id, to_user_id, status)
+                VALUES (?, ?, ?, 'pending')`,
+                [
+                    roomId,
+                    socket.data.user.id,
+                    target.user.id
+                ]
+            );
+
+            io.to(target.socketId).emit("meeting-request", {
+                roomId,
+                admin: room.admin
+            });
+
+        }
+
+    });
 
 
     // DISCONNECT CLEANUP (IMPORTANT FIX)
