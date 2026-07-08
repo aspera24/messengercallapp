@@ -78,12 +78,11 @@
         position: fixed;
         left: -100%;
         top: 75px;
-        width: 250px;
+        width: 260px;
         height: calc(100% - 85px);
         z-index: 999;
         transition: .3s;
         margin: 0;
-
     }
 
     .leftCont.show {
