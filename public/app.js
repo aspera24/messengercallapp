@@ -19,6 +19,37 @@ const localVideo = document.getElementById("local");
 let currentUser = null;
 let myId = null;
 
+let requestSoundPlaying = false;
+
+const sounds = {
+    micOn: new Audio("/sounds/mic_on.mp3"),
+    micOff: new Audio("/sounds/mic_off.mp3"),
+    camOn: new Audio("/sounds/cam_on.mp3"),
+    camOff: new Audio("/sounds/cam_off.mp3"),
+    join: new Audio("/sounds/join.mp3"),
+    leave: new Audio("/sounds/leave.mp3"),
+    request: new Audio("/sounds/request.mp3")
+};
+
+Object.values(sounds).forEach(sound => {
+    sound.preload = "auto";
+});
+
+sounds.request.loop = true;
+
+function playSound(audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => { });
+}
+
+function stopSound(audio) {
+    audio.pause();
+    audio.currentTime = 0;
+}
+
+
+
+
 async function loadCurrentUser() {
 
     try {
@@ -437,6 +468,8 @@ function joinRoomNow() {
 
 function endMeeting() {
 
+    playSound(sounds.leave);
+
     if (!roomId) return;
 
     socket.emit("end-meeting", {
@@ -446,6 +479,8 @@ function endMeeting() {
 }
 
 socket.on("meeting-ended", ({ joinedUsers }) => {
+
+    // playSound(sounds.leave);
 
     roomId = null;
     activeRoom = null;
@@ -539,6 +574,8 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
 
 socket.on("user-disconnected", (userId) => {
 
+    // playSound(sounds.leave);
+
     joinedUsers = Math.max(0, joinedUsers - 1);
 
     if (currentUser.acc_type === "admin") {
@@ -598,6 +635,10 @@ socket.on("room-info", data => {
 });
 
 socket.on("user-joined-room", (user) => {
+
+    if (user.id !== myId) {
+        playSound(sounds.join);
+    }
 
     if (currentUser.acc_type === "admin") {
         joinedUsers++;
@@ -926,8 +967,7 @@ async function loadUsers() {
 
 async function requestUser(token) {
 
-    const btn =
-        document.getElementById(`req-${token}`);
+    const btn = document.getElementById(`req-${token}`);
 
     btn.disabled = true;
 
@@ -959,6 +999,8 @@ async function deleteUser(token) {
 
 function callAllUsers() {
 
+    // playSound(sounds.request);
+
     if (!roomId) {
 
         socket.emit("create-room", {
@@ -989,9 +1031,21 @@ socket.on("user-deleted", (token) => {
 let requestedRoom = null;
 
 socket.on("meeting-request", (data) => {
+
     requestedRoom = data.roomId;
-    document.getElementById("meetingRequestText").innerText = `${data.admin} wants you to join the meeting.`;
+
+    document.getElementById("meetingRequestText").innerText =
+        `${data.admin} wants you to join the meeting.`;
+
     document.getElementById("meetingRequestModal").style.display = "flex";
+
+    if (!requestSoundPlaying) {
+        requestSoundPlaying = true;
+        sounds.request.currentTime = 0;
+        sounds.request.loop = true;
+        sounds.request.play().catch(() => { });
+    }
+
 });
 
 socket.on("request-accepted", ({ token }) => {
@@ -1022,6 +1076,8 @@ socket.on("request-declined", ({ token }) => {
 });
 
 socket.on("removed-from-meeting", () => {
+
+    // playSound(sounds.leave);
 
     roomId = null;
 
@@ -1097,6 +1153,10 @@ socket.on("removed-from-meeting", () => {
 
 document.getElementById("acceptMeetingBtn").onclick = async () => {
 
+    sounds.request.pause();
+    sounds.request.currentTime = 0;
+    requestSoundPlaying = false;
+
     document.getElementById(
         "meetingRequestModal"
     ).style.display = "none";
@@ -1104,6 +1164,8 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
     roomId = requestedRoom;
 
     socket.emit("meeting-request-accepted");
+
+    playSound(sounds.join);
 
     if (!stream) {
         await ensureMediaReady();
@@ -1124,6 +1186,10 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 };
 
 document.getElementById("declineMeetingBtn").onclick = () => {
+    
+    sounds.request.pause();
+    sounds.request.currentTime = 0;
+    requestSoundPlaying = false;
 
     document.getElementById("meetingRequestModal").style.display = "none";
 
@@ -1403,6 +1469,12 @@ async function setupRemoteMicLevel(userId, remoteStream) {
 // CONTROLS
 function toggleCamera() {
 
+    playSound(
+        videoTrack.enabled
+            ? sounds.camOn
+            : sounds.camOff
+    );
+
     videoTrack.enabled = !videoTrack.enabled;
 
     socket.emit("media-status", {
@@ -1413,7 +1485,15 @@ function toggleCamera() {
     updateMediaStatus();
 }
 
+
+
 function toggleMic() {
+
+    playSound(
+        audioTrack.enabled
+            ? sounds.micOn
+            : sounds.micOff
+    );
 
     audioTrack.enabled = !audioTrack.enabled;
 
@@ -1424,6 +1504,8 @@ function toggleMic() {
 
     updateMediaStatus();
 }
+
+
 
 function updateMediaStatus() {
 
