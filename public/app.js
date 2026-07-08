@@ -1186,7 +1186,7 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 };
 
 document.getElementById("declineMeetingBtn").onclick = () => {
-    
+
     sounds.request.pause();
     sounds.request.currentTime = 0;
     requestSoundPlaying = false;
@@ -1556,9 +1556,21 @@ function updateRemoteStatus(userId) {
 }
 
 function logout() {
-    if (confirm("Do you want to logout?")) {
-        return window.location.href = "/logout";
+
+    if (!confirm("Do you want to logout?")) {
+        return;
     }
+
+    const btn = document.getElementById("logoutBtn");
+
+    btn.disabled = true;
+
+    btn.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span>Logging out...</span>
+    `;
+
+    window.location.href = "/logout";
 }
 
 

@@ -772,6 +772,10 @@ video {
     border-radius: 0px;
 }
 
+.logoutBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
 
 .logoutBtn:not(:disabled):hover {
     opacity: .8;

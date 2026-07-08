@@ -1563,12 +1563,21 @@ async function logout() {
     if (!confirm("Do you want to logout?"))
         return;
 
+    const btn = document.getElementById("logoutBtn");
+
+    btn.disabled = true;
+
     await fetch(
         "https://meetflow-j39a.onrender.com/logout",
         {
             credentials: "include"
         }
     );
+
+    btn.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span>Logging out...</span>
+    `;
 
     location.replace("auth.html");
 
