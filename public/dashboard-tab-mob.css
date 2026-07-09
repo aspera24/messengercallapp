@@ -4,7 +4,7 @@
 @media (max-width: 1200px) {
 
     .centCont {
-        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-columns: 340px minmax(0, 1fr);
     }
 
     .leftCont {
@@ -72,6 +72,20 @@
     .centCont {
         display: flex;
         height: calc(100dvh - 65px);
+    }
+
+    .filter-box {
+        display: inline-flex;
+        flex-direction: column;
+        padding: 10px 10px;
+    }
+
+    .filter-box select {
+        width: 100%;
+    }
+
+    .filter-box button {
+        width: 100%;
     }
 
     .leftCont {

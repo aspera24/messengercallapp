@@ -88,20 +88,98 @@ io.use((socket, next) => {
 
 });
 
+
+function endMeeting(roomId) {
+
+    if (!roomId) return;
+
+    const room = rooms[roomId];
+    if (!room) return;
+
+    db.query(
+        `UPDATE rooms
+        SET status='ended',
+            ended_at=NOW()
+        WHERE room_token=?`,
+        [roomId]
+    );
+
+    db.query(
+        `UPDATE meetings
+        SET ended_at=NOW(),
+            duration_seconds=
+                TIMESTAMPDIFF(
+                    SECOND,
+                    started_at,
+                    NOW()
+                )
+        WHERE room_token=?`,
+        [roomId]
+    );
+
+    db.query(
+        `SELECT id
+        FROM meetings
+        WHERE room_token=?`,
+        [roomId],
+        (err, result) => {
+
+            if (err || result.length === 0) return;
+
+            db.query(
+                `UPDATE meeting_participants
+                SET left_at=NOW()
+                WHERE meeting_id=?
+                AND left_at IS NULL`,
+                [result[0].id]
+            );
+
+        }
+    );
+
+    const joined = Object.keys(joinedUsersInMeeting);
+
+    // Kick all sockets
+    io.in(roomId).fetchSockets().then(sockets => {
+
+        sockets.forEach(s => {
+            s.leave(roomId);
+        });
+
+    });
+
+    Object.keys(joinedUsersInMeeting).forEach(token => {
+        delete joinedUsersInMeeting[token];
+    });
+
+    Object.keys(pendingRequests).forEach(token => {
+        delete pendingRequests[token];
+    });
+
+    activeMeeting = null;
+
+    delete rooms[roomId];
+
+    io.emit("meeting-ended", {
+        roomId,
+        joinedUsers: joined
+    });
+
+}
+
+
+
+
+
+
 // SOCKET
 io.on("connection", (socket) => {
 
     console.log("Connected:", socket.id);
 
-    // REGISTER (FIXED SAFE)
-    socket.on("register", () => {
+    const user = socket.data.user;
 
-        const user = socket.data.user;
-
-        if (!user) return;
-
-
-        if (!user?.token) return;
+    if (user?.token) {
 
         if (!userMediaState[user.token]) {
             userMediaState[user.token] = {
@@ -110,29 +188,64 @@ io.on("connection", (socket) => {
             };
         }
 
-        // prevent duplicate overwrite issues
         onlineUsers[user.token] = {
             socketId: socket.id,
             user
         };
 
-        socket.data.user = user;
+        console.log("[AUTO REGISTER]", user.token);
 
-        console.log("[REGISTER]", user.token);
-
-        // auto rejoin meetin
         if (
             activeMeeting &&
-            activeMeeting.participants.includes(
-                user.token
-            )
+            activeMeeting.participants.includes(user.token)
         ) {
             socket.emit("meeting-started", {
                 roomId: activeMeeting.roomId,
                 startedAt: activeMeeting.startedAt
             });
         }
-    });
+    }
+
+    // REGISTER (FIXED SAFE)
+    // socket.on("register", () => {
+
+    //     const user = socket.data.user;
+
+    //     if (!user) return;
+
+
+    //     if (!user?.token) return;
+
+    //     if (!userMediaState[user.token]) {
+    //         userMediaState[user.token] = {
+    //             camera: true,
+    //             mic: true
+    //         };
+    //     }
+
+    //     // prevent duplicate overwrite issues
+    //     onlineUsers[user.token] = {
+    //         socketId: socket.id,
+    //         user
+    //     };
+
+    //     socket.data.user = user;
+
+    //     console.log("[REGISTER]", user.token);
+
+    //     // auto rejoin meetin
+    //     if (
+    //         activeMeeting &&
+    //         activeMeeting.participants.includes(
+    //             user.token
+    //         )
+    //     ) {
+    //         socket.emit("meeting-started", {
+    //             roomId: activeMeeting.roomId,
+    //             startedAt: activeMeeting.startedAt
+    //         });
+    //     }
+    // });
 
     socket.on("request-user", ({ roomId, token }) => {
 
@@ -857,12 +970,34 @@ io.on("connection", (socket) => {
     });
 
 
+    socket.on("admin-logout", () => {
+
+        const user = socket.data.user;
+
+        if (
+            user &&
+            user.acc_type === "admin" &&
+            activeMeeting &&
+            activeMeeting.adminToken === user.token
+        ) {
+
+            endMeeting(activeMeeting.roomId);
+
+        }
+
+    });
+
     // DISCONNECT CLEANUP (IMPORTANT FIX)
     socket.on("disconnect", () => {
 
         const user = socket.data.user;
 
-        if (user) {
+        if (user &&
+            user.acc_type === "admin" &&
+            activeMeeting &&
+            activeMeeting.adminToken === user.token) {
+
+            endMeeting(activeMeeting.roomId);
 
             if (user?.token) {
                 delete joinedUsersInMeeting[user.token];

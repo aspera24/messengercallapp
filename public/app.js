@@ -48,7 +48,11 @@ function stopSound(audio) {
 }
 
 
+socket.on("connect", async () => {
+    console.log("Socket connected:", socket.id);
 
+    await loadCurrentUser();
+});
 
 async function loadCurrentUser() {
 
@@ -80,7 +84,7 @@ async function loadCurrentUser() {
 
 }
 
-loadCurrentUser();
+
 
 
 let userMediaStates = {};
@@ -149,8 +153,6 @@ function initUser(data) {
     currentUser = data.user;
     myId = currentUser.token;
 
-    socket.emit("register");
-
     setTimeout(() => {
 
         if (videoTrack && audioTrack) {
@@ -167,6 +169,8 @@ function initUser(data) {
     setupUI();
 
 }
+
+
 
 // UI
 function setupUI() {
@@ -223,8 +227,7 @@ async function ensureMediaReady(attempt = 0) {
     loader.style.display = "flex";
 
     try {
-
-        stream = await navigator.mediaDevices.getUserMedia({
+        const rawStream = await navigator.mediaDevices.getUserMedia({
             video: {
                 width: { ideal: 640 },
                 height: { ideal: 480 },
@@ -240,6 +243,18 @@ async function ensureMediaReady(attempt = 0) {
             }
         });
 
+        const filteredVideo = await createFilteredStream(rawStream);
+        const finalStream = new MediaStream();
+
+        filteredVideo.getVideoTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
+
+        rawStream.getAudioTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
+
+        stream = finalStream;
         localVideo.srcObject = stream;
 
         videoTrack = stream.getVideoTracks()[0];
@@ -248,33 +263,49 @@ async function ensureMediaReady(attempt = 0) {
         setupMicLevel();
 
         loader.style.display = "none";
-
         return true;
 
     } catch (err) {
         console.error("[MEDIA ERROR]", err);
-
         console.error(err.name);
         console.error(err.message);
-
         console.log("[MEDIA] failed attempt:", attempt);
 
         if (attempt < 10) {
-            setTimeout(
-                () => ensureMediaReady(attempt + 1),
-                1000
-            );
+            setTimeout(() => ensureMediaReady(attempt + 1), 1000);
         } else {
-
             loader.innerHTML = `
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Camera Permission Denied</span>
             `;
         }
-
         return false;
     }
 }
+
+document.getElementById("cameraFilter").addEventListener("change", async e => {
+    await changeCameraFilter(e.target.value);
+});
+
+document.getElementById("importLutBtn").addEventListener("click", () => {
+    document.getElementById("lutFile").click();
+});
+
+
+document.getElementById("lutFile").addEventListener("change", async (e) => {
+    const files = e.target.files;
+
+    if (files.length > 0) {
+        const selectedFile = files[0];
+        console.log("Gi-import nga file:", selectedFile.name);
+
+        await loadUserLUT(selectedFile);
+        document.getElementById("cameraFilter").value = "";
+    }
+});
+
+
+
 
 let pendingRequestTokens = [];
 let pendingCallAll = false;
@@ -904,6 +935,7 @@ async function loadUsers() {
                     return `
 
                         <button
+                            title="Request a call"
                             class="reqBtn"
                             id="req-${data.token}"
                             onclick="requestUser('${data.token}')"
@@ -918,6 +950,7 @@ async function loadUsers() {
                         </button>
 
                         <button
+                            title="Remove user"
                             class="deleteBtn"
                             id="delete-${data.token}"
                             onclick="deleteUser('${data.token}')"
@@ -982,7 +1015,7 @@ async function requestUser(token) {
             participants: []
         });
 
-        pendingRequestToken = token;
+        pendingRequestTokens.push(token);
         return;
     }
 
@@ -1567,8 +1600,10 @@ function logout() {
 
     btn.innerHTML = `
         <i class="fa-solid fa-spinner fa-spin"></i>
-        <span>Logging out...</span>
+        <span>Signing out...</span>
     `;
+
+    socket.emit("admin-logout");
 
     window.location.href = "/logout";
 }

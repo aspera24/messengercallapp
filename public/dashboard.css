@@ -253,6 +253,15 @@ input:focus {
     align-items: center;
 }
 
+.listBar i {
+    color: rgb(182, 182, 182);
+    cursor: pointer;
+}
+
+.listBar i:hover {
+    color: rgb(133, 133, 133);
+}
+
 .listBar button {
     height: 25px;
     width: 25px;
@@ -283,11 +292,8 @@ input:focus {
 }
 
 .dt-layout-table {
-    background: rgb(255, 255, 255);
     overflow: hidden;
     width: 100%;
-    border-radius: 20px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.13);
 }
 
 .dt-layout-start,
@@ -380,6 +386,11 @@ input:focus {
 
 .deleteBtn {
     color: rgb(255, 60, 0);
+}
+
+.reqBtn:not(:disabled):hover,
+.deleteBtn:not(:disabled):hover {
+    color: rgb(92, 92, 92);
 }
 
 .reqBtn:disabled,
@@ -523,13 +534,13 @@ input:focus {
     display: flex;
     gap: 2px;
     align-items: flex-end;
-    height: 18px;
+    height: 30px;
     padding: 5px;
     background: rgba(39, 39, 39, 0.63);
 }
 
 .userlevel {
-    border-bottom-right-radius: 10px;
+    border-bottom-right-radius: 15px;
 }
 
 .mic-level .bar {
@@ -544,6 +555,63 @@ input:focus {
 .mic-active .bar {
     opacity: 1;
 }
+
+.filter-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #1e1e24;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+.filter-box label {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.filter-box select {
+    background-color: #2b2b36;
+    color: #ffffff;
+    border: 1px solid #3f3f50;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-box select:focus {
+    border-color: #4a90e2;
+}
+
+.filter-box button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #4a90e2;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.filter-box button:hover {
+    background-color: #357abd;
+}
+
+.filter-box button:active {
+    transform: scale(0.98);
+}
+
 
 
 /* VIDEO */

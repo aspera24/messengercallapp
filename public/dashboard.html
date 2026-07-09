@@ -13,6 +13,8 @@
     <!-- <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css"> -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+
+
 </head>
 
 <body>
@@ -77,20 +79,44 @@
                         </div>
                     </div>
 
+                    <div class="filter-box">
+
+                        <label>Camera Filter</label>
+
+                        <select id="cameraFilter">
+
+                            <option value="">None</option>
+                            <option value="Grayscale">Grayscale</option>
+                            <option value="Warm">Warm</option>
+                            <option value="Cool">Cool</option>
+                            <option value="Cinematic">Cinematic</option>
+
+                        </select>
+
+                        <button id="importLutBtn">
+                            <i class="fa-solid fa-file-import"></i>
+                            Import LUT
+                        </button>
+
+                        <input type="file" id="lutFile" accept=".cube" hidden>
+
+                    </div>
 
                     <div class="userListCont">
+
                         <button id="endBtn" onclick="endMeeting()">
                             <i class="fa-solid fa-phone-slash"></i>
                             End Meeting
                         </button>
 
-                        <button id="callAllBtn" onclick="callAllUsers()">
+                        <button title="Call all employees" id="callAllBtn" onclick="callAllUsers()">
                             <i class="fa-solid fa-phone"></i>
                             Call All
                         </button>
-                        
+
                         <div class="listBar">
                             <h3>Employees</h3>
+                            <i title="Add Employee" class="fa-solid fa-user-plus"></i>
                         </div>
 
                         <table id="userTable" class="display" style="width:100%">
@@ -107,9 +133,9 @@
 
                 </div>
 
-                <button class="logoutBtn" id="logoutBtn" onclick="logout()">
+                <button title="Sign out" class="logoutBtn" id="logoutBtn" onclick="logout()">
                     <i class="fa-solid fa-right-from-bracket"></i>
-                    Logout
+                    Sign out
                 </button>
             </div>
             <div class="rightCont">
@@ -150,6 +176,8 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="/lut.js"></script>
     <script src="/app.js"></script>
 
 </body>

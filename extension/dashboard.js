@@ -50,7 +50,11 @@ function stopSound(audio) {
 }
 
 
+socket.on("connect", async () => {
+    console.log("Socket connected:", socket.id);
 
+    await loadCurrentUser();
+});
 
 async function loadCurrentUser() {
 
@@ -82,7 +86,7 @@ async function loadCurrentUser() {
 
 }
 
-loadCurrentUser();
+
 
 
 let userMediaStates = {};
@@ -177,6 +181,8 @@ function initUser(data) {
 
 }
 
+
+
 // UI
 function setupUI() {
 
@@ -197,7 +203,6 @@ function setupUI() {
     updateMeetingButtons(false);
 }
 
-
 // CAMERA
 window.onload = async () => {
 
@@ -214,7 +219,6 @@ window.onload = async () => {
 
 };
 
-
 async function ensureMediaReady(attempt = 0) {
 
     const loader = document.getElementById("localLoading");
@@ -227,8 +231,7 @@ async function ensureMediaReady(attempt = 0) {
     loader.style.display = "flex";
 
     try {
-
-        stream = await navigator.mediaDevices.getUserMedia({
+        const rawStream = await navigator.mediaDevices.getUserMedia({
             video: {
                 width: { ideal: 640 },
                 height: { ideal: 480 },
@@ -244,6 +247,18 @@ async function ensureMediaReady(attempt = 0) {
             }
         });
 
+        const filteredVideo = await createFilteredStream(rawStream);
+        const finalStream = new MediaStream();
+
+        filteredVideo.getVideoTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
+
+        rawStream.getAudioTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
+
+        stream = finalStream;
         localVideo.srcObject = stream;
 
         videoTrack = stream.getVideoTracks()[0];
@@ -252,33 +267,48 @@ async function ensureMediaReady(attempt = 0) {
         setupMicLevel();
 
         loader.style.display = "none";
-
         return true;
 
     } catch (err) {
         console.error("[MEDIA ERROR]", err);
-
         console.error(err.name);
         console.error(err.message);
-
         console.log("[MEDIA] failed attempt:", attempt);
 
         if (attempt < 10) {
-            setTimeout(
-                () => ensureMediaReady(attempt + 1),
-                1000
-            );
+            setTimeout(() => ensureMediaReady(attempt + 1), 1000);
         } else {
-
             loader.innerHTML = `
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Camera Permission Denied</span>
             `;
         }
-
         return false;
     }
 }
+
+document.getElementById("cameraFilter").addEventListener("change", async e => {
+    await changeCameraFilter(e.target.value);
+});
+
+document.getElementById("importLutBtn").addEventListener("click", () => {
+    document.getElementById("lutFile").click();
+});
+
+document.getElementById("lutFile").addEventListener("change", async (e) => {
+    const files = e.target.files;
+
+    if (files.length > 0) {
+        const selectedFile = files[0];
+        console.log("Gi-import nga file:", selectedFile.name);
+
+        await loadUserLUT(selectedFile);
+        document.getElementById("cameraFilter").value = "";
+    }
+});
+
+
+
 
 let pendingRequestTokens = [];
 let pendingCallAll = false;
@@ -876,6 +906,7 @@ function getSelectedUsers() {
 }
 
 let table;
+let eventsBound = false;
 
 async function loadUsers() {
 
@@ -906,31 +937,30 @@ async function loadUsers() {
                 render: function (data) {
 
                     return `
-
                         <button
-                            class="reqBtn"
+                            title="Request a call"
                             id="req-${data.token}"
-                            onclick="requestUser('${data.token}')"
+                            class="reqBtn"
+                            data-token="${data.token}"
                             ${data.joined ? "disabled" : ""}
                         >
-
-                        ${data.joined
+                            ${data.joined
                             ? '<i class="fa-solid fa-circle-check"></i>'
                             : '<i class="fa-solid fa-paper-plane"></i>'
                         }
-
                         </button>
 
                         <button
-                            class="deleteBtn"
+                            title="Remove user"
                             id="delete-${data.token}"
-                            onclick="deleteUser('${data.token}')"
+                            class="deleteBtn"
+                            data-token="${data.token}"
                             ${data.joined ? "disabled" : ""}
                         >
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
-
                     `;
+
                 }
             }
 
@@ -965,6 +995,30 @@ async function loadUsers() {
         }
 
     });
+
+    if (!eventsBound) {
+
+        document
+            .querySelector("#userTable tbody")
+            .addEventListener("click", (e) => {
+
+                const reqBtn = e.target.closest(".reqBtn");
+
+                if (reqBtn) {
+                    requestUser(reqBtn.dataset.token);
+                    return;
+                }
+
+                const deleteBtn = e.target.closest(".deleteBtn");
+
+                if (deleteBtn) {
+                    deleteUser(deleteBtn.dataset.token);
+                }
+
+            });
+
+        eventsBound = true;
+    }
 
 }
 
@@ -1001,6 +1055,10 @@ async function deleteUser(token) {
     if (!confirm("Delete this employee?")) return;
     socket.emit("delete-user", { token });
 }
+
+document.getElementById("callAllBtn").addEventListener("click", () => {
+    callAllUsers();
+})
 
 function callAllUsers() {
 
@@ -1566,6 +1624,8 @@ async function logout() {
     const btn = document.getElementById("logoutBtn");
 
     btn.disabled = true;
+
+    socket.emit("admin-logout");
 
     await fetch(
         "https://meetflow-j39a.onrender.com/logout",
