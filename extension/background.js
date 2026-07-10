@@ -1,3 +1,19 @@
+importScripts("socket.io.min.js");
+
+const socket = io("https://meetflow-j39a.onrender.com", {
+    withCredentials: true
+});
+
+socket.on("meeting-request", (data) => {
+
+    chrome.runtime.sendMessage({
+        type: "incoming-call",
+        roomId: data.roomId,
+        admin: data.admin
+    });
+
+});
+
 let meetflowWindowId = null;
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -14,12 +30,37 @@ chrome.runtime.onMessage.addListener((message, sender) => {
         return;
 
     chrome.sidePanel.open({
-
         windowId: sender.tab.windowId
-
     });
 
 });
+
+chrome.tabs.query({}, (tabs) => {
+
+    for (const tab of tabs) {
+
+        chrome.tabs.sendMessage(tab.id, {
+            type: "INCOMING_CALL"
+        });
+
+    }
+
+});
+
+chrome.tabs.query({}, (tabs) => {
+
+    for (const tab of tabs) {
+
+        chrome.tabs.sendMessage(tab.id, {
+            type: "CALL_ENDED"
+        });
+
+    }
+
+});
+
+
+
 
 function openMeetFlow() {
 

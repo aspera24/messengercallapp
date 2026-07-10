@@ -459,6 +459,10 @@ socket.on("meeting-started", async (data) => {
 
     startMeetingTimer(data.startedAt);
 
+    if (!currentUser) {
+        console.log("User not loaded yet.");
+        return;
+    }
 
     if (currentUser.acc_type === "admin") {
         joinedUsers = 0;

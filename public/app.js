@@ -442,6 +442,11 @@ socket.on("meeting-started", async (data) => {
     roomId = data.roomId;
     activeRoom = roomId;
 
+    if (!currentUser) {
+        console.log("User not loaded yet.");
+        return;
+    }
+
     if (currentUser.acc_type === "admin") {
         joinedUsers = 0;
         updateMeetingButtons(false);

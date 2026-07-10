@@ -41,6 +41,27 @@
 
     launcher.style.transition = ".25s";
 
+    launcher.style.position = "fixed";
+
+    // Badge
+    const badge = document.createElement("span");
+
+    badge.id = "meetflow-badge";
+
+    badge.style.position = "absolute";
+    badge.style.top = "3px";
+    badge.style.right = "3px";
+
+    badge.style.width = "10px";
+    badge.style.height = "10px";
+
+    badge.style.borderRadius = "50%";
+    badge.style.background = "#ff3b30";
+
+    badge.style.display = "none";
+
+    launcher.appendChild(badge);
+
     launcher.onmouseenter = () => {
         launcher.style.transform = "scale(1.08)";
     };
@@ -55,8 +76,27 @@
             action: "OPEN_MEETFLOW"
         });
 
+        badge.style.display = "none";
+
     };
 
     document.body.appendChild(launcher);
+
+    // LISTEN FROM BACKGROUND
+    chrome.runtime.onMessage.addListener((message) => {
+
+        if (message.type === "INCOMING_CALL") {
+
+            badge.style.display = "block";
+
+        }
+
+        if (message.type === "CALL_ENDED") {
+
+            badge.style.display = "none";
+
+        }
+
+    });
 
 })();

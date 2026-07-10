@@ -283,11 +283,8 @@ input:focus {
 }
 
 .dt-layout-table {
-    background: rgb(255, 255, 255);
     overflow: hidden;
     width: 100%;
-    border-radius: 20px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.13);
 }
 
 .dt-layout-start,
@@ -302,7 +299,7 @@ input:focus {
 }
 
 .dt-length select {
-    width: 50px;
+    width: 30px;
     height: 30px;
     border: 1px solid rgb(199, 199, 199);
     border-radius: 8px;
@@ -312,7 +309,7 @@ input:focus {
 }
 
 .dt-search input {
-    width: 100px;
+    width: 80px;
     min-width: 0;
     height: 30px;
     border: 1px solid rgb(199, 199, 199);
