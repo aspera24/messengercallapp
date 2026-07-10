@@ -749,36 +749,35 @@ io.on("connection", (socket) => {
             });
 
 
-            if (targetSocket) {
+            delete joinedUsersInMeeting[userId];
 
-                targetSocket.leave(roomId);
-                delete joinedUsersInMeeting[userId];
-                console.log(joinedUsersInMeeting);
+            console.log(joinedUsersInMeeting);
 
-                db.query(
-                    `SELECT id
-                    FROM meetings
-                    WHERE room_token=?`,
-                    [roomId],
-                    (err, result) => {
+            // Update database
+            db.query(
+                `SELECT id
+                FROM meetings
+                WHERE room_token=?`,
+                [roomId],
+                (err, result) => {
 
-                        if (err || result.length === 0) return;
+                    if (err || result.length === 0) return;
 
-                        db.query(
-                            `UPDATE meeting_participants
-                            SET left_at=NOW()
-                            WHERE meeting_id=? AND user_id=?`,
-                            [
-                                result[0].id,
-                                target.user.id
-                            ]
-                        );
+                    db.query(
+                        `UPDATE meeting_participants
+                        SET left_at=NOW()
+                        WHERE meeting_id=? AND user_id=?`,
+                        [
+                            result[0].id,
+                            target.user.id
+                        ]
+                    );
 
-                    }
-                );
+                }
+            );
 
-                targetSocket.emit("removed-from-meeting");
-            }
+            // Inform everyone else
+            io.to(roomId).emit("user-disconnected", userId);
         }
 
         io.to(roomId).emit(
