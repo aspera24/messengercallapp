@@ -2,6 +2,22 @@ const socket = io("https://meetflow-j39a.onrender.com", {
     withCredentials: true
 });
 
+socket.on("connect", () => {
+    console.log("[EXTENSION] Connected:", socket.id);
+});
+
+socket.on("disconnect", (reason) => {
+    console.log("[EXTENSION] Disconnected:", reason);
+});
+
+socket.on("reconnect", () => {
+    console.log("[EXTENSION] Reconnected:", socket.id);
+});
+
+socket.on("connect_error", (err) => {
+    console.log("[EXTENSION] Connect Error:", err.message);
+});
+
 let stream = null;
 let roomId = null;
 let videoTrack;
@@ -49,7 +65,6 @@ function stopSound(audio) {
     audio.currentTime = 0;
 }
 
-
 socket.on("connect", async () => {
     console.log("Socket connected:", socket.id);
 
@@ -88,7 +103,6 @@ async function loadCurrentUser() {
 
 
 
-
 let userMediaStates = {};
 
 const globalAudioContext = new AudioContext();
@@ -114,7 +128,6 @@ window.toggleSidebar = function () {
     document.querySelector("#overlay").classList.toggle("show");
 
 }
-
 
 function startMeetingTimer(startedAt) {
 
@@ -180,8 +193,6 @@ function initUser(data) {
     setupUI();
 
 }
-
-
 
 // UI
 function setupUI() {

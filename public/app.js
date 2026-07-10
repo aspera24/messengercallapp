@@ -291,7 +291,6 @@ document.getElementById("importLutBtn").addEventListener("click", () => {
     document.getElementById("lutFile").click();
 });
 
-
 document.getElementById("lutFile").addEventListener("change", async (e) => {
     const files = e.target.files;
 
@@ -997,7 +996,6 @@ async function loadUsers() {
 
 }
 
-
 async function requestUser(token) {
 
     const btn = document.getElementById(`req-${token}`);
@@ -1050,8 +1048,6 @@ function callAllUsers() {
     });
 
 }
-
-
 
 socket.on("user-deleted", (token) => {
 
@@ -1231,7 +1227,6 @@ document.getElementById("declineMeetingBtn").onclick = () => {
     requestedRoom = null;
 
 };
-
 
 // UI VIDEO
 function addRemoteVideo(userId, stream) {
@@ -1518,8 +1513,6 @@ function toggleCamera() {
     updateMediaStatus();
 }
 
-
-
 function toggleMic() {
 
     playSound(
@@ -1537,8 +1530,6 @@ function toggleMic() {
 
     updateMediaStatus();
 }
-
-
 
 function updateMediaStatus() {
 
@@ -1607,7 +1598,6 @@ function logout() {
 
     window.location.href = "/logout";
 }
-
 
 // ERROR
 socket.on("request-error", ({ token, message }) => {

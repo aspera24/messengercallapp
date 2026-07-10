@@ -175,9 +175,13 @@ function endMeeting(roomId) {
 // SOCKET
 io.on("connection", (socket) => {
 
-    console.log("Connected:", socket.id);
-
     const user = socket.data.user;
+
+    console.log(
+        "[CONNECT]",
+        user.token,
+        socket.id
+    );
 
     if (user?.token) {
 
@@ -188,10 +192,16 @@ io.on("connection", (socket) => {
             };
         }
 
-        onlineUsers[user.token] = {
-            socketId: socket.id,
-            user
-        };
+        if (!onlineUsers[user.token]) {
+
+            onlineUsers[user.token] = {
+                sockets: new Set(),
+                user
+            };
+
+        }
+
+        onlineUsers[user.token].sockets.add(socket.id);
 
         console.log("[AUTO REGISTER]", user.token);
 
@@ -206,46 +216,6 @@ io.on("connection", (socket) => {
         }
     }
 
-    // REGISTER (FIXED SAFE)
-    // socket.on("register", () => {
-
-    //     const user = socket.data.user;
-
-    //     if (!user) return;
-
-
-    //     if (!user?.token) return;
-
-    //     if (!userMediaState[user.token]) {
-    //         userMediaState[user.token] = {
-    //             camera: true,
-    //             mic: true
-    //         };
-    //     }
-
-    //     // prevent duplicate overwrite issues
-    //     onlineUsers[user.token] = {
-    //         socketId: socket.id,
-    //         user
-    //     };
-
-    //     socket.data.user = user;
-
-    //     console.log("[REGISTER]", user.token);
-
-    //     // auto rejoin meetin
-    //     if (
-    //         activeMeeting &&
-    //         activeMeeting.participants.includes(
-    //             user.token
-    //         )
-    //     ) {
-    //         socket.emit("meeting-started", {
-    //             roomId: activeMeeting.roomId,
-    //             startedAt: activeMeeting.startedAt
-    //         });
-    //     }
-    // });
 
     socket.on("request-user", ({ roomId, token }) => {
 
@@ -277,10 +247,29 @@ io.on("connection", (socket) => {
             ]
         );
 
-        io.to(target.socketId).emit("meeting-request", {
-            roomId,
-            admin: socket.data.user.firstname
+        // io.to(target.socketId).emit("meeting-request", {
+        //     roomId,
+        //     admin: socket.data.user.firstname
+        // });
+
+        target.sockets.forEach(id => {
+
+            io.to(id).emit("meeting-request", {
+                roomId,
+                admin: socket.data.user.firstname
+            });
+
         });
+
+        console.log(
+            "ONLINE USERS:",
+            Object.keys(onlineUsers)
+        );
+
+        console.log(
+            "TARGET:",
+            onlineUsers[token]
+        );
 
     });
 
@@ -1075,18 +1064,32 @@ io.on("connection", (socket) => {
         for (const token in onlineUsers) {
 
             if (
-                onlineUsers[token].socketId ===
-                socket.id
+                onlineUsers[token] &&
+                onlineUsers[token].socketId === socket.id
             ) {
 
-                delete onlineUsers[token];
+                const online = onlineUsers[user.token];
+
+                if (online) {
+
+                    online.sockets.delete(socket.id);
+
+                    if (online.sockets.size === 0) {
+                        delete onlineUsers[user.token];
+                    }
+
+                }
                 break;
 
             }
 
         }
 
-
+        console.log(
+            "[DISCONNECT]",
+            user.token,
+            socket.id
+        );
 
     });
 });
