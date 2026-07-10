@@ -54,56 +54,50 @@ async function createFilteredStream(stream) {
             uniform float lutSize;
             varying vec2 vUv;
 
-            // FIXED ALGORITHM PARA SA HORIZONTAL 2D STRIP LUT SAMPLING
             vec4 sampleAs3DTexture(sampler2D tex, vec3 uvw, float size) {
-                float sliceSize = 1.0 / size;
-                float slicePixelSize = sliceSize / size;
-                float sliceInnerSize = slicePixelSize * (size - 1.0);
+                float maxColor = size - 1.0;
+                float zSlice0 = floor(uvw.z * maxColor);
+                float zSlice1 = min(zSlice0 + 1.0, maxColor);
                 
-                float zSlice0 = floor(uvw.z * (size - 1.0));
-                float zSlice1 = min(zSlice0 + 1.0, size - 1.0);
+                float xOffset = 0.5 / (size * size);
+                float yOffset = 0.5 / size;
                 
                 vec2 uv0;
-                uv0.x = (uvw.x * sliceInnerSize) + (slicePixelSize * 0.5) + (zSlice0 * sliceSize);
-                uv0.y = (uvw.y * sliceInnerSize) + (slicePixelSize * 0.5);
+                uv0.x = xOffset + (zSlice0 * size + uvw.r * maxColor) / (size * size);
+                uv0.y = yOffset + (uvw.g * maxColor) / size;
                 
                 vec2 uv1;
-                uv1.x = (uvw.x * sliceInnerSize) + (slicePixelSize * 0.5) + (zSlice1 * sliceSize);
-                uv1.y = (uvw.y * sliceInnerSize) + (slicePixelSize * 0.5);
+                uv1.x = xOffset + (zSlice1 * size + uvw.r * maxColor) / (size * size);
+                uv1.y = yOffset + (uvw.g * maxColor) / size;
                 
                 vec4 col0 = texture2D(tex, uv0);
                 vec4 col1 = texture2D(tex, uv1);
                 
-                return mix(col0, col1, fract(uvw.z * (size - 1.0)));
+                return mix(col0, col1, fract(uvw.z * maxColor));
             }
 
             void main(){
                 vec4 color = texture2D(tDiffuse, vUv);
 
-                // I-PROCESS ANG .CUBE DATA KUNG GI-ENABLE SA USER
                 if (useLUT && lutSize > 0.0) {
                     color.rgb = sampleAs3DTexture(lutTexture, clamp(color.rgb, 0.0, 1.0), lutSize).rgb;
                 }
 
-                if(filterType == 0){ gl_FragColor = color; return; }
                 if(filterType == 1){
                     float gray = dot(color.rgb, vec3(0.299,0.587,0.114));
-                    gl_FragColor = vec4(vec3(gray), 1.0);
-                    return;
+                    color.rgb = vec3(gray);
                 }
-                if(filterType == 2){
+                else if(filterType == 2){
                     color.r *= 1.15; color.g *= 1.05; color.b *= 0.90;
-                    gl_FragColor = color; return;
                 }
-                if(filterType == 3){
+                else if(filterType == 3){
                     color.r *= 0.90; color.g *= 1.00; color.b *= 1.15;
-                    gl_FragColor = color; return;
                 }
-                if(filterType == 4){
+                else if(filterType == 4){
                     color.rgb = pow(color.rgb, vec3(1.15));
                     color.r *= 1.05; color.b *= 0.85;
-                    gl_FragColor = color; return;
                 }
+                
                 gl_FragColor = color;
             }
         `
@@ -148,12 +142,9 @@ async function createFilteredStream(stream) {
     return canvas.captureStream(30);
 }
 
+// GI-AYO ARON DILI MAPATAY ANG LUT AUTOMATICALLY
 async function changeCameraFilter(name) {
     if (!shaderMaterial) return;
-
-    if (name !== "CustomLUT") {
-        shaderMaterial.uniforms.useLUT.value = false;
-    }
 
     switch (name) {
         case "": case "None": case "none": shaderMaterial.uniforms.filterType.value = 0; break;
@@ -161,16 +152,18 @@ async function changeCameraFilter(name) {
         case "Warm": shaderMaterial.uniforms.filterType.value = 2; break;
         case "Cool": shaderMaterial.uniforms.filterType.value = 3; break;
         case "Cinematic": shaderMaterial.uniforms.filterType.value = 4; break;
-        default: shaderMaterial.uniforms.filterType.value = 0;
     }
+}
+
+function disableCustomLUT() {
+    if (!shaderMaterial) return;
+    shaderMaterial.uniforms.useLUT.value = false;
 }
 
 function setFilter(name) {
     currentFilter = name;
 }
 
-
-// FIXED .CUBE PARSER UG TEXTURE MAP GENERATOR
 async function loadUserLUT(file) {
     if (!shaderMaterial) return;
 
@@ -191,13 +184,14 @@ async function loadUserLUT(file) {
         shaderMaterial.uniforms.lutSize.value = lutData.size;
         shaderMaterial.uniforms.useLUT.value = true;
 
-        shaderMaterial.uniforms.filterType.value = 0;
-        currentFilter = "CustomLUT";
+        // GI-TANGTANG ANG filterType.value = 0 ARON DILI MA-RESET ANG ACTIVE FILTER!
+        // Gi-tangtang pud ang currentFilter = "CustomLUT" aron mapreserba ang imong state tracking
 
     } catch (err) {
         console.error("Adunay error sa pag-execute sa LUT upload:", err);
     }
 }
+
 
 function parseCube(text) {
     const lines = text.split(/\r?\n/);
@@ -223,7 +217,7 @@ function parseCube(text) {
         if (/^[0-9\.\-\s]+$/.test(l)) {
             const rgb = l.split(/\s+/).map(Number);
             if (rgb.length >= 3) {
-                values.push(rgb);
+                values.push([rgb[0], rgb[1], rgb[2]]);
             }
         }
     }
@@ -237,14 +231,26 @@ function createLUT2DTexture(lut) {
     const height = size;
 
     const data = new Uint8Array(width * height * 4);
-    let index = 0;
 
-    for (let i = 0; i < lut.values.length; i++) {
-        const rgb = lut.values[i];
-        data[index++] = Math.round(Math.max(0, Math.min(1, rgb[0])) * 255);
-        data[index++] = Math.round(Math.max(0, Math.min(1, rgb[1])) * 255);
-        data[index++] = Math.round(Math.max(0, Math.min(1, rgb[2])) * 255);
-        data[index++] = 255;
+    let srcIndex = 0;
+    for (let z = 0; z < size; z++) {
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+
+                const pixelX = x + (z * size);
+                const pixelY = y;
+                const destIndex = (pixelY * width + pixelX) * 4;
+
+                const rgb = lut.values[srcIndex];
+                if (rgb) {
+                    data[destIndex] = Math.round(Math.max(0, Math.min(1, rgb[0])) * 255);
+                    data[destIndex + 1] = Math.round(Math.max(0, Math.min(1, rgb[1])) * 255);
+                    data[destIndex + 2] = Math.round(Math.max(0, Math.min(1, rgb[2])) * 255);
+                    data[destIndex + 3] = 255;
+                }
+                srcIndex++;
+            }
+        }
     }
 
     const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);

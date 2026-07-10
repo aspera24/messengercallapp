@@ -313,10 +313,7 @@ document.getElementById("lutFile").addEventListener("change", async (e) => {
 
     if (files.length > 0) {
         const selectedFile = files[0];
-        console.log("Gi-import nga file:", selectedFile.name);
-
         await loadUserLUT(selectedFile);
-        document.getElementById("cameraFilter").value = "";
     }
 });
 
