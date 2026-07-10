@@ -71,6 +71,8 @@ async function loadCurrentUser() {
 
         initUser(data);
 
+        socket.emit("check-active-meeting");
+
         document.getElementById("uname").textContent =
             `Hi, ${currentUser.firstname}`;
 

@@ -43,6 +43,7 @@ const acceptedUsers = {};
 const pendingRequests = {};
 const joinedUsersInMeeting = {};
 const port = 3000;
+const reconnectTimers = {};
 
 io.use((socket, next) => {
 
@@ -183,6 +184,13 @@ io.on("connection", (socket) => {
         socket.id
     );
 
+    if (reconnectTimers[user.token]) {
+
+        clearTimeout(reconnectTimers[user.token]);
+        delete reconnectTimers[user.token];
+        console.log("Auto reconnected.");
+    }
+
     if (user?.token) {
 
         if (!userMediaState[user.token]) {
@@ -204,6 +212,11 @@ io.on("connection", (socket) => {
         onlineUsers[user.token].sockets.add(socket.id);
 
         console.log("[AUTO REGISTER]", user.token);
+        console.log(
+            "[AUTO REJOIN CHECK]",
+            user.token,
+            activeMeeting?.participants
+        );
 
         if (
             activeMeeting &&
@@ -215,6 +228,26 @@ io.on("connection", (socket) => {
             });
         }
     }
+
+    socket.on("check-active-meeting", () => {
+
+        const user = socket.data.user;
+
+        if (!user) return;
+
+        if (
+            activeMeeting &&
+            activeMeeting.participants.includes(user.token)
+        ) {
+
+            socket.emit("meeting-started", {
+                roomId: activeMeeting.roomId,
+                startedAt: activeMeeting.startedAt
+            });
+
+        }
+
+    });
 
 
     socket.on("request-user", ({ roomId, token }) => {
@@ -362,12 +395,11 @@ io.on("connection", (socket) => {
 
         if (admin) {
 
-            io.to(admin.socketId).emit(
-                "request-declined",
-                {
+            admin.sockets.forEach(id => {
+                io.to(id).emit("request-declined", {
                     token: user.token
-                }
-            );
+                });
+            });
 
         }
 
@@ -412,13 +444,19 @@ io.on("connection", (socket) => {
             adminToken: socket.data.user.token,
             adminSocketId: socket.id,
             admin: socket.data.user.firstname,
-            participants
+            participants: [
+                socket.data.user.token,
+                ...participants
+            ]
         };
 
         activeMeeting = {
             roomId,
             adminToken: socket.data.user.token,
-            participants,
+            participants: [
+                socket.data.user.token,
+                ...participants
+            ],
             startedAt: Date.now()
         };
 
@@ -513,13 +551,12 @@ io.on("connection", (socket) => {
 
             if (!target) return;
 
-            io.to(target.socketId).emit(
-                "meeting-started",
-                {
+            target.sockets.forEach(id => {
+                io.to(id).emit("meeting-started", {
                     roomId,
                     startedAt: activeMeeting.startedAt
-                }
-            );
+                });
+            });
         });
     }
 
@@ -646,23 +683,30 @@ io.on("connection", (socket) => {
         const target = onlineUsers[data.to];
         if (!target) return;
 
-        io.to(target.socketId).emit("offer", data);
-        console.log("OFFER", data.from, "->", data.to);
+        const socketId = [...target.sockets][0];
+        if (socketId) {
+            io.to(socketId).emit("offer", data);
+        }
     });
 
     socket.on("answer", (data) => {
         const target = onlineUsers[data.to];
         if (!target) return;
 
-        io.to(target.socketId).emit("answer", data);
-        console.log("ANSWER", data.from, "->", data.to);
+        const socketId = [...target.sockets][0];
+        if (socketId) {
+            io.to(socketId).emit("answer", data);
+        }
     });
 
     socket.on("ice-candidate", (data) => {
         const target = onlineUsers[data.to];
         if (!target) return;
 
-        io.to(target.socketId).emit("ice-candidate", data);
+        const socketId = [...target.sockets][0];
+        if (socketId) {
+            io.to(socketId).emit("ice-candidate", data);
+        }
     });
 
     socket.on("remove-user", async ({ roomId, userId }) => {
@@ -695,14 +739,20 @@ io.on("connection", (socket) => {
 
         if (target) {
 
-            const targetSocket = io.sockets.sockets.get(target.socketId);
+            target.sockets.forEach(id => {
+                const targetSocket = io.sockets.sockets.get(id);
+
+                if (!targetSocket) return;
+
+                targetSocket.leave(roomId);
+                targetSocket.emit("removed-from-meeting");
+            });
+
 
             if (targetSocket) {
 
                 targetSocket.leave(roomId);
-
                 delete joinedUsersInMeeting[userId];
-
                 console.log(joinedUsersInMeeting);
 
                 db.query(
@@ -949,9 +999,11 @@ io.on("connection", (socket) => {
                 ]
             );
 
-            io.to(target.socketId).emit("meeting-request", {
-                roomId,
-                admin: room.admin
+            target.sockets.forEach(id => {
+                io.to(id).emit("meeting-request", {
+                    roomId,
+                    admin: room.admin
+                });
             });
 
         }
@@ -976,7 +1028,7 @@ io.on("connection", (socket) => {
 
     });
 
-    // DISCONNECT CLEANUP (IMPORTANT FIX)
+
     socket.on("disconnect", () => {
 
         const user = socket.data.user;
@@ -986,11 +1038,23 @@ io.on("connection", (socket) => {
             activeMeeting &&
             activeMeeting.adminToken === user.token) {
 
-            endMeeting(activeMeeting.roomId);
+            const roomId = activeMeeting.roomId;
 
-            if (user?.token) {
-                delete joinedUsersInMeeting[user.token];
-            }
+            reconnectTimers[user.token] = setTimeout(() => {
+
+                if (
+                    activeMeeting &&
+                    activeMeeting.adminToken === user.token
+                ) {
+
+                    console.log("Admin did not reconnect.");
+
+                    endMeeting(roomId);
+
+                }
+
+            }, 30000);
+
 
             socket.to(activeMeeting?.roomId).emit(
                 "user-disconnected",
@@ -1061,26 +1125,14 @@ io.on("connection", (socket) => {
 
         }
 
-        for (const token in onlineUsers) {
+        const online = onlineUsers[user.token];
 
-            if (
-                onlineUsers[token] &&
-                onlineUsers[token].socketId === socket.id
-            ) {
+        if (online) {
 
-                const online = onlineUsers[user.token];
+            online.sockets.delete(socket.id);
 
-                if (online) {
-
-                    online.sockets.delete(socket.id);
-
-                    if (online.sockets.size === 0) {
-                        delete onlineUsers[user.token];
-                    }
-
-                }
-                break;
-
+            if (online.sockets.size === 0) {
+                delete onlineUsers[user.token];
             }
 
         }
