@@ -253,7 +253,7 @@ async function ensureMediaReady(attempt = 0) {
             audio: {
                 echoCancellation: false,
                 noiseSuppression: true,
-                autoGainControl: false,
+                autoGainControl: true,
                 voiceIsolation: true,
                 sampleRate: 48000,
                 channelCount: 1
