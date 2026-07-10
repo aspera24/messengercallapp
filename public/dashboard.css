@@ -605,6 +605,7 @@ input:focus {
 }
 
 .filter-box button:hover {
+    transform: none;
     background-color: #357abd;
 }
 

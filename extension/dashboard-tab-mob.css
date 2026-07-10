@@ -74,6 +74,20 @@
         height: calc(100dvh - 65px);
     }
 
+    .filter-box {
+        display: inline-flex;
+        flex-direction: column;
+        padding: 10px 10px;
+    }
+
+    .filter-box select {
+        width: 100%;
+    }
+
+    .filter-box button {
+        width: 100%;
+    }
+
     .leftCont {
         position: fixed;
         left: -100%;
