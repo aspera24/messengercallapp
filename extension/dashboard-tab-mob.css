@@ -95,9 +95,8 @@
         width: 260px;
         height: calc(100% - 85px);
         z-index: 999;
-        transition: .3s;
+        transition: .5s;
         margin: 0;
-
     }
 
     .leftCont.show {
