@@ -1177,6 +1177,83 @@ app.get("/users", authMiddleware, (req, res) => {
     );
 });
 
+const crypto = require("crypto");
+
+app.post("/add-employee", authMiddleware, (req, res) => {
+    
+    const {
+        firstname,
+        lastname,
+        username,
+        password
+    } = req.body;
+
+    if (!firstname || !lastname || !username || !password) {
+        return res.status(400).json({
+            message: "All fields are required."
+        });
+    }
+
+    db.query(
+        "SELECT id FROM users WHERE username = ?",
+        [username],
+        (err, exists) => {
+
+            if (err) {
+                return res.status(500).json(err);
+            }
+
+            if (exists.length > 0) {
+                return res.status(400).json({
+                    message: "Username already exists."
+                });
+            }
+
+            const token = crypto.randomUUID();
+
+            db.query(
+                `
+                INSERT INTO users (
+                    firstname,
+                    lastname,
+                    acc_type,
+                    username,
+                    password,
+                    token,
+                    is_active,
+                    created_by,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                `,
+                [
+                    firstname,
+                    lastname,
+                    "employee",
+                    username,
+                    password,
+                    token,
+                    1,
+                    req.user.id
+                ],
+                (err) => {
+
+                    if (err) {
+                        return res.status(500).json(err);
+                    }
+
+                    res.json({
+                        success: true
+                    });
+
+                }
+            );
+
+        }
+    );
+
+});
+
 
 
 // START SERVER

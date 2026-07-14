@@ -1603,6 +1603,116 @@ function logout() {
     window.location.href = "/logout";
 }
 
+const addEmpBtn = document.getElementById("addEmp");
+const addEmployeeModal = document.getElementById("addEmployeeModal");
+
+addEmpBtn.addEventListener("click", () => {
+    addEmployeeModal.style.display = "flex";
+});
+
+document.getElementById("closeEmployeeModal").addEventListener("click", () => {
+    addEmployeeModal.style.display = "none";
+});
+
+addEmployeeModal.addEventListener("click", (e) => {
+    if (e.target === addEmployeeModal) {
+        addEmployeeModal.style.display = "none";
+    }
+});
+
+const empPassword = document.getElementById("empPassword");
+const toggleEmpPassword = document.getElementById("toggleEmpPassword");
+
+toggleEmpPassword.addEventListener("click", () => {
+
+    if (empPassword.type === "password") {
+
+        empPassword.type = "text";
+
+        toggleEmpPassword.classList.remove("fa-eye");
+        toggleEmpPassword.classList.add("fa-eye-slash");
+
+    } else {
+
+        empPassword.type = "password";
+
+        toggleEmpPassword.classList.remove("fa-eye-slash");
+        toggleEmpPassword.classList.add("fa-eye");
+
+    }
+
+});
+
+
+document.getElementById("saveEmployeeBtn").addEventListener("click", async () => {
+
+    const firstname = document.getElementById("empFirstname").value.trim();
+    const lastname = document.getElementById("empLastname").value.trim();
+    const username = document.getElementById("empUsername").value.trim();
+    const password = document.getElementById("empPassword").value.trim();
+
+    if (!firstname || !lastname || !username || !password) {
+        return alert("Please fill in all fields.");
+    }
+
+    const btn = document.getElementById("saveEmployeeBtn");
+
+    btn.disabled = true;
+    btn.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Saving...
+    `;
+
+    try {
+
+        const res = await fetch("/add-employee", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                firstname,
+                lastname,
+                username,
+                password
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.message);
+        }
+
+        alert("Employee added successfully.");
+
+        addEmployeeModal.style.display = "none";
+
+        document.getElementById("empFirstname").value = "";
+        document.getElementById("empLastname").value = "";
+        document.getElementById("empUsername").value = "";
+        document.getElementById("empPassword").value = "";
+
+        loadUsers();
+
+    } catch (err) {
+
+        alert(err.message);
+
+    } finally {
+
+        btn.disabled = false;
+        btn.innerHTML = "Save";
+
+    }
+
+});
+
+
+
+
+
 // ERROR
 socket.on("request-error", ({ token, message }) => {
 
