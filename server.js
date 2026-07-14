@@ -1019,18 +1019,95 @@ io.on("connection", (socket) => {
 
         const user = socket.data.user;
 
-        if (
-            user &&
+        if (user &&
             user.acc_type === "admin" &&
             activeMeeting &&
-            activeMeeting.adminToken === user.token
-        ) {
+            activeMeeting.adminToken === user.token) {
 
-            console.log("[ADMIN DISCONNECTED] Ending meeting.");
+            const roomId = activeMeeting.roomId;
 
-            endMeeting(activeMeeting.roomId);
+            reconnectTimers[user.token] = setTimeout(() => {
 
-            return;
+                if (
+                    activeMeeting &&
+                    activeMeeting.adminToken === user.token
+                ) {
+
+                    console.log("Admin did not reconnect.");
+
+                    endMeeting(roomId);
+
+                }
+
+            }, 30000);
+
+
+            socket.to(activeMeeting?.roomId).emit(
+                "user-disconnected",
+                user.token
+            );
+
+            db.query(
+                `SELECT id
+                FROM meetings
+                WHERE room_token=?`,
+                [activeMeeting?.roomId],
+                (err, result) => {
+
+                    if (err || result.length === 0) return;
+
+                    db.query(
+                        `UPDATE meeting_participants
+                        SET left_at=NOW()
+                        WHERE
+                            meeting_id=?
+                            AND user_id=?`,
+                        [
+                            result[0].id,
+                            user.id
+                        ]
+                    );
+
+                }
+            );
+
+            const requesterToken =
+                pendingRequests[user.token];
+
+            if (requesterToken) {
+
+                db.query(
+                    `UPDATE meeting_requests
+                    SET
+                        status='cancelled',
+                        responded_at=NOW()
+                    WHERE
+                        room_token=?
+                        AND to_user_id=?
+                        AND status='pending'`,
+                    [
+                        activeMeeting?.roomId,
+                        user.id
+                    ]
+                );
+
+                const admin =
+                    onlineUsers[requesterToken];
+
+                if (admin) {
+
+                    io.to(admin.socketId).emit(
+                        "request-declined",
+                        {
+                            token: user.token
+                        }
+                    );
+
+                }
+
+                delete pendingRequests[user.token];
+
+            }
 
         }
 
@@ -1065,6 +1142,7 @@ io.on("connection", (socket) => {
         );
 
     });
+
 });
 
 
@@ -1173,6 +1251,16 @@ app.post("/add-employee", authMiddleware, (req, res) => {
 
         }
     );
+
+});
+
+app.post("/admin-close-meeting", express.text({ type: "*/*" }), (req, res) => {
+
+    const { roomId } = JSON.parse(req.body);
+
+    endMeeting(roomId);
+
+    res.sendStatus(200);
 
 });
 
