@@ -66,10 +66,41 @@ function stopSound(audio) {
 }
 
 socket.on("connect", async () => {
+
     console.log("Socket connected:", socket.id);
 
     await loadCurrentUser();
+
+    if (roomId) {
+
+        console.log("[AUTO REJOIN]", roomId);
+
+        socket.emit("join-room", {
+            roomId,
+            userId: myId
+        });
+
+        if (videoTrack && audioTrack) {
+
+            socket.emit("media-status", {
+                camera: videoTrack.enabled,
+                mic: audioTrack.enabled
+            });
+
+        }
+
+    }
+
 });
+
+socket.io.on("reconnect", () => {
+    console.log("Socket reconnected.");
+});
+
+socket.io.on("reconnect_attempt", () => {
+    console.log("Trying to reconnect...");
+});
+
 
 async function loadCurrentUser() {
 
@@ -457,7 +488,9 @@ socket.on("meeting-started", async (data) => {
     roomId = data.roomId;
     activeRoom = roomId;
 
-    startMeetingTimer(data.startedAt);
+    if (data.startedAt) {
+        startMeetingTimer(data.startedAt);
+    }
 
     if (!currentUser) {
         console.log("User not loaded yet.");

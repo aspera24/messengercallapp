@@ -492,6 +492,10 @@ socket.on("meeting-started", async (data) => {
     roomId = data.roomId;
     activeRoom = roomId;
 
+    if (data.startedAt) {
+        startMeetingTimer(data.startedAt);
+    }
+
     if (!currentUser) {
         console.log("User not loaded yet.");
         return;

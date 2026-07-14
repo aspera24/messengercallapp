@@ -595,17 +595,26 @@ io.on("connection", (socket) => {
         peerSocketMap[user.token] = socket.id;
         socket.data.roomId = roomId;
 
-        if (
-            activeMeeting &&
-            user.acc_type === "employee" &&
-            !activeMeeting.timerStarted
-        ) {
-            activeMeeting.timerStarted = true;
-            activeMeeting.startedAt = Date.now();
+        if (activeMeeting) {
 
-            io.to(roomId).emit("meeting-timer-start", {
-                startedAt: activeMeeting.startedAt
-            });
+            if (!activeMeeting.timerStarted) {
+
+                activeMeeting.timerStarted = true;
+
+                activeMeeting.startedAt = Date.now();
+
+                io.to(roomId).emit("meeting-timer-start", {
+                    startedAt: activeMeeting.startedAt
+                });
+
+            } else {
+
+                socket.emit("meeting-timer-start", {
+                    startedAt: activeMeeting.startedAt
+                });
+
+            }
+
         }
 
         db.query(
