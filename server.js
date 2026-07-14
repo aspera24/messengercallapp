@@ -44,6 +44,7 @@ const pendingRequests = {};
 const joinedUsersInMeeting = {};
 const port = 3000;
 const reconnectTimers = {};
+const peerSocketMap = {};
 
 io.use((socket, next) => {
 
@@ -178,12 +179,6 @@ io.on("connection", (socket) => {
 
     const user = socket.data.user;
 
-    console.log(
-        "[CONNECT]",
-        user.token,
-        socket.id
-    );
-
     if (reconnectTimers[user.token]) {
 
         clearTimeout(reconnectTimers[user.token]);
@@ -211,21 +206,18 @@ io.on("connection", (socket) => {
 
         onlineUsers[user.token].sockets.add(socket.id);
 
-        console.log("[AUTO REGISTER]", user.token);
-        console.log(
-            "[AUTO REJOIN CHECK]",
-            user.token,
-            activeMeeting?.participants
-        );
-
         if (
             activeMeeting &&
             activeMeeting.participants.includes(user.token)
         ) {
+
+            peerSocketMap[user.token] = socket.id;
+
             socket.emit("meeting-started", {
                 roomId: activeMeeting.roomId,
                 startedAt: activeMeeting.startedAt
             });
+
         }
     }
 
@@ -591,6 +583,8 @@ io.on("connection", (socket) => {
         socket.join(roomId);
 
         joinedUsersInMeeting[user.token] = true;
+        peerSocketMap[user.token] = socket.id;
+        socket.data.roomId = roomId;
 
         if (
             activeMeeting &&
@@ -604,8 +598,6 @@ io.on("connection", (socket) => {
                 startedAt: activeMeeting.startedAt
             });
         }
-
-        console.log(joinedUsersInMeeting);
 
         db.query(
             `SELECT id
@@ -631,14 +623,9 @@ io.on("connection", (socket) => {
             }
         );
 
-        console.log(
-            `[JOIN] ${user.token} -> ${roomId}`
-        );
-
         const clients = [];
 
-        const roomSockets =
-            await io.in(roomId).fetchSockets();
+        const roomSockets = await io.in(roomId).fetchSockets();
 
         for (const s of roomSockets) {
 
@@ -680,33 +667,33 @@ io.on("connection", (socket) => {
 
     // WEBRTC SIGNALING (SAFE ROUTING)
     socket.on("offer", (data) => {
-        const target = onlineUsers[data.to];
-        if (!target) return;
 
-        const socketId = [...target.sockets][0];
-        if (socketId) {
-            io.to(socketId).emit("offer", data);
-        }
+        const socketId = peerSocketMap[data.to];
+
+        if (!socketId) return;
+
+        io.to(socketId).emit("offer", data);
+
     });
 
     socket.on("answer", (data) => {
-        const target = onlineUsers[data.to];
-        if (!target) return;
 
-        const socketId = [...target.sockets][0];
-        if (socketId) {
-            io.to(socketId).emit("answer", data);
-        }
+        const socketId = peerSocketMap[data.to];
+
+        if (!socketId) return;
+
+        io.to(socketId).emit("answer", data);
+
     });
 
     socket.on("ice-candidate", (data) => {
-        const target = onlineUsers[data.to];
-        if (!target) return;
 
-        const socketId = [...target.sockets][0];
-        if (socketId) {
-            io.to(socketId).emit("ice-candidate", data);
-        }
+        const socketId = peerSocketMap[data.to];
+
+        if (!socketId) return;
+
+        io.to(socketId).emit("ice-candidate", data);
+
     });
 
     socket.on("remove-user", async ({ roomId, userId }) => {
@@ -1124,6 +1111,18 @@ io.on("connection", (socket) => {
 
         }
 
+        if (peerSocketMap[user.token] === socket.id) {
+
+            setTimeout(() => {
+
+                if (peerSocketMap[user.token] === socket.id) {
+                    delete peerSocketMap[user.token];
+                }
+
+            }, 30000);
+
+        }
+
         const online = onlineUsers[user.token];
 
         if (online) {
@@ -1180,7 +1179,7 @@ app.get("/users", authMiddleware, (req, res) => {
 const crypto = require("crypto");
 
 app.post("/add-employee", authMiddleware, (req, res) => {
-    
+
     const {
         firstname,
         lastname,
