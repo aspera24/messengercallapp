@@ -48,23 +48,23 @@ function stopSound(audio) {
 }
 
 
-window.addEventListener("pagehide", () => {
+// window.addEventListener("pagehide", () => {
 
-    if (
-        currentUser?.acc_type === "admin" &&
-        roomId
-    ) {
+//     if (
+//         currentUser?.acc_type === "admin" &&
+//         roomId
+//     ) {
 
-        navigator.sendBeacon(
-            "/admin-close-meeting",
-            JSON.stringify({
-                roomId
-            })
-        );
+//         navigator.sendBeacon(
+//             "/admin-close-meeting",
+//             JSON.stringify({
+//                 roomId
+//             })
+//         );
 
-    }
+//     }
 
-});
+// });
 
 
 socket.on("connect", async () => {

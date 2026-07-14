@@ -350,6 +350,15 @@ io.on("connection", (socket) => {
             !activeMeeting.participants.includes(user.token)
         ) {
             activeMeeting.participants.push(user.token);
+
+            const room = rooms[activeMeeting.roomId];
+
+            if (
+                room &&
+                !room.participants.includes(user.token)
+            ) {
+                room.participants.push(user.token);
+            }
         }
 
         io.emit("request-accepted", {
@@ -961,7 +970,7 @@ io.on("connection", (socket) => {
             if (token === room.adminToken)
                 continue;
 
-            if (room.participants.includes(token))
+            if (joinedUsersInMeeting[token])
                 continue;
 
             if (pendingRequests[token])
@@ -1254,19 +1263,21 @@ app.post("/add-employee", authMiddleware, (req, res) => {
 
 });
 
-app.post("/admin-close-meeting", express.text({ type: "*/*" }), (req, res) => {
+// app.post("/admin-close-meeting", express.text({ type: "*/*" }), (req, res) => {
 
-    const { roomId } = JSON.parse(req.body);
+//     const { roomId } = JSON.parse(req.body);
 
-    endMeeting(roomId);
+//     endMeeting(roomId);
 
-    res.sendStatus(200);
+//     res.sendStatus(200);
 
-});
+// });
 
 
 
 // START SERVER
+
+
 server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });

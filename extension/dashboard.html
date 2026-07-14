@@ -111,6 +111,7 @@
 
                         <div class="listBar">
                             <h3>Employees</h3>
+                            <i id="addEmp" title="Add Employee" class="fa-solid fa-user-plus"></i>
                         </div>
 
                         <table id="userTable" class="display" style="width:100%">
@@ -164,6 +165,72 @@
             <button id="declineMeetingBtn">
                 Decline
             </button>
+
+        </div>
+
+    </div>
+
+    <div id="addEmployeeModal" class="meeting-modal">
+
+        <div class="employee-modal">
+
+            <div class="employee-header">
+
+                <div class="employee-icon">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+
+                <div>
+                    <h2>Add Employee</h2>
+                    <p>Create a new employee account.</p>
+                </div>
+
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="empFirstname" placeholder="Juan">
+                </div>
+
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="empLastname" placeholder="Dela Cruz">
+                </div>
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="empUsername" placeholder="juan123">
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+
+                    <div class="password-field">
+                        <input type="password" id="empPassword" placeholder="••••••••">
+
+                        <i id="toggleEmpPassword" class="fa-solid fa-eye">
+                        </i>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="employee-actions">
+
+                <button id="closeEmployeeModal" class="cancel-btn">
+                    <i class="fa-solid fa-xmark"></i>
+                    Cancel
+                </button>
+
+                <button id="saveEmployeeBtn" class="save-btn">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Save Employee
+                </button>
+
+            </div>
 
         </div>
 
