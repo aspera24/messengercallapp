@@ -23,10 +23,20 @@ async function createFilteredStream(stream) {
 
     renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true
+        antialias: false,
+        alpha: false,
+        depth: false,
+        stencil: false,
+        powerPreference: "high-performance"
     });
 
-    renderer.setSize(640, 480);
+    renderer.setPixelRatio(1);
+    renderer.setSize(640, 480, false);
+    renderer.autoClear = false;
+    texture = new THREE.VideoTexture(video);
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     scene = new THREE.Scene();
     camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     texture = new THREE.VideoTexture(video);
@@ -111,17 +121,29 @@ async function createFilteredStream(stream) {
 
     function renderFrame() {
         if (video.readyState >= video.HAVE_CURRENT_DATA) {
-            if (texture) texture.needsUpdate = true;
+            // if (texture) texture.needsUpdate = true;
             renderer.render(scene, camera);
         }
     }
 
-    function animate() {
-        if (isTabActive) {
-            renderFrame();
-            requestAnimationFrame(animate);
-        }
+    const fps = 30;
+    const interval = 1000 / fps;
+
+    let last = 0;
+
+    function animate(now) {
+
+        requestAnimationFrame(animate);
+
+        if (now - last < interval)
+            return;
+
+        last = now;
+
+        renderFrame();
     }
+
+    requestAnimationFrame(animate);
 
     animate();
 
@@ -183,9 +205,6 @@ async function loadUserLUT(file) {
         shaderMaterial.uniforms.lutTexture.value = lut2DTexture;
         shaderMaterial.uniforms.lutSize.value = lutData.size;
         shaderMaterial.uniforms.useLUT.value = true;
-
-        // GI-TANGTANG ANG filterType.value = 0 ARON DILI MA-RESET ANG ACTIVE FILTER!
-        // Gi-tangtang pud ang currentFilter = "CustomLUT" aron mapreserba ang imong state tracking
 
     } catch (err) {
         console.error("Adunay error sa pag-execute sa LUT upload:", err);
@@ -254,6 +273,7 @@ function createLUT2DTexture(lut) {
     }
 
     const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+    texture.generateMipmaps = false;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     texture.wrapS = THREE.ClampToEdgeWrapping;

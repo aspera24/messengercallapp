@@ -206,10 +206,47 @@ io.on("connection", (socket) => {
 
         onlineUsers[user.token].sockets.add(socket.id);
 
+        db.query(
+            `
+                SELECT
+                    mr.room_token,
+                    u.firstname
+                FROM meeting_requests mr
+                JOIN users u
+                    ON mr.from_user_id = u.id
+                JOIN rooms r
+                    ON r.room_token = mr.room_token
+                WHERE
+                    mr.to_user_id = ?
+                    AND mr.status = 'pending'
+                    AND r.status = 'active'
+                LIMIT 1
+                `,
+            [user.id],
+            (err, result) => {
+
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+
+                if (result.length) {
+
+                    socket.emit("meeting-request", {
+                        roomId: result[0].room_token,
+                        admin: result[0].firstname
+                    });
+
+                }
+
+            }
+        );
+
         if (
             activeMeeting &&
             activeMeeting.participants.includes(user.token)
         ) {
+
 
             peerSocketMap[user.token] = socket.id;
 
@@ -219,6 +256,8 @@ io.on("connection", (socket) => {
             });
 
         }
+
+
     }
 
     socket.on("check-active-meeting", () => {
@@ -250,50 +289,49 @@ io.on("connection", (socket) => {
             return;
         }
 
-        const target = onlineUsers[token];
-
-        if (!target) {
-            return socket.emit("request-error", {
-                token,
-                message: "User is offline."
-            });
-        }
-
-        pendingRequests[token] = socket.data.user.token;
-
         db.query(
-            `INSERT INTO meeting_requests
-            (room_token, from_user_id, to_user_id, status)
-            VALUES (?, ?, ?, 'pending')`,
-            [
-                roomId,
-                socket.data.user.id,
-                target.user.id
-            ]
-        );
+            `SELECT id
+         FROM users
+         WHERE token=?`,
+            [token],
+            (err, result) => {
 
-        // io.to(target.socketId).emit("meeting-request", {
-        //     roomId,
-        //     admin: socket.data.user.firstname
-        // });
+                if (err || result.length === 0) {
+                    return;
+                }
 
-        target.sockets.forEach(id => {
+                const employeeId = result[0].id;
 
-            io.to(id).emit("meeting-request", {
-                roomId,
-                admin: socket.data.user.firstname
-            });
+                pendingRequests[token] = user.token;
 
-        });
 
-        console.log(
-            "ONLINE USERS:",
-            Object.keys(onlineUsers)
-        );
+                db.query(
+                    `INSERT INTO meeting_requests
+                (room_token, from_user_id, to_user_id, status)
+                VALUES (?, ?, ?, 'pending')`,
+                    [
+                        roomId,
+                        user.id,
+                        employeeId
+                    ]
+                );
 
-        console.log(
-            "TARGET:",
-            onlineUsers[token]
+                const target = onlineUsers[token];
+
+                if (target) {
+
+                    target.sockets.forEach(id => {
+
+                        io.to(id).emit("meeting-request", {
+                            roomId,
+                            admin: user.firstname
+                        });
+
+                    });
+
+                }
+
+            }
         );
 
     });
@@ -304,36 +342,43 @@ io.on("connection", (socket) => {
 
         if (!user) return;
 
+        // Meeting might already be ended
+        if (!activeMeeting) {
+            return socket.emit("meeting-ended");
+        }
+
         acceptedUsers[user.token] = true;
+
+        const roomId = activeMeeting.roomId;
 
         db.query(
             `UPDATE meeting_requests
-            SET
-                status='accepted',
-                responded_at=NOW()
-            WHERE
-                room_token=?
-                AND to_user_id=?
-                AND status='pending'`,
+         SET
+            status='accepted',
+            responded_at=NOW()
+         WHERE
+            room_token=?
+            AND to_user_id=?
+            AND status='pending'`,
             [
-                activeMeeting.roomId,
+                roomId,
                 user.id
             ]
         );
 
         db.query(
             `SELECT id
-            FROM meetings
-            WHERE room_token=?`,
-            [activeMeeting.roomId],
+         FROM meetings
+         WHERE room_token=?`,
+            [roomId],
             (err, result) => {
 
                 if (err || result.length === 0) return;
 
                 db.query(
                     `INSERT INTO meeting_participants
-                    (meeting_id,user_id,joined_at)
-                    VALUES(?,?,NOW())`,
+                 (meeting_id, user_id, joined_at)
+                 VALUES (?, ?, NOW())`,
                     [
                         result[0].id,
                         user.id
@@ -345,13 +390,11 @@ io.on("connection", (socket) => {
 
         delete pendingRequests[user.token];
 
-        if (
-            activeMeeting &&
-            !activeMeeting.participants.includes(user.token)
-        ) {
+        if (!activeMeeting.participants.includes(user.token)) {
+
             activeMeeting.participants.push(user.token);
 
-            const room = rooms[activeMeeting.roomId];
+            const room = rooms[roomId];
 
             if (
                 room &&
@@ -359,6 +402,7 @@ io.on("connection", (socket) => {
             ) {
                 room.participants.push(user.token);
             }
+
         }
 
         io.emit("request-accepted", {
@@ -1114,12 +1158,11 @@ io.on("connection", (socket) => {
 
                 if (admin) {
 
-                    io.to(admin.socketId).emit(
-                        "request-declined",
-                        {
+                    admin.sockets.forEach(id => {
+                        io.to(id).emit("request-declined", {
                             token: user.token
-                        }
-                    );
+                        });
+                    });
 
                 }
 

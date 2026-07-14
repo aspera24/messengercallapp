@@ -289,7 +289,7 @@ async function ensureMediaReady(attempt = 0) {
                 echoCancellation: false,
                 noiseSuppression: true,
                 autoGainControl: true,
-                voiceIsolation: true,
+                voiceIsolation: false,
                 sampleRate: 48000,
                 channelCount: 1
             }
@@ -424,7 +424,7 @@ function setupMicLevel() {
     const source = audioContext.createMediaStreamSource(stream);
 
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 64;
+    analyser.fftSize = 32;
 
     source.connect(analyser);
 
@@ -822,13 +822,14 @@ function createPeer(userId) {
     });
 
     const sender = peer.getSenders()
-        .find(s => s.track?.kind === "audio");
+        .find(s => s.track?.kind === "video");
 
     if (sender) {
         const params = sender.getParameters();
 
         params.encodings = [{
-            maxBitrate: 32000
+            maxBitrate: 300000,
+            maxFramerate: 20
         }];
 
         sender.setParameters(params);
