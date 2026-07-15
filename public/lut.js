@@ -8,14 +8,38 @@ let currentFilter = "none";
 let shaderMaterial = null;
 
 async function createFilteredStream(stream) {
-
     const video = document.createElement("video");
     video.srcObject = stream;
     video.muted = true;
     video.playsInline = true;
     video.setAttribute("autoplay", "true");
 
-    await video.play();
+
+    let playAttempts = 0;
+    
+    async function safePlay() {
+        try {
+            const playPromise = video.play(); 
+
+            if (playPromise !== undefined) {
+                await playPromise;
+                console.log("Webcam stream started playing successfully.");
+            }
+        } catch (err) {
+            console.warn("Gi-interrupted ang video play request, nag-retry... Error:", err.name);
+
+            if (playAttempts < 5) {
+                playAttempts++;
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return safePlay();
+            } else {
+                console.error("Dili gyud ka-play ang video stream human sa 5 ka suway:", err.message);
+            }
+        }
+    }
+
+    await safePlay();
+
 
     canvas = document.createElement("canvas");
     canvas.width = 640;
@@ -27,19 +51,26 @@ async function createFilteredStream(stream) {
         alpha: false,
         depth: false,
         stencil: false,
-        powerPreference: "high-performance"
+        powerPreference: "high-performance",
+        preserveDrawingBuffer: true
     });
-
     renderer.setPixelRatio(1);
     renderer.setSize(640, 480, false);
     renderer.autoClear = false;
+
+    canvas.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault();
+        console.error("WebGL Context lost! Gi-restart ang renderer...");
+        setTimeout(() => window.location.reload(), 1000);
+    }, false);
+
     texture = new THREE.VideoTexture(video);
     texture.generateMipmaps = false;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
+
     scene = new THREE.Scene();
     camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    texture = new THREE.VideoTexture(video);
 
     shaderMaterial = new THREE.ShaderMaterial({
         uniforms: {
@@ -63,51 +94,38 @@ async function createFilteredStream(stream) {
             uniform bool useLUT;
             uniform float lutSize;
             varying vec2 vUv;
-
             vec4 sampleAs3DTexture(sampler2D tex, vec3 uvw, float size) {
                 float maxColor = size - 1.0;
                 float zSlice0 = floor(uvw.z * maxColor);
                 float zSlice1 = min(zSlice0 + 1.0, maxColor);
-                
                 float xOffset = 0.5 / (size * size);
                 float yOffset = 0.5 / size;
-                
                 vec2 uv0;
                 uv0.x = xOffset + (zSlice0 * size + uvw.r * maxColor) / (size * size);
                 uv0.y = yOffset + (uvw.g * maxColor) / size;
-                
                 vec2 uv1;
                 uv1.x = xOffset + (zSlice1 * size + uvw.r * maxColor) / (size * size);
                 uv1.y = yOffset + (uvw.g * maxColor) / size;
-                
                 vec4 col0 = texture2D(tex, uv0);
                 vec4 col1 = texture2D(tex, uv1);
-                
                 return mix(col0, col1, fract(uvw.z * maxColor));
             }
-
             void main(){
                 vec4 color = texture2D(tDiffuse, vUv);
-
                 if (useLUT && lutSize > 0.0) {
                     color.rgb = sampleAs3DTexture(lutTexture, clamp(color.rgb, 0.0, 1.0), lutSize).rgb;
                 }
-
                 if(filterType == 1){
                     float gray = dot(color.rgb, vec3(0.299,0.587,0.114));
                     color.rgb = vec3(gray);
-                }
-                else if(filterType == 2){
+                } else if(filterType == 2){
                     color.r *= 1.15; color.g *= 1.05; color.b *= 0.90;
-                }
-                else if(filterType == 3){
+                } else if(filterType == 3){
                     color.r *= 0.90; color.g *= 1.00; color.b *= 1.15;
-                }
-                else if(filterType == 4){
+                } else if(filterType == 4){
                     color.rgb = pow(color.rgb, vec3(1.15));
                     color.r *= 1.05; color.b *= 0.85;
                 }
-                
                 gl_FragColor = color;
             }
         `
@@ -116,55 +134,49 @@ async function createFilteredStream(stream) {
     plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), shaderMaterial);
     scene.add(plane);
 
-    let isTabActive = true;
-    let backgroundInterval = null;
+    let workerTimer = null;
+    const workerCode = `
+        let timer = null;
+        self.onmessage = function(e) {
+            if (e.data === 'start') {
+                if (timer) clearInterval(timer);
+                timer = setInterval(() => { self.postMessage('tick'); }, 1000 / 30);
+            } else if (e.data === 'stop') {
+                clearInterval(timer);
+                timer = null;
+            }
+        };
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    workerTimer = new Worker(URL.createObjectURL(blob));
 
     function renderFrame() {
         if (video.readyState >= video.HAVE_CURRENT_DATA) {
-            // if (texture) texture.needsUpdate = true;
+            if (texture) texture.needsUpdate = true;
             renderer.render(scene, camera);
         }
     }
 
-    const fps = 30;
-    const interval = 1000 / fps;
-
-    let last = 0;
-
-    function animate(now) {
-
-        requestAnimationFrame(animate);
-
-        if (now - last < interval)
-            return;
-
-        last = now;
-
-        renderFrame();
-    }
-
-    requestAnimationFrame(animate);
-
-    animate();
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            isTabActive = false;
-            backgroundInterval = setInterval(renderFrame, 1000 / 30);
-        } else {
-            isTabActive = true;
-            if (backgroundInterval) {
-                clearInterval(backgroundInterval);
-                backgroundInterval = null;
-            }
-            animate();
+    workerTimer.onmessage = function (e) {
+        if (e.data === 'tick') {
+            renderFrame();
         }
-    });
+    };
 
-    return canvas.captureStream(30);
+    workerTimer.postMessage('start');
+
+    return new Promise((resolve) => {
+        const checkCanvasInterval = setInterval(() => {
+            if (video.readyState >= video.HAVE_CURRENT_DATA) {
+                clearInterval(checkCanvasInterval);
+                console.log("Canvas is ready for streaming!");
+                resolve(canvas.captureStream(30));
+            }
+        }, 100);
+    });
 }
 
-// GI-AYO ARON DILI MAPATAY ANG LUT AUTOMATICALLY
+
 async function changeCameraFilter(name) {
     if (!shaderMaterial) return;
 
