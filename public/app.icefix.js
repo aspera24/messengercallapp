@@ -2,7 +2,12 @@
 // Drop-in replacement: include this file AFTER socket.io and BEFORE using functions.
 // This file patches the existing public/app.js behavior by overwriting the signaling handlers and createPeer.
 
-const socket = window.socket || io();
+// reuse existing socket from app.js to avoid redeclaration
+const _socket = window.socket || io();
+
+// Ensure we don't reference a non-existent `socket` variable
+const socket = _socket;
+
 
 // ===== Helpers for ICE queueing =====
 const pendingIceCandidates = {}; // peerId -> [candidate]
@@ -76,11 +81,11 @@ window.createPeer = function createPeer(userId) {
 
 const processedOfferIds = new Set();
 
-socket.off && socket.off("offer");
-socket.off && socket.off("answer");
-socket.off && socket.off("ice-candidate");
+_socket.off && _socket.off("offer");
+_socket.off && _socket.off("answer");
+_socket.off && _socket.off("ice-candidate");
 
-socket.on("offer", async ({ offer, from, firstname }) => {
+_socket.on("offer", async ({ offer, from, firstname }) => {
   // Queue offer if peer cannot be created yet
   const peer = (window.peers && window.peers[from]) ? window.peers[from] : (window.createPeer ? window.createPeer(from) : null);
 
