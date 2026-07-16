@@ -830,6 +830,8 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
+        
+        iceTransportPolicy: "relay",
 
         iceServers: [
 
