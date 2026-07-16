@@ -7,8 +7,26 @@ module.exports = (req, res, next) => {
 
     const token = req.cookies.meetflow_session;
 
-    if (!token) {
+    function unauthorized() {
+
+        // API requests (extension, fetch, ajax)
+        if (
+            req.path === "/me" ||
+            req.xhr ||
+            req.headers.accept?.includes("application/json")
+        ) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        // Normal browser pages
         return res.redirect("/auth");
+    }
+
+    if (!token) {
+        return unauthorized();
     }
 
     db.query(
@@ -34,7 +52,7 @@ module.exports = (req, res, next) => {
 
                 res.clearCookie("meetflow_session");
 
-                return res.redirect("/auth");
+                return unauthorized();
 
             }
 

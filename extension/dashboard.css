@@ -420,11 +420,6 @@ input:focus {
     height: 150px;
 }
 
-/* .video-box.mic-active {
-    outline: 3px solid #2563eb;
-    outline-offset: -3px;
-} */
-
 .video-loading {
     position: absolute;
     inset: 0;
@@ -596,7 +591,15 @@ input:focus {
     transform: scale(0.98);
 }
 
-
+.smallVideo {
+    height: 80px;
+    width: 150px;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-left: auto;
+    margin-right: 20px;
+    margin-top: 10px;
+}
 
 /* VIDEO */
 video {

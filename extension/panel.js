@@ -1,18 +1,27 @@
-window.addEventListener("message", (event) => {
+(async () => {
 
-    if (event.origin !== "https://meetflow-j39a.onrender.com")
-        return;
+    try {
 
-    if (event.data.type === "OPEN_CALL_WINDOW") {
+        const res = await fetch(
+            "https://meetflow-j39a.onrender.com/me",
+            {
+                credentials: "include"
+            }
+        );
 
-        chrome.runtime.sendMessage({
+        console.log("status:", res.status);
+        console.log("redirected:", res.redirected);
+        console.log("url:", res.url);
+        console.log(await res.text());
 
-            action: "OPEN_CALL_WINDOW",
+        if (res.ok) {
+            location.replace("dashboard.html");
+        } else {
+            location.replace("login.html");
+        }
 
-            callId: event.data.callId
-
-        });
-
+    } catch (err) {
+        location.replace("login.html");
     }
 
-});
+})();
