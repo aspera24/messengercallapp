@@ -832,21 +832,19 @@ function createPeer(userId) {
     const peer = new RTCPeerConnection({
 
         iceServers: [
-
             {
                 urls: [
                     "stun:stun.l.google.com:19302"
                 ]
             },
-
             {
                 urls: [
-                    "turn:free.expressturn.com:3478"
+                    "turn:free.expressturn.com:3478?transport=udp",
+                    "turn:free.expressturn.com:3478?transport=tcp"
                 ],
                 username: "000000002099533468",
                 credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
             }
-
         ]
 
     });
