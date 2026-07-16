@@ -977,15 +977,8 @@ socket.on("answer", async ({ answer, from }) => {
     const peer = peers[from];
     if (!peer) return;
 
-    if (peer.signalingState !== "have-local-offer") {
-        console.warn(
-            "Ignoring answer:",
-            peer.signalingState
-        );
-        return;
-    }
-
     try {
+        // Avoid strict signalingState gating (timing differs across NATs/ISPs)
         await peer.setRemoteDescription(answer);
     } catch (err) {
         console.log(err);
