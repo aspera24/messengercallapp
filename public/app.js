@@ -306,10 +306,21 @@ async function ensureMediaReady(attempt = 0) {
             }
         });
 
-        const filteredVideo = await createFilteredStream(rawStream);
-        const finalStream = new MediaStream();
+        // const filteredVideo = await createFilteredStream(rawStream);
+        // const finalStream = new MediaStream();
 
-        filteredVideo.getVideoTracks().forEach(track => {
+        // filteredVideo.getVideoTracks().forEach(track => {
+        //     finalStream.addTrack(track);
+        // });
+
+        // rawStream.getAudioTracks().forEach(track => {
+        //     finalStream.addTrack(track);
+        // });
+
+        const finalStream =
+            new MediaStream();
+
+        rawStream.getVideoTracks().forEach(track => {
             finalStream.addTrack(track);
         });
 
