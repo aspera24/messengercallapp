@@ -938,7 +938,7 @@ function createPeer(userId) {
 // SIGNALING
 socket.on("offer", async ({ offer, from, firstname }) => {
 
-    console.log("[RECEIVED OFFER]", data.from);
+    console.log("[RECEIVED OFFER]", from);
 
     let peer = peers[from] || createPeer(from);
 
@@ -972,7 +972,7 @@ socket.on("offer", async ({ offer, from, firstname }) => {
 
 socket.on("answer", async ({ answer, from }) => {
 
-    console.log("[RECEIVED ANSWER]", data.from);
+    console.log("[RECEIVED ANSWER]", from);
 
     const peer = peers[from];
     if (!peer) return;
