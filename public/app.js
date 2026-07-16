@@ -888,6 +888,8 @@ function createPeer(userId) {
             return;
         }
 
+        console.log(event.track.kind);
+
         addRemoteVideo(userId, event.streams[0]);
     };
 
@@ -1368,6 +1370,9 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 // UI VIDEO
 function addRemoteVideo(userId, stream) {
 
+    console.log(stream.getVideoTracks());
+    console.log(stream.getAudioTracks());
+
     let wrapper = document.getElementById("wrap-" + userId);
 
     if (!wrapper) {
@@ -1436,6 +1441,24 @@ function addRemoteVideo(userId, stream) {
     if (remoteVideo.srcObject !== stream) {
 
         remoteVideo.srcObject = stream;
+
+        console.log("VIDEO STREAM SET", stream.id);
+
+        remoteVideo.onloadedmetadata = () => {
+            console.log("VIDEO METADATA");
+        };
+
+        remoteVideo.onplay = () => {
+            console.log("VIDEO PLAY");
+        };
+
+        remoteVideo.onplaying = () => {
+            console.log("VIDEO PLAYING");
+        };
+
+        remoteVideo.onerror = e => {
+            console.log("VIDEO ERROR", e);
+        };
 
         delete remoteVideo.dataset.micReady;
 
