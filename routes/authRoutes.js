@@ -118,7 +118,8 @@ router.post("/login", (req, res) => {
                         console.error(err);
 
                         return res.status(500).json({
-                            success: false
+                            success: false,
+                            err: JSON.stringify(err),
                         });
                     }
 
