@@ -14,12 +14,42 @@ let peerNames = {};
 let activeRoom = null;
 let pendingUsers = [];
 
+let pendingCallAllResponses = 0;
+let callAllLoading = false;
+
+
+
 const localVideo = document.getElementById("local");
 
 let currentUser = null;
 let myId = null;
 
 let requestSoundPlaying = false;
+
+
+
+
+function setCallAllLoading(loading) {
+
+    const btn = document.getElementById("callAllBtn");
+
+    if (!btn) return;
+
+    callAllLoading = loading;
+    btn.disabled = loading;
+
+    btn.innerHTML = loading
+        ? `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Calling...
+        `
+        : `
+            <i class="fa-solid fa-phone"></i>
+            Call All
+        `;
+}
+
+
 
 const sounds = {
     micOn: new Audio("/sounds/mic_on.mp3"),
@@ -46,25 +76,6 @@ function stopSound(audio) {
     audio.pause();
     audio.currentTime = 0;
 }
-
-
-// window.addEventListener("pagehide", () => {
-
-//     if (
-//         currentUser?.acc_type === "admin" &&
-//         roomId
-//     ) {
-
-//         navigator.sendBeacon(
-//             "/admin-close-meeting",
-//             JSON.stringify({
-//                 roomId
-//             })
-//         );
-
-//     }
-
-// });
 
 
 socket.on("connect", async () => {
@@ -309,6 +320,9 @@ async function ensureMediaReady(attempt = 0) {
         stream = finalStream;
         localVideo.srcObject = stream;
 
+        const localPreview = document.getElementById("localPreview");
+        localPreview.srcObject = stream;
+
         videoTrack = stream.getVideoTracks()[0];
         audioTrack = stream.getAudioTracks()[0];
 
@@ -319,9 +333,6 @@ async function ensureMediaReady(attempt = 0) {
 
     } catch (err) {
         console.error("[MEDIA ERROR]", err);
-        console.error(err.name);
-        console.error(err.message);
-        console.log("[MEDIA] failed attempt:", attempt);
 
         if (attempt < 10) {
             setTimeout(() => ensureMediaReady(attempt + 1), 1000);
@@ -378,11 +389,16 @@ socket.on("room-created", ({ roomId: newRoom }) => {
 
     if (pendingCallAll) {
 
-        socket.emit("request-all-users", {
-            roomId
-        });
-
         pendingCallAll = false;
+
+        setTimeout(() => {
+
+            socket.emit("request-all-users", {
+                roomId
+            });
+
+        }, 100);
+
     }
 
 });
@@ -669,7 +685,7 @@ socket.on("user-disconnected", (userId) => {
     if (currentUser.acc_type === "admin") {
         updateMeetingButtons(joinedUsers > 0);
 
-        const btn = document.getElementById(`req-${userId.token}`);
+        const btn = document.getElementById(`req-${userId}`);
 
         if (btn) {
             btn.disabled = false;
@@ -732,7 +748,7 @@ socket.on("user-joined-room", (user) => {
         joinedUsers++;
         updateMeetingButtons(joinedUsers > 0);
 
-        const btn = document.getElementById(`req-${user.token}`);
+        const btn = document.getElementById(`req-${user.id}`);
 
         if (btn) {
             btn.disabled = true;
@@ -1089,7 +1105,9 @@ async function deleteUser(token) {
 
 function callAllUsers() {
 
-    // playSound(sounds.request);
+    if (callAllLoading) return;
+
+    setCallAllLoading(true);
 
     if (!roomId) {
 
@@ -1107,6 +1125,23 @@ function callAllUsers() {
     });
 
 }
+
+socket.on("call-all-started", ({ total }) => {
+
+    pendingCallAllResponses = total;
+    setCallAllLoading(true);
+
+});
+
+socket.on("call-all-progress", ({ remaining }) => {
+
+    pendingCallAllResponses = remaining;
+
+    if (remaining === 0) {
+        setCallAllLoading(false);
+    }
+
+});
 
 socket.on("user-deleted", (token) => {
 
@@ -1141,12 +1176,16 @@ socket.on("request-accepted", ({ token }) => {
     const reqBtn = document.getElementById(`req-${token}`);
     const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (reqBtn) reqBtn.disabled = false;
-    if (deleteBtn) deleteBtn.disabled = false;
-
-    reqBtn.innerHTML = `
+    if (reqBtn) {
+        reqBtn.disabled = false;
+        reqBtn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
     `;
+    }
+
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+    }
 });
 
 socket.on("request-declined", ({ token }) => {
@@ -1154,12 +1193,16 @@ socket.on("request-declined", ({ token }) => {
     const reqBtn = document.getElementById(`req-${token}`);
     const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (reqBtn) reqBtn.disabled = false;
-    if (deleteBtn) deleteBtn.disabled = false;
+    if (reqBtn) {
+        reqBtn.disabled = false;
+        reqBtn.innerHTML = `
+            <i class="fa-solid fa-paper-plane"></i>
+        `;
+    }
 
-    reqBtn.innerHTML = `
-        <i class="fa-solid fa-paper-plane"></i>
-    `;
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+    }
 
 });
 

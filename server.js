@@ -45,6 +45,7 @@ const joinedUsersInMeeting = {};
 const port = 3000;
 const reconnectTimers = {};
 const peerSocketMap = {};
+const callAllProgress = {};
 
 io.use((socket, next) => {
 
@@ -409,6 +410,22 @@ io.on("connection", (socket) => {
             token: user.token
         });
 
+        const progress = callAllProgress[roomId];
+
+        if (progress) {
+
+            progress.remaining--;
+
+            io.to(progress.adminSocket).emit("call-all-progress", {
+                remaining: progress.remaining
+            });
+
+            if (progress.remaining <= 0) {
+                delete callAllProgress[roomId];
+            }
+
+        }
+
     });
 
     socket.on("meeting-request-declined", () => {
@@ -416,6 +433,12 @@ io.on("connection", (socket) => {
         const user = socket.data.user;
 
         if (!user) return;
+
+        if (!activeMeeting) {
+            return socket.emit("meeting-ended");
+        }
+
+        const roomId = activeMeeting.roomId;
 
         const requesterToken = pendingRequests[user.token];
 
@@ -431,7 +454,7 @@ io.on("connection", (socket) => {
                 AND to_user_id=?
                 AND status='pending'`,
             [
-                activeMeeting.roomId,
+                roomId,
                 user.id
             ]
         );
@@ -449,6 +472,22 @@ io.on("connection", (socket) => {
         }
 
         delete pendingRequests[user.token];
+
+        const progress = callAllProgress[roomId];
+
+        if (progress) {
+
+            progress.remaining--;
+
+            io.to(progress.adminSocket).emit("call-all-progress", {
+                remaining: progress.remaining
+            });
+
+            if (progress.remaining <= 0) {
+                delete callAllProgress[roomId];
+            }
+
+        }
 
     });
 
@@ -1017,8 +1056,14 @@ io.on("connection", (socket) => {
 
         if (!room) return;
 
+        let totalRequests = 0;
+
         for (const token in onlineUsers) {
 
+            console.log(
+                token,
+                onlineUsers[token].sockets.size
+            );
 
             if (token === room.adminToken)
                 continue;
@@ -1034,12 +1079,14 @@ io.on("connection", (socket) => {
             if (!target)
                 continue;
 
+            totalRequests++;
+
             pendingRequests[token] = socket.data.user.token;
 
             db.query(
                 `INSERT INTO meeting_requests
-                (room_token, from_user_id, to_user_id, status)
-                VALUES (?, ?, ?, 'pending')`,
+            (room_token, from_user_id, to_user_id, status)
+            VALUES (?, ?, ?, 'pending')`,
                 [
                     roomId,
                     socket.data.user.id,
@@ -1048,13 +1095,28 @@ io.on("connection", (socket) => {
             );
 
             target.sockets.forEach(id => {
-                io.to(id).emit("meeting-request", {
-                    roomId,
-                    admin: room.admin
-                });
+
+                setTimeout(() => {
+
+                    io.to(id).emit("meeting-request", {
+                        roomId,
+                        admin: room.admin
+                    });
+
+                }, 50);
+
             });
 
         }
+
+        callAllProgress[roomId] = {
+            adminSocket: socket.id,
+            remaining: totalRequests
+        };
+
+        socket.emit("call-all-started", {
+            total: totalRequests
+        });
 
     });
 

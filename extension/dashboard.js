@@ -32,12 +32,40 @@ let peerNames = {};
 let activeRoom = null;
 let pendingUsers = [];
 
+let pendingCallAllResponses = 0;
+let callAllLoading = false;
+
+
+
 const localVideo = document.getElementById("local");
 
 let currentUser = null;
 let myId = null;
 
 let requestSoundPlaying = false;
+
+
+function setCallAllLoading(loading) {
+
+    const btn = document.getElementById("callAllBtn");
+
+    if (!btn) return;
+
+    callAllLoading = loading;
+    btn.disabled = loading;
+
+    btn.innerHTML = loading
+        ? `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Calling...
+        `
+        : `
+            <i class="fa-solid fa-phone"></i>
+            Call All
+        `;
+}
+
+
 
 const sounds = {
     micOn: new Audio("/sounds/mic_on.mp3"),
@@ -305,6 +333,9 @@ async function ensureMediaReady(attempt = 0) {
         stream = finalStream;
         localVideo.srcObject = stream;
 
+        const localPreview = document.getElementById("localPreview");
+        localPreview.srcObject = stream;
+
         videoTrack = stream.getVideoTracks()[0];
         audioTrack = stream.getAudioTracks()[0];
 
@@ -374,11 +405,16 @@ socket.on("room-created", ({ roomId: newRoom }) => {
 
     if (pendingCallAll) {
 
-        socket.emit("request-all-users", {
-            roomId
-        });
-
         pendingCallAll = false;
+
+        setTimeout(() => {
+
+            socket.emit("request-all-users", {
+                roomId
+            });
+
+        }, 100);
+
     }
 
 });
@@ -1126,6 +1162,23 @@ function callAllUsers() {
 
 }
 
+socket.on("call-all-started", ({ total }) => {
+
+    pendingCallAllResponses = total;
+    setCallAllLoading(true);
+
+});
+
+socket.on("call-all-progress", ({ remaining }) => {
+
+    pendingCallAllResponses = remaining;
+
+    if (remaining === 0) {
+        setCallAllLoading(false);
+    }
+
+});
+
 socket.on("user-deleted", (token) => {
 
     document.querySelector(`#delete-${token}`)
@@ -1565,7 +1618,6 @@ async function setupRemoteMicLevel(userId, remoteStream) {
     animate();
 }
 
-
 document.getElementById("camBtn").onclick = () => {
     toggleCamera();
 }
@@ -1689,7 +1741,6 @@ async function logout() {
     location.replace("auth.html");
 
 }
-
 
 const addEmpBtn = document.getElementById("addEmp");
 const addEmployeeModal = document.getElementById("addEmployeeModal");
