@@ -830,15 +830,7 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
-        iceServers: [
-            {
-                urls: [
-                    "stun:stun.l.google.com:19302",
-                    "stun:stun1.l.google.com:19302",
-                    "stun:stun2.l.google.com:19302"
-                ]
-            }
-        ]
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
 
     stream.getTracks().forEach(track => {
@@ -888,8 +880,6 @@ function createPeer(userId) {
             return;
         }
 
-        console.log(event.track.kind);
-
         addRemoteVideo(userId, event.streams[0]);
     };
 
@@ -914,22 +904,6 @@ function createPeer(userId) {
             peer.restartIce();
         }
 
-    };
-
-    peer.onicecandidate = e => {
-        console.log("LOCAL ICE:", e.candidate);
-    };
-
-    peer.oniceconnectionstatechange = () => {
-        console.log("ICE STATE:", peer.iceConnectionState);
-    };
-
-    peer.onconnectionstatechange = () => {
-        console.log("PC STATE:", peer.connectionState);
-    };
-
-    peer.ontrack = e => {
-        console.log("TRACK RECEIVED:", e.streams[0].id);
     };
 
     peers[userId] = peer;
@@ -994,13 +968,6 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
 
     await peer.addIceCandidate(candidate);
 });
-
-
-socket.on("offer", () => console.log("OFFER RECEIVED"));
-socket.on("answer", () => console.log("ANSWER RECEIVED"));
-socket.on("ice-candidate", () => console.log("ICE RECEIVED"));
-
-
 
 function getSelectedUsers() {
 
@@ -1370,9 +1337,6 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 // UI VIDEO
 function addRemoteVideo(userId, stream) {
 
-    console.log(stream.getVideoTracks());
-    console.log(stream.getAudioTracks());
-
     let wrapper = document.getElementById("wrap-" + userId);
 
     if (!wrapper) {
@@ -1442,24 +1406,6 @@ function addRemoteVideo(userId, stream) {
 
         remoteVideo.srcObject = stream;
 
-        console.log("VIDEO STREAM SET", stream.id);
-
-        remoteVideo.onloadedmetadata = () => {
-            console.log("VIDEO METADATA");
-        };
-
-        remoteVideo.onplay = () => {
-            console.log("VIDEO PLAY");
-        };
-
-        remoteVideo.onplaying = () => {
-            console.log("VIDEO PLAYING");
-        };
-
-        remoteVideo.onerror = e => {
-            console.log("VIDEO ERROR", e);
-        };
-
         delete remoteVideo.dataset.micReady;
 
         remoteVideo.onplaying = () => {
@@ -1476,11 +1422,7 @@ function addRemoteVideo(userId, stream) {
 
         };
 
-        remoteVideo.play().catch(err => {
-            if (err.name !== "AbortError") {
-                console.error(err);
-            }
-        });
+        remoteVideo.play().catch(console.error);
     }
 
 
