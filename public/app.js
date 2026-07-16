@@ -830,7 +830,19 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        iceServers: [
+
+            {
+                urls: "stun:stun.l.google.com:19302"
+            },
+
+            {
+                urls: "turn:free.expressturn.com:3478",
+                username: "000000002099533468",
+                credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
+            }
+
+        ]
     });
 
     stream.getTracks().forEach(track => {
@@ -895,11 +907,11 @@ function createPeer(userId) {
     };
 
     peer.onconnectionstatechange = () => {
-        console.log(peer.connectionState);
+        console.log("CONNECTION:", peer.connectionState);
     };
 
     peer.oniceconnectionstatechange = () => {
-        console.log(peer.iceConnectionState);
+        console.log("ICE:", peer.iceConnectionState);
         if (peer.iceConnectionState === "failed") {
             peer.restartIce();
         }
