@@ -804,9 +804,15 @@ async function processUsers(users) {
 
         const peer = createPeer(user.id);
 
+        console.log("[PROCESS USERS]", users);
+
         const offer = await peer.createOffer();
 
+        console.log("[CREATE OFFER]", user.id);
+
         await peer.setLocalDescription(offer);
+
+        console.log("[SEND OFFER]", user.id);
 
         socket.emit("offer", {
             roomId,
@@ -831,26 +837,17 @@ function createPeer(userId) {
 
     const peer = new RTCPeerConnection({
 
-        iceTransportPolicy: "relay",
-
         iceServers: [
-
-            {
-                urls: "stun:stun.l.google.com:19302"
-            },
-
             {
                 urls: [
-                    "turn:free.expressturn.com:3478?transport=udp",
-                    "turn:free.expressturn.com:3478?transport=tcp"
-                ],
-                username: "000000002099533468",
-                credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
+                    "stun:stun.l.google.com:19302",
+                    "stun:stun1.l.google.com:19302",
+                    "stun:stun2.l.google.com:19302",
+                    "stun:stun3.l.google.com:19302",
+                    "stun:stun4.l.google.com:19302"
+                ]
             }
-
-        ],
-
-        iceTransportPolicy: "all"
+        ]
 
     });
 
@@ -908,7 +905,7 @@ function createPeer(userId) {
 
         if (e.candidate) {
 
-            console.log(e.candidate.candidate);
+            console.log("[LOCAL ICE]", e.candidate.candidate);
 
             socket.emit("ice-candidate", {
                 roomId,
@@ -921,7 +918,7 @@ function createPeer(userId) {
 
     };
 
-    
+
     peer.onconnectionstatechange = () => {
         console.log("CONNECTION:", peer.connectionState);
     };
@@ -940,6 +937,8 @@ function createPeer(userId) {
 
 // SIGNALING
 socket.on("offer", async ({ offer, from, firstname }) => {
+
+    console.log("[RECEIVED OFFER]", data.from);
 
     let peer = peers[from] || createPeer(from);
 
@@ -967,9 +966,13 @@ socket.on("offer", async ({ offer, from, firstname }) => {
     if (firstname) {
         peerNames[from] = firstname;
     }
+
+    console.log("[SEND ANSWER]", from);
 });
 
 socket.on("answer", async ({ answer, from }) => {
+
+    console.log("[RECEIVED ANSWER]", data.from);
 
     const peer = peers[from];
     if (!peer) return;
@@ -990,6 +993,8 @@ socket.on("answer", async ({ answer, from }) => {
 });
 
 socket.on("ice-candidate", async ({ candidate, from }) => {
+
+    console.log("[REMOTE ICE]", from, candidate?.candidate);
 
     const peer = peers[from];
     if (!peer || !candidate) return;
