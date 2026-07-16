@@ -17,16 +17,48 @@ const allowedOrigins = [
     "https://meetflow-j39a.onrender.com",
     "https://www.google.com",
     "http://localhost:3000",
+    "chrome-extension://jcfhgikicifmhpalafohbcjfjicamppb"
 ];
 
+app.use(cors({
+    credentials: true,
+    origin(origin, callback) {
+
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (
+            origin.startsWith("chrome-extension://") ||
+            allowedOrigins.includes(origin)
+        ) {
+            return callback(null, true);
+        }
+
+        callback(new Error("Not allowed"));
+    }
+}));
 
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
-        credentials: true
+        credentials: true,
+        origin(origin, callback) {
+
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            if (
+                origin.startsWith("chrome-extension://") ||
+                allowedOrigins.includes(origin)
+            ) {
+                return callback(null, true);
+            }
+
+            callback(new Error("Not allowed"));
+        }
     }
 });
-
 const authRoutes = require("./routes/authRoutes");
 
 app.use(cookieParser());
