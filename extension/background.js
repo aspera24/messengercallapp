@@ -4,17 +4,63 @@ const socket = io("https://meetflow-j39a.onrender.com", {
     withCredentials: true
 });
 
+let meetflowWindowId = null;
+
+function broadcastToTabs(message) {
+
+    chrome.tabs.query({}, (tabs) => {
+
+        tabs.forEach((tab) => {
+
+            chrome.tabs.sendMessage(
+                tab.id,
+                message,
+                () => {
+
+                    if (chrome.runtime.lastError) {
+                        return;
+                    }
+
+                }
+            );
+
+        });
+
+    });
+
+}
+
+
+socket.on("connect", () => {
+    console.log("Socket Connected:", socket.id);
+});
+
+socket.on("disconnect", () => {
+    console.log("Socket Disconnected");
+});
+
 socket.on("meeting-request", (data) => {
 
-    chrome.runtime.sendMessage({
-        type: "incoming-call",
+    console.log("Incoming meeting request:", data);
+
+    broadcastToTabs({
+        type: "INCOMING_CALL",
         roomId: data.roomId,
         admin: data.admin
     });
 
 });
 
-let meetflowWindowId = null;
+socket.on("meeting-ended", () => {
+
+    console.log("Meeting Ended");
+
+    broadcastToTabs({
+        type: "CALL_ENDED"
+    });
+
+});
+
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("MeetFlow Extension Installed");
@@ -24,42 +70,26 @@ chrome.runtime.onStartup.addListener(() => {
     console.log("Chrome Started");
 });
 
+
 chrome.runtime.onMessage.addListener((message, sender) => {
 
-    if (message.action !== "OPEN_MEETFLOW")
-        return;
+    switch (message.action) {
 
-    chrome.sidePanel.open({
-        windowId: sender.tab.windowId
-    });
+        case "OPEN_MEETFLOW":
 
-});
+            if (sender.tab) {
 
-chrome.tabs.query({}, (tabs) => {
+                chrome.sidePanel.open({
+                    windowId: sender.tab.windowId
+                });
 
-    for (const tab of tabs) {
+            }
 
-        chrome.tabs.sendMessage(tab.id, {
-            type: "INCOMING_CALL"
-        });
+            break;
 
     }
 
 });
-
-chrome.tabs.query({}, (tabs) => {
-
-    for (const tab of tabs) {
-
-        chrome.tabs.sendMessage(tab.id, {
-            type: "CALL_ENDED"
-        });
-
-    }
-
-});
-
-
 
 
 function openMeetFlow() {
