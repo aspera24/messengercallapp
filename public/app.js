@@ -830,7 +830,7 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
-        
+
         iceTransportPolicy: "relay",
 
         iceServers: [
@@ -904,17 +904,24 @@ function createPeer(userId) {
         addRemoteVideo(userId, event.streams[0]);
     };
 
-    peer.onicecandidate = (event) => {
-        if (event.candidate) {
+    peer.onicecandidate = (e) => {
+
+        if (e.candidate) {
+
+            console.log(e.candidate.candidate);
+
             socket.emit("ice-candidate", {
                 roomId,
                 to: userId,
                 from: myId,
-                candidate: event.candidate
+                candidate: e.candidate
             });
+
         }
+
     };
 
+    
     peer.onconnectionstatechange = () => {
         console.log("CONNECTION:", peer.connectionState);
     };
