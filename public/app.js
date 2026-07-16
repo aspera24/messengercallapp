@@ -830,7 +830,15 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        iceServers: [
+            {
+                urls: [
+                    "stun:stun.l.google.com:19302",
+                    "stun:stun1.l.google.com:19302",
+                    "stun:stun2.l.google.com:19302"
+                ]
+            }
+        ]
     });
 
     stream.getTracks().forEach(track => {
@@ -906,6 +914,22 @@ function createPeer(userId) {
 
     };
 
+    peer.onicecandidate = e => {
+        console.log("LOCAL ICE:", e.candidate);
+    };
+
+    peer.oniceconnectionstatechange = () => {
+        console.log("ICE STATE:", peer.iceConnectionState);
+    };
+
+    peer.onconnectionstatechange = () => {
+        console.log("PC STATE:", peer.connectionState);
+    };
+
+    peer.ontrack = e => {
+        console.log("TRACK RECEIVED:", e.streams[0].id);
+    };
+
     peers[userId] = peer;
     return peer;
 }
@@ -954,7 +978,11 @@ socket.on("answer", async ({ answer, from }) => {
         return;
     }
 
-    await peer.setRemoteDescription(answer);
+    try {
+        await peer.setRemoteDescription(answer);
+    } catch (err) {
+        console.log(err);
+    }
 });
 
 socket.on("ice-candidate", async ({ candidate, from }) => {
@@ -964,6 +992,13 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
 
     await peer.addIceCandidate(candidate);
 });
+
+
+socket.on("offer", () => console.log("OFFER RECEIVED"));
+socket.on("answer", () => console.log("ANSWER RECEIVED"));
+socket.on("ice-candidate", () => console.log("ICE RECEIVED"));
+
+
 
 function getSelectedUsers() {
 
@@ -1418,7 +1453,11 @@ function addRemoteVideo(userId, stream) {
 
         };
 
-        remoteVideo.play().catch(console.error);
+        remoteVideo.play().catch(err => {
+            if (err.name !== "AbortError") {
+                console.error(err);
+            }
+        });
     }
 
 
