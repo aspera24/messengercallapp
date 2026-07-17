@@ -847,40 +847,64 @@ function createPeer(userId) {
 
     if (peers[userId]) return peers[userId];
 
-    const peer = new RTCPeerConnection({
+    // const peer = new RTCPeerConnection({
 
+    //     iceServers: [
+    //         {
+    //             urls: "stun:stun.relay.metered.ca:80"
+    //         },
+    //         {
+    //             urls: "turn:standard.relay.metered.ca:80",
+    //             username: "5c2d25d7fdd1c3ac7562312b",
+    //             credential: "hLT2NB9ClBIEMeOY",
+    //         },
+    //         {
+    //             urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+    //             username: "5c2d25d7fdd1c3ac7562312b",
+    //             credential: "hLT2NB9ClBIEMeOY",
+    //         },
+    //         {
+    //             urls: "turn:standard.relay.metered.ca:443",
+    //             username: "5c2d25d7fdd1c3ac7562312b",
+    //             credential: "hLT2NB9ClBIEMeOY",
+    //         },
+    //         {
+    //             urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+    //             username: "5c2d25d7fdd1c3ac7562312b",
+    //             credential: "hLT2NB9ClBIEMeOY",
+    //         }
+    //     ],
+
+    // });
+
+
+    const peer = new RTCPeerConnection({
         iceServers: [
+
+            // STUN
             {
-                urls: "stun:stun.relay.metered.ca:80",
+                urls: "stun:free.expressturn.com:3478"
             },
-            // {
-            //     urls: "turn:standard.relay.metered.ca:80",
-            //     username: "5c2d25d7fdd1c3ac7562312b",
-            //     credential: "hLT2NB9ClBIEMeOY",
-            // },
-            // {
-            //     urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-            //     username: "5c2d25d7fdd1c3ac7562312b",
-            //     credential: "hLT2NB9ClBIEMeOY",
-            // },
-            // {
-            //     urls: "turn:standard.relay.metered.ca:443",
-            //     username: "5c2d25d7fdd1c3ac7562312b",
-            //     credential: "hLT2NB9ClBIEMeOY",
-            // },
-            // {
-            //     urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-            //     username: "5c2d25d7fdd1c3ac7562312b",
-            //     credential: "hLT2NB9ClBIEMeOY",
-            // },
+
+            // TURN UDP
             {
                 urls: "turn:free.expressturn.com:3478",
                 username: "000000002099533468",
                 credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
-            }
-        ],
+            },
 
+            // TURN TCP
+            {
+                urls: "turn:free.expressturn.com:3478?transport=tcp",
+                username: "000000002099533468",
+                credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
+            }
+
+        ]
     });
+
+
+
 
     stream.getTracks().forEach(track => {
         peer.addTrack(track, stream);
@@ -1602,6 +1626,10 @@ async function setupRemoteMicLevel(userId, remoteStream) {
 
     async function animate() {
 
+        const bars = document.querySelectorAll(
+            `#mic-${userId} .bar`
+        );
+
         if (globalAudioContext.state !== "running") {
             await globalAudioContext.resume();
         }
@@ -1620,6 +1648,7 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         if (!track) {
             return;
         }
+
 
         if (track.muted) {
 
@@ -1646,9 +1675,7 @@ async function setupRemoteMicLevel(userId, remoteStream) {
 
         avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
-        const bars = document.querySelectorAll(
-            `#mic-${userId} .bar`
-        );
+
 
 
         if (state?.mic && avg > 10) {
