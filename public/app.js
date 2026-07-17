@@ -853,26 +853,31 @@ function createPeer(userId) {
             {
                 urls: "stun:stun.relay.metered.ca:80",
             },
+            // {
+            //     urls: "turn:standard.relay.metered.ca:80",
+            //     username: "5c2d25d7fdd1c3ac7562312b",
+            //     credential: "hLT2NB9ClBIEMeOY",
+            // },
+            // {
+            //     urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+            //     username: "5c2d25d7fdd1c3ac7562312b",
+            //     credential: "hLT2NB9ClBIEMeOY",
+            // },
+            // {
+            //     urls: "turn:standard.relay.metered.ca:443",
+            //     username: "5c2d25d7fdd1c3ac7562312b",
+            //     credential: "hLT2NB9ClBIEMeOY",
+            // },
+            // {
+            //     urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+            //     username: "5c2d25d7fdd1c3ac7562312b",
+            //     credential: "hLT2NB9ClBIEMeOY",
+            // },
             {
-                urls: "turn:standard.relay.metered.ca:80",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-            {
-                urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-            {
-                urls: "turn:standard.relay.metered.ca:443",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-            {
-                urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
+                urls: "turn:free.expressturn.com:3478",
+                username: "000000002099533468",
+                credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
+            }
         ],
 
     });
