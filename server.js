@@ -20,7 +20,7 @@ const allowedOrigins = [
     "chrome-extension://jcfhgikicifmhpalafohbcjfjicamppb"
 ];
 
-app.use(cors({
+const corsOptions = {
     credentials: true,
     origin(origin, callback) {
 
@@ -37,28 +37,14 @@ app.use(cors({
 
         callback(new Error("Not allowed"));
     }
-}));
+};
+
+app.use(cors(corsOptions));
 
 const io = new Server(server, {
-    cors: {
-        credentials: true,
-        origin(origin, callback) {
-
-            if (!origin) {
-                return callback(null, true);
-            }
-
-            if (
-                origin.startsWith("chrome-extension://") ||
-                allowedOrigins.includes(origin)
-            ) {
-                return callback(null, true);
-            }
-
-            callback(new Error("Not allowed"));
-        }
-    }
+    cors: corsOptions
 });
+
 const authRoutes = require("./routes/authRoutes");
 
 app.use(cookieParser());
@@ -71,7 +57,6 @@ app.use(authRoutes);
 // MEMORY STORAGE
 const onlineUsers = {}; // token -> {socketId, user}
 const rooms = {};       // roomId -> admin data
-const acceptedUsers = {};
 const pendingRequests = {};
 const joinedUsersInMeeting = {};
 const port = 3000;
@@ -131,83 +116,82 @@ function endMeeting(roomId) {
     const room = rooms[roomId];
     if (!room) return;
 
-    db.query(
-        `UPDATE rooms
-        SET status='ended',
-            ended_at=NOW()
-        WHERE room_token=?`,
-        [roomId]
-    );
-
-    db.query(
-        `UPDATE meetings
-        SET ended_at=NOW(),
-            duration_seconds=
-                TIMESTAMPDIFF(
-                    SECOND,
-                    started_at,
-                    NOW()
-                )
-        WHERE room_token=?`,
-        [roomId]
-    );
-
-    db.query(
-        `SELECT id
-        FROM meetings
-        WHERE room_token=?`,
-        [roomId],
-        (err, result) => {
-
-            if (err || result.length === 0) return;
-
-            db.query(
-                `UPDATE meeting_participants
-                SET left_at=NOW()
-                WHERE meeting_id=?
-                AND left_at IS NULL`,
-                [result[0].id]
-            );
-
-        }
-    );
-
     const joined = Object.keys(joinedUsersInMeeting);
 
-    // Kick all sockets
+    // Update room
+    db.query(`
+        UPDATE rooms
+        SET status='ended',
+            ended_at=NOW()
+        WHERE room_token=?
+    `, [roomId]);
+
+    // Update meeting
+    db.query(`
+        UPDATE meetings
+        SET ended_at=NOW(),
+            duration_seconds=TIMESTAMPDIFF(
+                SECOND,
+                started_at,
+                NOW()
+            )
+        WHERE room_token=?
+    `, [roomId]);
+
+    // Update participants
+    db.query(`
+        SELECT id
+        FROM meetings
+        WHERE room_token=?
+    `, [roomId], (err, result) => {
+
+        if (err || !result.length) return;
+
+        db.query(`
+            UPDATE meeting_participants
+            SET left_at=NOW()
+            WHERE meeting_id=?
+            AND left_at IS NULL
+        `, [result[0].id]);
+
+    });
+
+    // Delete pending requests
+    db.query(`
+        UPDATE meeting_requests
+        SET
+            status='expired',
+            responded_at=NOW()
+        WHERE
+            room_token=?
+            AND status='pending'
+    `, [roomId]);
+
     io.in(roomId).fetchSockets().then(sockets => {
 
         sockets.forEach(s => {
+
             s.leave(roomId);
+
+            s.emit("meeting-ended", {
+                roomId,
+                joinedUsers: joined
+            });
+
         });
 
     });
 
-    Object.keys(joinedUsersInMeeting).forEach(token => {
-        delete joinedUsersInMeeting[token];
-    });
-
-    Object.keys(pendingRequests).forEach(token => {
-        delete pendingRequests[token];
-    });
-
-    activeMeeting = null;
+    Object.keys(joinedUsersInMeeting).forEach(t => delete joinedUsersInMeeting[t]);
+    Object.keys(pendingRequests).forEach(t => delete pendingRequests[t]);
 
     delete rooms[roomId];
+    delete callAllProgress[roomId];
 
-    io.emit("meeting-ended", {
-        roomId,
-        joinedUsers: joined
-    });
-
+    activeMeeting = null;
 }
 
 
-
-
-
-
-// SOCKET
 io.on("connection", (socket) => {
 
     const user = socket.data.user;
@@ -216,7 +200,6 @@ io.on("connection", (socket) => {
 
         clearTimeout(reconnectTimers[user.token]);
         delete reconnectTimers[user.token];
-        console.log("Auto reconnected.");
     }
 
     if (user?.token) {
@@ -380,19 +363,17 @@ io.on("connection", (socket) => {
             return socket.emit("meeting-ended");
         }
 
-        acceptedUsers[user.token] = true;
-
         const roomId = activeMeeting.roomId;
 
         db.query(
             `UPDATE meeting_requests
-         SET
-            status='accepted',
-            responded_at=NOW()
-         WHERE
-            room_token=?
-            AND to_user_id=?
-            AND status='pending'`,
+            SET
+                status='accepted',
+                responded_at=NOW()
+            WHERE
+                room_token=?
+                AND to_user_id=?
+                AND status='pending'`,
             [
                 roomId,
                 user.id
@@ -401,8 +382,8 @@ io.on("connection", (socket) => {
 
         db.query(
             `SELECT id
-         FROM meetings
-         WHERE room_token=?`,
+            FROM meetings
+            WHERE room_token=?`,
             [roomId],
             (err, result) => {
 
@@ -410,8 +391,8 @@ io.on("connection", (socket) => {
 
                 db.query(
                     `INSERT INTO meeting_participants
-                 (meeting_id, user_id, joined_at)
-                 VALUES (?, ?, NOW())`,
+                    (meeting_id, user_id, joined_at)
+                    VALUES (?, ?, NOW())`,
                     [
                         result[0].id,
                         user.id
@@ -447,6 +428,7 @@ io.on("connection", (socket) => {
         if (progress) {
 
             progress.remaining--;
+            progress.accepted++;
 
             io.to(progress.adminSocket).emit("call-all-progress", {
                 remaining: progress.remaining
@@ -516,6 +498,16 @@ io.on("connection", (socket) => {
             });
 
             if (progress.remaining <= 0) {
+
+                // nobody accepted
+                if (progress.accepted === 0) {
+
+                    console.log("Nobody accepted. Ending meeting.");
+
+                    endMeeting(roomId);
+
+                }
+
                 delete callAllProgress[roomId];
             }
 
@@ -558,7 +550,6 @@ io.on("connection", (socket) => {
 
         rooms[roomId] = {
             adminToken: socket.data.user.token,
-            adminSocketId: socket.id,
             admin: socket.data.user.firstname,
             participants: [
                 socket.data.user.token,
@@ -575,8 +566,6 @@ io.on("connection", (socket) => {
             ],
             startedAt: Date.now()
         };
-
-        console.log("[ROOM CREATED]", roomId);
 
         db.query(
             `INSERT INTO rooms
@@ -868,12 +857,8 @@ io.on("connection", (socket) => {
                 targetSocket.emit("removed-from-meeting");
             });
 
-
             delete joinedUsersInMeeting[userId];
 
-            console.log(joinedUsersInMeeting);
-
-            // Update database
             db.query(
                 `SELECT id
                 FROM meetings
@@ -896,14 +881,9 @@ io.on("connection", (socket) => {
                 }
             );
 
-            // Inform everyone else
-            io.to(roomId).emit("user-disconnected", userId);
         }
 
-        io.to(roomId).emit(
-            "user-disconnected",
-            userId
-        );
+        io.to(roomId).emit("user-disconnected", userId);
 
         const remainingEmployees =
             activeMeeting.participants.filter(
@@ -913,62 +893,15 @@ io.on("connection", (socket) => {
         console.log(remainingEmployees);
 
         if (remainingEmployees === 0) {
-
-            console.log("AUTO END");
-
-            db.query(`UPDATE rooms 
-                SET status='ended', 
-                ended_at=NOW() 
-                WHERE room_token=?`,
-                [roomId]);
-
-
-            db.query(`UPDATE meetings 
-                SET ended_at=NOW(), 
-                duration_seconds= TIMESTAMPDIFF( SECOND, started_at, NOW() ) 
-                WHERE room_token=?`,
-                [roomId]);
-
-            db.query(`SELECT id FROM meetings 
-                WHERE room_token=?`,
-                [roomId], (err, result) => {
-
-                    if (err || result.length === 0) return;
-
-                    db.query(`UPDATE meeting_participants 
-                    SET left_at=NOW() 
-                    WHERE meeting_id=? 
-                    AND left_at IS NULL`,
-                        [result[0].id]);
-                });
-
-            const joined = Object.keys(joinedUsersInMeeting);
-
-            Object.keys(joinedUsersInMeeting).forEach(token => {
-                delete joinedUsersInMeeting[token];
-            });
-
-            activeMeeting = null;
-
-            io.emit("meeting-ended", {
-                roomId,
-                joinedUsers: joined
-            });
-
-            delete rooms[roomId];
+            endMeeting(roomId);
         }
-
     });
 
     socket.on("end-meeting", ({ roomId, adminToken }) => {
 
         const user = socket.data.user;
 
-        if (!user || user.acc_type !== "admin") {
-            return;
-        }
-
-        if (!roomId) return;
+        if (!user || user.acc_type !== "admin") return;
 
         const room = rooms[roomId];
 
@@ -976,75 +909,11 @@ io.on("connection", (socket) => {
 
         if (room.adminToken !== adminToken) {
 
-            return socket.emit(
-                "error",
-                "Not allowed"
-            );
+            return socket.emit("error", "Not allowed");
 
         }
 
-        console.log("[MEETING ENDED]", roomId);
-
-        db.query(
-            `UPDATE rooms
-            SET
-                status='ended',
-                ended_at=NOW()
-            WHERE room_token=?`,
-            [roomId]
-        );
-
-        db.query(
-            `UPDATE meetings
-            SET
-                ended_at=NOW(),
-                duration_seconds=
-                    TIMESTAMPDIFF(
-                        SECOND,
-                        started_at,
-                        NOW()
-                    )
-            WHERE room_token=?`,
-            [roomId]
-        );
-
-        db.query(
-            `SELECT id
-            FROM meetings
-            WHERE room_token=?`,
-            [roomId],
-            (err, result) => {
-
-                if (err || result.length === 0) return;
-
-                db.query(
-                    `UPDATE meeting_participants
-                    SET left_at=NOW()
-                    WHERE
-                        meeting_id=?
-                        AND left_at IS NULL`,
-                    [
-                        result[0].id
-                    ]
-                );
-
-            }
-        );
-
-        const joined = Object.keys(joinedUsersInMeeting);
-
-        Object.keys(joinedUsersInMeeting).forEach(token => {
-            delete joinedUsersInMeeting[token];
-        });
-
-        activeMeeting = null;
-
-        io.emit("meeting-ended", {
-            roomId,
-            joinedUsers: joined
-        });
-
-        delete rooms[roomId];
+        endMeeting(roomId);
 
     });
 
@@ -1092,11 +961,6 @@ io.on("connection", (socket) => {
 
         for (const token in onlineUsers) {
 
-            console.log(
-                token,
-                onlineUsers[token].sockets.size
-            );
-
             if (token === room.adminToken)
                 continue;
 
@@ -1143,8 +1007,28 @@ io.on("connection", (socket) => {
 
         callAllProgress[roomId] = {
             adminSocket: socket.id,
-            remaining: totalRequests
+            remaining: totalRequests,
+            accepted: 0
         };
+
+        setTimeout(() => {
+
+            const progress = callAllProgress[roomId];
+
+            if (!progress)
+                return;
+
+            if (progress.accepted === 0) {
+
+                console.log("Call All expired.");
+
+                endMeeting(roomId);
+
+            }
+
+            delete callAllProgress[roomId];
+
+        }, 30000); // 30 seconds
 
         socket.emit("call-all-started", {
             total: totalRequests
@@ -1188,8 +1072,6 @@ io.on("connection", (socket) => {
                     activeMeeting &&
                     activeMeeting.adminToken === user.token
                 ) {
-
-                    console.log("Admin did not reconnect.");
 
                     endMeeting(roomId);
 
@@ -1289,12 +1171,6 @@ io.on("connection", (socket) => {
             }
 
         }
-
-        console.log(
-            "[DISCONNECT]",
-            user.token,
-            socket.id
-        );
 
     });
 
@@ -1409,19 +1285,6 @@ app.post("/add-employee", authMiddleware, (req, res) => {
 
 });
 
-// app.post("/admin-close-meeting", express.text({ type: "*/*" }), (req, res) => {
-
-//     const { roomId } = JSON.parse(req.body);
-
-//     endMeeting(roomId);
-
-//     res.sendStatus(200);
-
-// });
-
-
-
-// START SERVER
 
 
 server.listen(port, () => {

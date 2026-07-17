@@ -84,13 +84,12 @@ socket.on("connect", async () => {
 
     await loadCurrentUser();
 
-    if (roomId) {
+    if (roomId && currentUser) {
 
         console.log("[AUTO REJOIN]", roomId);
 
         socket.emit("join-room", {
-            roomId,
-            userId: myId
+            roomId
         });
 
         if (videoTrack && audioTrack) {
@@ -536,6 +535,10 @@ socket.on("meeting-started", async (data) => {
     if (!stream) {
         await ensureMediaReady();
 
+        while (pendingUsers.length) {
+            processUsers(pendingUsers.shift());
+        }
+
         if (audioContext?.state === "suspended") {
             await audioContext.resume();
         }
@@ -549,8 +552,7 @@ socket.on("meeting-started", async (data) => {
     peerNames = {};
 
     socket.emit("join-room", {
-        roomId,
-        userId: myId
+        roomId
     });
 
     socket.emit("media-status", {
@@ -571,8 +573,7 @@ function joinRoomNow() {
     roomId = token;
 
     socket.emit("join-room", {
-        roomId,
-        userId: myId
+        roomId
     });
 
     socket.emit("media-status", {
@@ -945,11 +946,25 @@ function createPeer(userId) {
 
 
     peer.onconnectionstatechange = () => {
+
         console.log("CONNECTION:", peer.connectionState);
+
+        if (
+            peer.connectionState === "failed" ||
+            peer.connectionState === "closed"
+        ) {
+
+            peer.close();
+            delete peers[userId];
+
+        }
+
     };
 
     peer.oniceconnectionstatechange = () => {
+
         console.log("ICE:", peer.iceConnectionState);
+
         if (peer.iceConnectionState === "failed") {
             peer.restartIce();
         }
@@ -965,7 +980,13 @@ socket.on("offer", async ({ offer, from, firstname }) => {
 
     console.log("[RECEIVED OFFER]", from);
 
-    let peer = peers[from] || createPeer(from);
+    let peer = peers[from];
+
+    if (!peer) {
+        peer = createPeer(from);
+    }
+
+    if (!peer) return;
 
     await peer.setRemoteDescription(offer);
 
@@ -1017,7 +1038,11 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
     const peer = peers[from];
     if (!peer || !candidate) return;
 
-    await peer.addIceCandidate(candidate);
+    try {
+        await peer.addIceCandidate(candidate);
+    } catch (e) {
+        console.log("ICE ignored", e);
+    }
 });
 
 function getSelectedUsers() {
@@ -1361,8 +1386,7 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
     }
 
     socket.emit("join-room", {
-        roomId,
-        userId: myId
+        roomId
     });
 
     socket.emit("media-status", {
