@@ -850,15 +850,29 @@ function createPeer(userId) {
 
         iceServers: [
             {
-                urls: [
-                    "stun:stun.l.google.com:19302",
-                    "stun:stun1.l.google.com:19302",
-                    "stun:stun2.l.google.com:19302",
-                    "stun:stun3.l.google.com:19302",
-                    "stun:stun4.l.google.com:19302"
-                ]
-            }
-        ]
+                urls: "stun:stun.relay.metered.ca:80",
+            },
+            {
+                urls: "turn:standard.relay.metered.ca:80",
+                username: "5c2d25d7fdd1c3ac7562312b",
+                credential: "hLT2NB9ClBIEMeOY",
+            },
+            {
+                urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+                username: "5c2d25d7fdd1c3ac7562312b",
+                credential: "hLT2NB9ClBIEMeOY",
+            },
+            {
+                urls: "turn:standard.relay.metered.ca:443",
+                username: "5c2d25d7fdd1c3ac7562312b",
+                credential: "hLT2NB9ClBIEMeOY",
+            },
+            {
+                urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+                username: "5c2d25d7fdd1c3ac7562312b",
+                credential: "hLT2NB9ClBIEMeOY",
+            },
+        ],
 
     });
 
