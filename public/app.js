@@ -881,23 +881,36 @@ function createPeer(userId) {
     const peer = new RTCPeerConnection({
         iceServers: [
 
-            // STUN
-            {
-                urls: "stun:free.expressturn.com:3478"
-            },
+            // // STUN
+            // {
+            //     urls: "stun:free.expressturn.com:3478"
+            // },
 
-            // TURN UDP
-            {
-                urls: "turn:free.expressturn.com:3478",
-                username: "000000002099533468",
-                credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
-            },
+            // // TURN UDP
+            // {
+            //     urls: "turn:free.expressturn.com:3478",
+            //     username: "000000002099628167",
+            //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
+            // },
 
-            // TURN TCP
+            // // TURN TCP
+            // {
+            //     urls: "turn:free.expressturn.com:3478?transport=tcp",
+            //     username: "000000002099628167",
+            //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
+            // },
+
             {
-                urls: "turn:free.expressturn.com:3478?transport=tcp",
-                username: "000000002099533468",
-                credential: "l6WTR6iuDl4iH2Aj8edW1dH40VA="
+                urls: "stun.l.google.com:19302"
+            },
+            {
+                urls: [
+                    "turn:turn.evan-brass.net",
+                    "turn:turn.evan-brass.net?transport=tcp",
+                    "turns:turn.evan-brass.net:443?transport=tcp"
+                ],
+                username: "user",
+                credential: "password"
             }
 
         ]
