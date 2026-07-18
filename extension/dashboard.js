@@ -2,22 +2,6 @@ const socket = io("https://meetflow-j39a.onrender.com", {
     withCredentials: true
 });
 
-socket.on("connect", () => {
-    console.log("[EXTENSION] Connected:", socket.id);
-});
-
-socket.on("disconnect", (reason) => {
-    console.log("[EXTENSION] Disconnected:", reason);
-});
-
-socket.on("reconnect", () => {
-    console.log("[EXTENSION] Reconnected:", socket.id);
-});
-
-socket.on("connect_error", (err) => {
-    console.log("[EXTENSION] Connect Error:", err.message);
-});
-
 let stream = null;
 let roomId = null;
 let videoTrack;
@@ -65,8 +49,6 @@ function setCallAllLoading(loading) {
         `;
 }
 
-
-
 const sounds = {
     micOn: new Audio("/sounds/mic_on.mp3"),
     micOff: new Audio("/sounds/mic_off.mp3"),
@@ -99,13 +81,10 @@ socket.on("connect", async () => {
 
     await loadCurrentUser();
 
-    if (roomId) {
-
-        console.log("[AUTO REJOIN]", roomId);
+    if (roomId && currentUser) {
 
         socket.emit("join-room", {
-            roomId,
-            userId: myId
+            roomId
         });
 
         if (videoTrack && audioTrack) {
@@ -128,7 +107,6 @@ socket.io.on("reconnect", () => {
 socket.io.on("reconnect_attempt", () => {
     console.log("Trying to reconnect...");
 });
-
 
 async function loadCurrentUser() {
 
@@ -162,8 +140,6 @@ async function loadCurrentUser() {
 
 }
 
-
-
 let userMediaStates = {};
 
 const globalAudioContext = new AudioContext();
@@ -172,7 +148,6 @@ const remoteAnimationFrames = {};
 
 let meetingStartTime = null;
 let meetingTimerInterval = null;
-
 
 document.getElementById("menuBtn").onclick = () => {
     toggleSidebar();
@@ -236,8 +211,6 @@ function initUser(data) {
     currentUser = data.user;
     myId = currentUser.token;
 
-    socket.emit("register");
-
     setTimeout(() => {
 
         if (videoTrack && audioTrack) {
@@ -255,7 +228,6 @@ function initUser(data) {
 
 }
 
-// UI
 function setupUI() {
 
     const callAllBtn = document.getElementById("callAllBtn");
@@ -275,10 +247,14 @@ function setupUI() {
     updateMeetingButtons(false);
 }
 
-// CAMERA
 window.onload = async () => {
 
-    await ensureMediaReady();
+    const ready = await ensureMediaReady();
+
+    if (!ready) {
+        console.log("Media initialization failed.");
+        return;
+    }
 
     if (audioContext?.state === "suspended") {
         await audioContext.resume();
@@ -313,7 +289,7 @@ async function ensureMediaReady(attempt = 0) {
                 echoCancellation: false,
                 noiseSuppression: true,
                 autoGainControl: true,
-                voiceIsolation: true,
+                voiceIsolation: false,
                 sampleRate: 48000,
                 channelCount: 1
             }
@@ -329,6 +305,17 @@ async function ensureMediaReady(attempt = 0) {
         rawStream.getAudioTracks().forEach(track => {
             finalStream.addTrack(track);
         });
+
+        // const finalStream =
+        //     new MediaStream();
+
+        // rawStream.getVideoTracks().forEach(track => {
+        //     finalStream.addTrack(track);
+        // });
+
+        // rawStream.getAudioTracks().forEach(track => {
+        //     finalStream.addTrack(track);
+        // });
 
         stream = finalStream;
         localVideo.srcObject = stream;
@@ -346,9 +333,6 @@ async function ensureMediaReady(attempt = 0) {
 
     } catch (err) {
         console.error("[MEDIA ERROR]", err);
-        console.error(err.name);
-        console.error(err.message);
-        console.log("[MEDIA] failed attempt:", attempt);
 
         if (attempt < 10) {
             setTimeout(() => ensureMediaReady(attempt + 1), 1000);
@@ -378,9 +362,6 @@ document.getElementById("lutFile").addEventListener("change", async (e) => {
         await loadUserLUT(selectedFile);
     }
 });
-
-
-
 
 let pendingRequestTokens = [];
 let pendingCallAll = false;
@@ -449,14 +430,13 @@ function updateMeetingButtons(active) {
     endBtn.style.display = active ? "block" : "none";
 }
 
-// MIC LEVEL
 function setupMicLevel() {
 
     audioContext = new AudioContext();
     const source = audioContext.createMediaStreamSource(stream);
 
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 64;
+    analyser.fftSize = 32;
 
     source.connect(analyser);
 
@@ -486,7 +466,6 @@ function updateMicLevel() {
     });
 }
 
-// ROOM EVENTS
 function createRoomNow() {
 
     socket.emit("create-room", {
@@ -515,8 +494,6 @@ function startMeeting() {
     });
 }
 
-
-// JOIN SYSTEM
 let joinedUsers = 0;
 
 socket.on("meeting-started", async (data) => {
@@ -541,6 +518,10 @@ socket.on("meeting-started", async (data) => {
     if (!stream) {
         await ensureMediaReady();
 
+        while (pendingUsers.length) {
+            processUsers(pendingUsers.shift());
+        }
+
         if (audioContext?.state === "suspended") {
             await audioContext.resume();
         }
@@ -554,8 +535,7 @@ socket.on("meeting-started", async (data) => {
     peerNames = {};
 
     socket.emit("join-room", {
-        roomId,
-        userId: myId
+        roomId
     });
 
     socket.emit("media-status", {
@@ -576,8 +556,7 @@ function joinRoomNow() {
     roomId = token;
 
     socket.emit("join-room", {
-        roomId,
-        userId: myId
+        roomId
     });
 
     socket.emit("media-status", {
@@ -611,6 +590,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         updateMeetingButtons(false);
     }
 
+    // Close all peers
     for (let id in peers) {
         peers[id].close();
     }
@@ -642,8 +622,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
 
     document.getElementById("videos").innerHTML = "";
 
-
-    // RESET MEDIA (IMPORTANT FIX)
+    // RESET MEDIA
     if (stream) {
         stream.getTracks().forEach(t => t.stop());
         stream = null;
@@ -651,7 +630,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         audioTrack = null;
     }
 
-    // AUTO RESTART CAMERA (optional but requested behavior)
+    // Restart local media
     setTimeout(async () => {
 
         await ensureMediaReady();
@@ -691,6 +670,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
     });
 
     stopMeetingTimer();
+
 });
 
 socket.on("user-disconnected", (userId) => {
@@ -700,7 +680,7 @@ socket.on("user-disconnected", (userId) => {
     if (currentUser.acc_type === "admin") {
         updateMeetingButtons(joinedUsers > 0);
 
-        const btn = document.getElementById(`req-${userId.token}`);
+        const btn = document.getElementById(`req-${userId}`);
 
         if (btn) {
             btn.disabled = false;
@@ -763,7 +743,7 @@ socket.on("user-joined-room", (user) => {
         joinedUsers++;
         updateMeetingButtons(joinedUsers > 0);
 
-        const btn = document.getElementById(`req-${user.token}`);
+        const btn = document.getElementById(`req-${user.id}`);
 
         if (btn) {
             btn.disabled = true;
@@ -796,7 +776,6 @@ socket.on("media-status-changed", ({ userId, camera, mic }) => {
     updateRemoteStatus(userId);
 });
 
-// FIXED EXISTING USERS
 socket.on("existing-users", (users) => {
 
     if (!stream) {
@@ -818,7 +797,6 @@ async function processUsers(users) {
         peerNames[user.id] = user.firstname;
 
         const peer = createPeer(user.id);
-
         const offer = await peer.createOffer();
 
         await peer.setLocalDescription(offer);
@@ -833,7 +811,6 @@ async function processUsers(users) {
     }
 }
 
-// PEER CREATION
 function createPeer(userId) {
 
     if (!stream) {
@@ -845,21 +822,59 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        iceServers: [
+
+            // // STUN
+            // {
+            //     urls: "stun:free.expressturn.com:3478"
+            // },
+
+            // // TURN UDP
+            // {
+            //     urls: "turn:free.expressturn.com:3478",
+            //     username: "000000002099628167",
+            //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
+            // },
+
+            // // TURN TCP
+            // {
+            //     urls: "turn:free.expressturn.com:3478?transport=tcp",
+            //     username: "000000002099628167",
+            //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
+            // },
+
+            {
+                urls: "stun:stun.l.google.com:19302"
+            },
+            {
+                urls: [
+                    "turn:turn.evan-brass.net",
+                    "turn:turn.evan-brass.net?transport=tcp",
+                    "turns:turn.evan-brass.net:443?transport=tcp"
+                ],
+                username: "user",
+                credential: "password"
+            }
+
+        ]
     });
+
+
+
 
     stream.getTracks().forEach(track => {
         peer.addTrack(track, stream);
     });
 
     const sender = peer.getSenders()
-        .find(s => s.track?.kind === "audio");
+        .find(s => s.track?.kind === "video");
 
     if (sender) {
         const params = sender.getParameters();
 
         params.encodings = [{
-            maxBitrate: 32000
+            maxBitrate: 300000,
+            maxFramerate: 20
         }];
 
         sender.setParameters(params);
@@ -897,23 +912,38 @@ function createPeer(userId) {
         addRemoteVideo(userId, event.streams[0]);
     };
 
-    peer.onicecandidate = (event) => {
-        if (event.candidate) {
+    peer.onicecandidate = (e) => {
+
+        if (e.candidate) {
+
             socket.emit("ice-candidate", {
                 roomId,
                 to: userId,
                 from: myId,
-                candidate: event.candidate
+                candidate: e.candidate
             });
+
         }
+
     };
 
+
     peer.onconnectionstatechange = () => {
-        console.log(peer.connectionState);
+
+        if (
+            peer.connectionState === "failed" ||
+            peer.connectionState === "closed"
+        ) {
+
+            peer.close();
+            delete peers[userId];
+
+        }
+
     };
 
     peer.oniceconnectionstatechange = () => {
-        console.log(peer.iceConnectionState);
+
         if (peer.iceConnectionState === "failed") {
             peer.restartIce();
         }
@@ -924,10 +954,15 @@ function createPeer(userId) {
     return peer;
 }
 
-// SIGNALING
 socket.on("offer", async ({ offer, from, firstname }) => {
 
-    let peer = peers[from] || createPeer(from);
+    let peer = peers[from];
+
+    if (!peer) {
+        peer = createPeer(from);
+    }
+
+    if (!peer) return;
 
     await peer.setRemoteDescription(offer);
 
@@ -953,6 +988,7 @@ socket.on("offer", async ({ offer, from, firstname }) => {
     if (firstname) {
         peerNames[from] = firstname;
     }
+
 });
 
 socket.on("answer", async ({ answer, from }) => {
@@ -960,15 +996,11 @@ socket.on("answer", async ({ answer, from }) => {
     const peer = peers[from];
     if (!peer) return;
 
-    if (peer.signalingState !== "have-local-offer") {
-        console.warn(
-            "Ignoring answer:",
-            peer.signalingState
-        );
-        return;
+    try {
+        await peer.setRemoteDescription(answer);
+    } catch (err) {
+        console.log(err);
     }
-
-    await peer.setRemoteDescription(answer);
 });
 
 socket.on("ice-candidate", async ({ candidate, from }) => {
@@ -976,8 +1008,13 @@ socket.on("ice-candidate", async ({ candidate, from }) => {
     const peer = peers[from];
     if (!peer || !candidate) return;
 
-    await peer.addIceCandidate(candidate);
+    try {
+        await peer.addIceCandidate(candidate);
+    } catch (e) {
+        console.log("ICE ignored", e);
+    }
 });
+
 
 function getSelectedUsers() {
 
@@ -989,11 +1026,10 @@ function getSelectedUsers() {
 }
 
 let table;
-let eventsBound = false;
 
 async function loadUsers() {
 
-    const res = await fetch("https://meetflow-j39a.onrender.com/users", {
+    const res = await fetch("/users", {
         credentials: "include"
     });
 
@@ -1020,30 +1056,33 @@ async function loadUsers() {
                 render: function (data) {
 
                     return `
+
                         <button
                             title="Request a call"
-                            id="req-${data.token}"
                             class="reqBtn"
-                            data-token="${data.token}"
+                            id="req-${data.token}"
+                            onclick="requestUser('${data.token}')"
                             ${data.joined ? "disabled" : ""}
                         >
-                            ${data.joined
+
+                        ${data.joined
                             ? '<i class="fa-solid fa-circle-check"></i>'
                             : '<i class="fa-solid fa-paper-plane"></i>'
                         }
+
                         </button>
 
                         <button
                             title="Remove user"
-                            id="delete-${data.token}"
                             class="deleteBtn"
-                            data-token="${data.token}"
+                            id="delete-${data.token}"
+                            onclick="deleteUser('${data.token}')"
                             ${data.joined ? "disabled" : ""}
                         >
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
-                    `;
 
+                    `;
                 }
             }
 
@@ -1079,37 +1118,11 @@ async function loadUsers() {
 
     });
 
-    if (!eventsBound) {
-
-        document
-            .querySelector("#userTable tbody")
-            .addEventListener("click", (e) => {
-
-                const reqBtn = e.target.closest(".reqBtn");
-
-                if (reqBtn) {
-                    requestUser(reqBtn.dataset.token);
-                    return;
-                }
-
-                const deleteBtn = e.target.closest(".deleteBtn");
-
-                if (deleteBtn) {
-                    deleteUser(deleteBtn.dataset.token);
-                }
-
-            });
-
-        eventsBound = true;
-    }
-
 }
-
 
 async function requestUser(token) {
 
-    const btn =
-        document.getElementById(`req-${token}`);
+    const btn = document.getElementById(`req-${token}`);
 
     btn.disabled = true;
 
@@ -1124,7 +1137,7 @@ async function requestUser(token) {
             participants: []
         });
 
-        pendingRequestToken = token;
+        pendingRequestTokens.push(token);
         return;
     }
 
@@ -1144,6 +1157,10 @@ document.getElementById("callAllBtn").addEventListener("click", () => {
 })
 
 function callAllUsers() {
+
+    if (callAllLoading) return;
+
+    setCallAllLoading(true);
 
     if (!roomId) {
 
@@ -1190,8 +1207,12 @@ socket.on("user-deleted", (token) => {
 let requestedRoom = null;
 
 socket.on("meeting-request", (data) => {
+
     requestedRoom = data.roomId;
-    document.getElementById("meetingRequestText").innerText = `${data.admin} wants you to join the meeting.`;
+
+    document.getElementById("meetingRequestText").innerText =
+        `${data.admin} wants you to join the meeting.`;
+
     document.getElementById("meetingRequestModal").style.display = "flex";
 
     if (!requestSoundPlaying) {
@@ -1200,6 +1221,7 @@ socket.on("meeting-request", (data) => {
         sounds.request.loop = true;
         sounds.request.play().catch(() => { });
     }
+
 });
 
 socket.on("request-accepted", ({ token }) => {
@@ -1207,12 +1229,16 @@ socket.on("request-accepted", ({ token }) => {
     const reqBtn = document.getElementById(`req-${token}`);
     const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (reqBtn) reqBtn.disabled = false;
-    if (deleteBtn) deleteBtn.disabled = false;
-
-    reqBtn.innerHTML = `
+    if (reqBtn) {
+        reqBtn.disabled = false;
+        reqBtn.innerHTML = `
         <i class="fa-solid fa-paper-plane"></i>
     `;
+    }
+
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+    }
 });
 
 socket.on("request-declined", ({ token }) => {
@@ -1220,12 +1246,16 @@ socket.on("request-declined", ({ token }) => {
     const reqBtn = document.getElementById(`req-${token}`);
     const deleteBtn = document.getElementById(`delete-${token}`);
 
-    if (reqBtn) reqBtn.disabled = false;
-    if (deleteBtn) deleteBtn.disabled = false;
+    if (reqBtn) {
+        reqBtn.disabled = false;
+        reqBtn.innerHTML = `
+            <i class="fa-solid fa-paper-plane"></i>
+        `;
+    }
 
-    reqBtn.innerHTML = `
-        <i class="fa-solid fa-paper-plane"></i>
-    `;
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+    }
 
 });
 
@@ -1327,8 +1357,7 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
     }
 
     socket.emit("join-room", {
-        roomId,
-        userId: myId
+        roomId
     });
 
     socket.emit("media-status", {
@@ -1351,8 +1380,6 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 
 };
 
-
-// UI VIDEO
 function addRemoteVideo(userId, stream) {
 
     let wrapper = document.getElementById("wrap-" + userId);
@@ -1440,7 +1467,23 @@ function addRemoteVideo(userId, stream) {
 
         };
 
-        remoteVideo.play().catch(console.error);
+        if (document.body.contains(remoteVideo)) {
+
+            const promise = remoteVideo.play();
+
+            if (promise) {
+
+                promise.catch(err => {
+
+                    if (err.name !== "AbortError") {
+                        console.error(err);
+                    }
+
+                });
+
+            }
+
+        }
     }
 
 
@@ -1507,8 +1550,6 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         delete remoteAnimationFrames[userId];
     }
 
-    console.log("Analyser stream:", remoteStream.id);
-
     if (globalAudioContext.state === "suspended") {
         await globalAudioContext.resume();
     }
@@ -1540,6 +1581,10 @@ async function setupRemoteMicLevel(userId, remoteStream) {
 
     async function animate() {
 
+        const bars = document.querySelectorAll(
+            `#mic-${userId} .bar`
+        );
+
         if (globalAudioContext.state !== "running") {
             await globalAudioContext.resume();
         }
@@ -1558,6 +1603,7 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         if (!track) {
             return;
         }
+
 
         if (track.muted) {
 
@@ -1584,9 +1630,7 @@ async function setupRemoteMicLevel(userId, remoteStream) {
 
         avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
-        const bars = document.querySelectorAll(
-            `#mic-${userId} .bar`
-        );
+
 
 
         if (state?.mic && avg > 10) {
@@ -1626,7 +1670,6 @@ document.getElementById("micBtn").onclick = () => {
     toggleMic();
 }
 
-// CONTROLS
 function toggleCamera() {
 
     playSound(

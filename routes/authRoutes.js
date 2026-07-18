@@ -10,13 +10,11 @@ router.get("/", guestMiddleware, (req, res) => {
 });
 
 router.get("/auth", guestMiddleware, (req, res) => {
-    console.log("AUTH ROUTE CALLED");
     res.sendFile(process.cwd() + "/public/auth.html");
 });
 
 
 router.get("/dashboard", authMiddleware, (req, res) => {
-    console.log("LOGGED USER:", req.user);
     res.sendFile(
         process.cwd() + "/public/dashboard.html"
     );
@@ -36,9 +34,6 @@ router.get("/me", authMiddleware, (req, res) => {
 
 // LOGIN
 router.post("/login", (req, res) => {
-
-    console.log("LOGIN REQUEST RECEIVED");
-    console.log(req.body);
 
     const { username, password } = req.body;
 
@@ -69,33 +64,6 @@ router.post("/login", (req, res) => {
                 });
             }
 
-
-            // req.session.user = {
-            //     id: user.id,
-            //     firstname: user.firstname,
-            //     lastname: user.lastname,
-            //     username: user.username,
-            //     acc_type: user.acc_type,
-            //     token: user.token
-            // };
-
-
-
-            // req.session.save((err) => {
-
-            //     if (err) {
-            //         return res.status(500).json({
-            //             success: false
-            //         });
-            //     }
-
-            //     res.json({
-            //         success: true,
-            //         token: user.token,
-            //         user: req.session.user
-            //     });
-
-            // });
 
             const sessionToken = crypto.randomUUID();
 

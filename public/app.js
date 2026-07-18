@@ -27,8 +27,6 @@ let myId = null;
 let requestSoundPlaying = false;
 
 
-
-
 function setCallAllLoading(loading) {
 
     const btn = document.getElementById("callAllBtn");
@@ -48,8 +46,6 @@ function setCallAllLoading(loading) {
             Call All
         `;
 }
-
-
 
 const sounds = {
     micOn: new Audio("/sounds/mic_on.mp3"),
@@ -77,7 +73,6 @@ function stopSound(audio) {
     audio.currentTime = 0;
 }
 
-
 socket.on("connect", async () => {
 
     console.log("Socket connected:", socket.id);
@@ -85,8 +80,6 @@ socket.on("connect", async () => {
     await loadCurrentUser();
 
     if (roomId && currentUser) {
-
-        console.log("[AUTO REJOIN]", roomId);
 
         socket.emit("join-room", {
             roomId
@@ -104,7 +97,6 @@ socket.on("connect", async () => {
     }
 
 });
-
 
 socket.io.on("reconnect", () => {
     console.log("Socket reconnected.");
@@ -146,9 +138,6 @@ async function loadCurrentUser() {
 
 }
 
-
-
-
 let userMediaStates = {};
 
 const globalAudioContext = new AudioContext();
@@ -158,8 +147,6 @@ const remoteAnimationFrames = {};
 let meetingStartTime = null;
 let meetingTimerInterval = null;
 
-
-
 window.toggleSidebar = function () {
 
     document.querySelector(".leftCont").classList.toggle("show");
@@ -167,7 +154,6 @@ window.toggleSidebar = function () {
     document.querySelector("#overlay").classList.toggle("show");
 
 }
-
 
 function startMeetingTimer(startedAt) {
 
@@ -232,9 +218,6 @@ function initUser(data) {
 
 }
 
-
-
-// UI
 function setupUI() {
 
     const callAllBtn = document.getElementById("callAllBtn");
@@ -254,9 +237,6 @@ function setupUI() {
     updateMeetingButtons(false);
 }
 
-
-
-// CAMERA
 window.onload = async () => {
 
     const ready = await ensureMediaReady();
@@ -305,27 +285,27 @@ async function ensureMediaReady(attempt = 0) {
             }
         });
 
-        // const filteredVideo = await createFilteredStream(rawStream);
-        // const finalStream = new MediaStream();
+        const filteredVideo = await createFilteredStream(rawStream);
+        const finalStream = new MediaStream();
 
-        // filteredVideo.getVideoTracks().forEach(track => {
-        //     finalStream.addTrack(track);
-        // });
-
-        // rawStream.getAudioTracks().forEach(track => {
-        //     finalStream.addTrack(track);
-        // });
-
-        const finalStream =
-            new MediaStream();
-
-        rawStream.getVideoTracks().forEach(track => {
+        filteredVideo.getVideoTracks().forEach(track => {
             finalStream.addTrack(track);
         });
 
         rawStream.getAudioTracks().forEach(track => {
             finalStream.addTrack(track);
         });
+
+        // const finalStream =
+        //     new MediaStream();
+
+        // rawStream.getVideoTracks().forEach(track => {
+        //     finalStream.addTrack(track);
+        // });
+
+        // rawStream.getAudioTracks().forEach(track => {
+        //     finalStream.addTrack(track);
+        // });
 
         stream = finalStream;
         localVideo.srcObject = stream;
@@ -372,9 +352,6 @@ document.getElementById("lutFile").addEventListener("change", async (e) => {
         await loadUserLUT(selectedFile);
     }
 });
-
-
-
 
 let pendingRequestTokens = [];
 let pendingCallAll = false;
@@ -443,7 +420,6 @@ function updateMeetingButtons(active) {
     endBtn.style.display = active ? "block" : "none";
 }
 
-// MIC LEVEL
 function setupMicLevel() {
 
     audioContext = new AudioContext();
@@ -480,7 +456,6 @@ function updateMicLevel() {
     });
 }
 
-// ROOM EVENTS
 function createRoomNow() {
 
     socket.emit("create-room", {
@@ -509,8 +484,6 @@ function startMeeting() {
     });
 }
 
-
-// JOIN SYSTEM
 let joinedUsers = 0;
 
 socket.on("meeting-started", async (data) => {
@@ -595,8 +568,6 @@ function endMeeting() {
 }
 
 socket.on("meeting-ended", ({ joinedUsers }) => {
-
-    // playSound(sounds.leave);
 
     roomId = null;
     activeRoom = null;
@@ -689,8 +660,6 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
 });
 
 socket.on("user-disconnected", (userId) => {
-
-    // playSound(sounds.leave);
 
     joinedUsers = Math.max(0, joinedUsers - 1);
 
@@ -793,7 +762,6 @@ socket.on("media-status-changed", ({ userId, camera, mic }) => {
     updateRemoteStatus(userId);
 });
 
-// FIXED EXISTING USERS
 socket.on("existing-users", (users) => {
 
     if (!stream) {
@@ -815,16 +783,9 @@ async function processUsers(users) {
         peerNames[user.id] = user.firstname;
 
         const peer = createPeer(user.id);
-
-        console.log("[PROCESS USERS]", users);
-
         const offer = await peer.createOffer();
 
-        console.log("[CREATE OFFER]", user.id);
-
         await peer.setLocalDescription(offer);
-
-        console.log("[SEND OFFER]", user.id);
 
         socket.emit("offer", {
             roomId,
@@ -836,7 +797,6 @@ async function processUsers(users) {
     }
 }
 
-// PEER CREATION
 function createPeer(userId) {
 
     if (!stream) {
@@ -846,37 +806,6 @@ function createPeer(userId) {
     }
 
     if (peers[userId]) return peers[userId];
-
-    // const peer = new RTCPeerConnection({
-
-    //     iceServers: [
-    //         {
-    //             urls: "stun:stun.relay.metered.ca:80"
-    //         },
-    //         {
-    //             urls: "turn:standard.relay.metered.ca:80",
-    //             username: "5c2d25d7fdd1c3ac7562312b",
-    //             credential: "hLT2NB9ClBIEMeOY",
-    //         },
-    //         {
-    //             urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-    //             username: "5c2d25d7fdd1c3ac7562312b",
-    //             credential: "hLT2NB9ClBIEMeOY",
-    //         },
-    //         {
-    //             urls: "turn:standard.relay.metered.ca:443",
-    //             username: "5c2d25d7fdd1c3ac7562312b",
-    //             credential: "hLT2NB9ClBIEMeOY",
-    //         },
-    //         {
-    //             urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-    //             username: "5c2d25d7fdd1c3ac7562312b",
-    //             credential: "hLT2NB9ClBIEMeOY",
-    //         }
-    //     ],
-
-    // });
-
 
     const peer = new RTCPeerConnection({
         iceServers: [
@@ -973,8 +902,6 @@ function createPeer(userId) {
 
         if (e.candidate) {
 
-            console.log("[LOCAL ICE]", e.candidate.candidate);
-
             socket.emit("ice-candidate", {
                 roomId,
                 to: userId,
@@ -988,8 +915,6 @@ function createPeer(userId) {
 
 
     peer.onconnectionstatechange = () => {
-
-        console.log("CONNECTION:", peer.connectionState);
 
         if (
             peer.connectionState === "failed" ||
@@ -1005,8 +930,6 @@ function createPeer(userId) {
 
     peer.oniceconnectionstatechange = () => {
 
-        console.log("ICE:", peer.iceConnectionState);
-
         if (peer.iceConnectionState === "failed") {
             peer.restartIce();
         }
@@ -1017,10 +940,7 @@ function createPeer(userId) {
     return peer;
 }
 
-// SIGNALING
 socket.on("offer", async ({ offer, from, firstname }) => {
-
-    console.log("[RECEIVED OFFER]", from);
 
     let peer = peers[from];
 
@@ -1055,18 +975,14 @@ socket.on("offer", async ({ offer, from, firstname }) => {
         peerNames[from] = firstname;
     }
 
-    console.log("[SEND ANSWER]", from);
 });
 
 socket.on("answer", async ({ answer, from }) => {
-
-    console.log("[RECEIVED ANSWER]", from);
 
     const peer = peers[from];
     if (!peer) return;
 
     try {
-        // Avoid strict signalingState gating (timing differs across NATs/ISPs)
         await peer.setRemoteDescription(answer);
     } catch (err) {
         console.log(err);
@@ -1074,8 +990,6 @@ socket.on("answer", async ({ answer, from }) => {
 });
 
 socket.on("ice-candidate", async ({ candidate, from }) => {
-
-    console.log("[REMOTE ICE]", from, candidate?.candidate);
 
     const peer = peers[from];
     if (!peer || !candidate) return;
@@ -1095,8 +1009,6 @@ function getSelectedUsers() {
         )
     ].map(x => x.value);
 }
-
-
 
 let table;
 
@@ -1330,8 +1242,6 @@ socket.on("request-declined", ({ token }) => {
 
 socket.on("removed-from-meeting", () => {
 
-    // playSound(sounds.leave);
-
     roomId = null;
 
     for (let id in peers) {
@@ -1451,7 +1361,6 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 
 };
 
-// UI VIDEO
 function addRemoteVideo(userId, stream) {
 
     let wrapper = document.getElementById("wrap-" + userId);
@@ -1539,7 +1448,23 @@ function addRemoteVideo(userId, stream) {
 
         };
 
-        remoteVideo.play().catch(console.error);
+        if (document.body.contains(remoteVideo)) {
+
+            const promise = remoteVideo.play();
+
+            if (promise) {
+
+                promise.catch(err => {
+
+                    if (err.name !== "AbortError") {
+                        console.error(err);
+                    }
+
+                });
+
+            }
+
+        }
     }
 
 
@@ -1605,8 +1530,6 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         cancelAnimationFrame(remoteAnimationFrames[userId]);
         delete remoteAnimationFrames[userId];
     }
-
-    console.log("Analyser stream:", remoteStream.id);
 
     if (globalAudioContext.state === "suspended") {
         await globalAudioContext.resume();
@@ -1720,7 +1643,6 @@ async function setupRemoteMicLevel(userId, remoteStream) {
     animate();
 }
 
-// CONTROLS
 function toggleCamera() {
 
     playSound(
@@ -1865,7 +1787,6 @@ toggleEmpPassword.addEventListener("click", () => {
 
 });
 
-
 document.getElementById("saveEmployeeBtn").addEventListener("click", async () => {
 
     const firstname = document.getElementById("empFirstname").value.trim();
@@ -1930,9 +1851,6 @@ document.getElementById("saveEmployeeBtn").addEventListener("click", async () =>
     }
 
 });
-
-
-
 
 
 // ERROR

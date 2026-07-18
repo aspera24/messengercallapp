@@ -2,16 +2,23 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
     scrollbar-width: thin;
     scrollbar-color: #c4c4c4 transparent !important;
-    font-family: sans-serif, Arial, Helvetica, sans-serif;
 }
+
+@font-face {
+    font-family: "CenturyGothicLocal";
+    src: url("/fonts/centurygothic.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 
 body {
     background: #f8f8f8;
     color: #f8fafc;
     overflow-y: auto;
+    font-family: "CenturyGothicLocal", sans-serif;
 }
 
 #overlay {
@@ -525,12 +532,8 @@ input:focus {
     align-items: flex-end;
     height: 30px;
     padding: 5px;
-    background: rgba(39, 39, 39, 0.63);
 }
 
-.userlevel {
-    border-bottom-right-radius: 15px;
-}
 
 .mic-level .bar {
     width: 3px;
@@ -552,7 +555,6 @@ input:focus {
     background-color: #1e1e24;
     padding: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-family: system-ui, -apple-system, sans-serif;
 }
 
 .filter-box label {

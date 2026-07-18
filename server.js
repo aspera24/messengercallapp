@@ -890,8 +890,6 @@ io.on("connection", (socket) => {
                 token => token !== room.adminToken
             ).length;
 
-        console.log(remainingEmployees);
-
         if (remainingEmployees === 0) {
             endMeeting(roomId);
         }
@@ -1068,22 +1066,14 @@ io.on("connection", (socket) => {
 
             reconnectTimers[user.token] = setTimeout(() => {
 
-                if (
-                    activeMeeting &&
-                    activeMeeting.adminToken === user.token
-                ) {
+                socket.to(roomId).emit(
+                    "user-disconnected",
+                    user.token
+                );
 
-                    endMeeting(roomId);
-
-                }
+                endMeeting(roomId);
 
             }, 30000);
-
-
-            socket.to(activeMeeting?.roomId).emit(
-                "user-disconnected",
-                user.token
-            );
 
             db.query(
                 `SELECT id
