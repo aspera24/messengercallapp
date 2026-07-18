@@ -98,7 +98,7 @@
         position: fixed;
         left: -100%;
         top: 75px;
-        width: 260px;
+        width: 320px;
         height: calc(100% - 85px);
         z-index: 999;
         transition: .5s;
