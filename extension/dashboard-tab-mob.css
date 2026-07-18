@@ -36,6 +36,12 @@
         grid-auto-rows: 170px;
     }
 
+    .smallVideo {
+        height: 130px;
+        width: 210px;
+        padding: 15px;
+    }
+
     .topbar h2 {
         font-size: 18px;
     }
