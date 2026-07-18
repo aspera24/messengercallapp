@@ -1185,7 +1185,10 @@ socket.on("user-deleted", (token) => {
 
 });
 
+
+
 let requestedRoom = null;
+let requestCountdownTimer = null;
 
 socket.on("meeting-request", (data) => {
 
@@ -1202,6 +1205,33 @@ socket.on("meeting-request", (data) => {
         sounds.request.loop = true;
         sounds.request.play().catch(() => { });
     }
+
+    if (requestCountdownTimer) {
+        clearInterval(requestCountdownTimer);
+    }
+
+    let seconds = 20;
+
+    requestCountdownTimer = setInterval(() => {
+
+        seconds--;
+
+        if (seconds <= 0) {
+
+            clearInterval(requestCountdownTimer);
+            requestCountdownTimer = null;
+
+            sounds.request.pause();
+            sounds.request.currentTime = 0;
+            requestSoundPlaying = false;
+
+            requestedRoom = null;
+
+            document.getElementById("meetingRequestModal").style.display = "none";
+
+        }
+
+    }, 1000);
 
 });
 
@@ -1316,6 +1346,11 @@ socket.on("removed-from-meeting", () => {
 
 document.getElementById("acceptMeetingBtn").onclick = async () => {
 
+    if (requestCountdownTimer) {
+        clearInterval(requestCountdownTimer);
+        requestCountdownTimer = null;
+    }
+
     sounds.request.pause();
     sounds.request.currentTime = 0;
     requestSoundPlaying = false;
@@ -1348,6 +1383,11 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 };
 
 document.getElementById("declineMeetingBtn").onclick = () => {
+
+    if (requestCountdownTimer) {
+        clearInterval(requestCountdownTimer);
+        requestCountdownTimer = null;
+    }
 
     sounds.request.pause();
     sounds.request.currentTime = 0;

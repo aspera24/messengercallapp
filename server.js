@@ -58,6 +58,7 @@ app.use(authRoutes);
 const onlineUsers = {}; // token -> {socketId, user}
 const rooms = {};       // roomId -> admin data
 const pendingRequests = {};
+const requestTimers = {};
 const joinedUsersInMeeting = {};
 const port = 3000;
 const reconnectTimers = {};
@@ -184,6 +185,14 @@ function endMeeting(roomId) {
 
     Object.keys(joinedUsersInMeeting).forEach(t => delete joinedUsersInMeeting[t]);
     Object.keys(pendingRequests).forEach(t => delete pendingRequests[t]);
+
+    Object.keys(requestTimers).forEach(token => {
+
+        clearTimeout(requestTimers[token]);
+
+        delete requestTimers[token];
+
+    });
 
     delete rooms[roomId];
     delete callAllProgress[roomId];
@@ -345,6 +354,46 @@ io.on("connection", (socket) => {
 
                     });
 
+                    if (requestTimers[token]) {
+                        clearTimeout(requestTimers[token]);
+                    }
+
+                    requestTimers[token] = setTimeout(() => {
+
+                        delete requestTimers[token];
+
+                        if (!pendingRequests[token]) {
+                            return;
+                        }
+
+                        db.query(`
+                            UPDATE meeting_requests
+                            SET
+                                status='expired',
+                                responded_at=NOW()
+                            WHERE
+                                room_token=?
+                                AND to_user_id=?
+                                AND status='pending'
+                        `,
+                            [roomId, employeeId]);
+
+                        delete pendingRequests[token];
+
+                        io.emit("request-expired", {
+                            token
+                        });
+
+                        console.log(`${token} request expired.`);
+
+                        const stillPending = Object.keys(pendingRequests).length;
+
+                        if (stillPending === 0) {
+                            endMeeting(roomId);
+                        }
+
+                    }, 20000);
+
                 }
 
             }
@@ -403,6 +452,11 @@ io.on("connection", (socket) => {
         );
 
         delete pendingRequests[user.token];
+
+        if (requestTimers[user.token]) {
+            clearTimeout(requestTimers[user.token]);
+            delete requestTimers[user.token];
+        }
 
         if (!activeMeeting.participants.includes(user.token)) {
 
@@ -486,6 +540,11 @@ io.on("connection", (socket) => {
         }
 
         delete pendingRequests[user.token];
+
+        if (requestTimers[user.token]) {
+            clearTimeout(requestTimers[user.token]);
+            delete requestTimers[user.token];
+        }
 
         const progress = callAllProgress[roomId];
 
@@ -1026,7 +1085,7 @@ io.on("connection", (socket) => {
 
             delete callAllProgress[roomId];
 
-        }, 30000); // 30 seconds
+        }, 20000); // 20 seconds
 
         socket.emit("call-all-started", {
             total: totalRequests
@@ -1073,7 +1132,7 @@ io.on("connection", (socket) => {
 
                 endMeeting(roomId);
 
-            }, 30000);
+            }, 20000);
 
             db.query(
                 `SELECT id
@@ -1146,7 +1205,7 @@ io.on("connection", (socket) => {
                     delete peerSocketMap[user.token];
                 }
 
-            }, 30000);
+            }, 20000);
 
         }
 
