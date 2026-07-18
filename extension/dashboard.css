@@ -224,7 +224,7 @@ input:focus {
     width: 95%;
     height: calc(100% - 60px);
     margin: auto 0 auto 30px;
-    background: #ffffff;
+    background: #272727;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.13);
     display: flex;
     flex-direction: column;

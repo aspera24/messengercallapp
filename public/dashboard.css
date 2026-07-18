@@ -3,7 +3,7 @@
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: #c4c4c4 transparent !important;
+    scrollbar-color: #6d6d6d transparent !important;
 }
 
 @font-face {
@@ -35,7 +35,7 @@ body {
 
 .topbar {
     height: 65px;
-    background: rgba(15, 23, 42, .9);
+    background: #272727;
     border-bottom: 1px solid rgba(255, 255, 255, .08);
     position: sticky;
     top: 0;
@@ -44,7 +44,6 @@ body {
     align-items: center;
     z-index: 1000;
     overflow: hidden;
-    background: rgba(17, 24, 39, .75);
     border: 1px solid rgba(255, 255, 255, .06);
 }
 
@@ -222,9 +221,9 @@ input:focus {
 
 .leftCont {
     width: 95%;
-    height: calc(100% - 60px);
     margin: auto 0 auto 30px;
-    background: #ffffff;
+    height: calc(100% - 60px);
+    background: #272727;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.13);
     display: flex;
     flex-direction: column;
@@ -282,8 +281,8 @@ input:focus {
 .userListCont h3 {
     font-size: 18px;
     padding: 15px 0;
-    color: #111827;
-    font-weight: normal;
+    color: #bbbbbb;
+    font-weight: bold;
     letter-spacing: 2px;
 }
 
@@ -304,7 +303,7 @@ input:focus {
 .dt-layout-end {
     width: 50%;
     font-size: 10px;
-    color: rgb(133, 133, 133);
+    color: rgb(160, 159, 159);
 }
 
 .dt-layout-end {
@@ -312,31 +311,35 @@ input:focus {
 }
 
 .dt-length select {
-    width: 30px;
+    width: 40px;
     height: 30px;
-    border: 1px solid rgb(199, 199, 199);
+    border: 1px solid rgb(110, 110, 110);
+    background: transparent;
     border-radius: 8px;
     font-size: 8px;
     outline: none;
     cursor: pointer;
+    color:rgb(110, 110, 110);
 }
 
 .dt-search input {
     width: 80px;
     min-width: 0;
     height: 30px;
-    border: 1px solid rgb(199, 199, 199);
+    border: 1px solid rgb(110, 110, 110);
     font-size: 12px;
     margin-left: 5px;
     border-radius: 8px;
+    background: transparent;
+    color:rgb(110, 110, 110);
 }
 
 .dt-search input:hover {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.144);
 }
 
 .dt-search input:focus {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.144);
 }
 
 #userTable {
@@ -346,8 +349,8 @@ input:focus {
 }
 
 #userTable thead th {
-    background: #f7f7f7;
-    color: #555;
+    background: #363636;
+    color: #a3a3a3;
     border: none !important;
     padding: 10px;
     font-size: 12px;
@@ -359,7 +362,7 @@ input:focus {
 }
 
 #userTable thead th:first-child:hover {
-    background: #f0f0f0;
+    background: #414141;
 }
 
 #userTable thead th:last-child {
@@ -373,6 +376,7 @@ input:focus {
     padding: 10px;
     font-size: 14px;
     letter-spacing: 1px;
+    color: #8a8a8a;
 }
 
 
@@ -428,6 +432,13 @@ input:focus {
     border-radius: 8px;
 }
 
+.dt-paging-button {
+    background: #414141;
+    color: #8a8a8a;
+}
+
+
+
 
 .video-grid {
     display: flex;
@@ -439,6 +450,9 @@ input:focus {
     overflow: hidden;
     position: relative;
     height: 150px;
+    width: 95%;
+    margin: 25px auto 0;
+    border-radius: 5px;
 }
 
 
