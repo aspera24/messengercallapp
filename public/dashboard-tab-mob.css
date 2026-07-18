@@ -116,7 +116,6 @@
 
     #videos {
         width: 100%;
-        height: auto;
         padding: 12px;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         grid-auto-rows: 300px;
