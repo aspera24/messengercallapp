@@ -4,13 +4,13 @@
 @media (max-width: 1200px) {
 
     .centCont {
-        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-columns: 340px minmax(0, 1fr);
     }
 
     .leftCont {
         width: 100%;
         height: calc(100% - 30px);
-        margin: auto 0;
+        margin: 15px 0 auto;
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
     }

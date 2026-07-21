@@ -276,8 +276,7 @@ io.on("connection", (socket) => {
             peerSocketMap[user.token] = socket.id;
 
             socket.emit("meeting-started", {
-                roomId: activeMeeting.roomId,
-                startedAt: activeMeeting.startedAt
+                roomId: activeMeeting.roomId
             });
 
         }
@@ -297,8 +296,7 @@ io.on("connection", (socket) => {
         ) {
 
             socket.emit("meeting-started", {
-                roomId: activeMeeting.roomId,
-                startedAt: activeMeeting.startedAt
+                roomId: activeMeeting.roomId
             });
 
         }
@@ -378,11 +376,23 @@ io.on("connection", (socket) => {
                         `,
                             [roomId, employeeId]);
 
+                        const requesterToken = pendingRequests[token];
+
                         delete pendingRequests[token];
 
-                        io.emit("request-expired", {
-                            token
-                        });
+                        const admin = onlineUsers[requesterToken];
+
+                        if (admin) {
+
+                            admin.sockets.forEach(id => {
+
+                                io.to(id).emit("request-expired", {
+                                    token
+                                });
+
+                            });
+
+                        }
 
                         console.log(`${token} request expired.`);
 
@@ -623,7 +633,8 @@ io.on("connection", (socket) => {
                 socket.data.user.token,
                 ...participants
             ],
-            startedAt: Date.now()
+            timerStarted: false,
+            startedAt: null
         };
 
         db.query(
@@ -690,8 +701,7 @@ io.on("connection", (socket) => {
         });
 
         socket.emit("meeting-started", {
-            roomId,
-            startedAt: activeMeeting.startedAt
+            roomId
         });
 
         startMeetingBroadcast(roomId);
@@ -717,8 +727,7 @@ io.on("connection", (socket) => {
 
             target.sockets.forEach(id => {
                 io.to(id).emit("meeting-started", {
-                    roomId,
-                    startedAt: activeMeeting.startedAt
+                    roomId
                 });
             });
         });
@@ -758,26 +767,17 @@ io.on("connection", (socket) => {
         peerSocketMap[user.token] = socket.id;
         socket.data.roomId = roomId;
 
-        if (activeMeeting) {
+        const roomSockets = await io.in(roomId).fetchSockets();
 
-            if (!activeMeeting.timerStarted) {
+        if (!activeMeeting.timerStarted &&
+            roomSockets.length >= 2) {
 
-                activeMeeting.timerStarted = true;
+            activeMeeting.timerStarted = true;
+            activeMeeting.startedAt = Date.now();
 
-                activeMeeting.startedAt = Date.now();
-
-                io.to(roomId).emit("meeting-timer-start", {
-                    startedAt: activeMeeting.startedAt
-                });
-
-            } else {
-
-                socket.emit("meeting-timer-start", {
-                    startedAt: activeMeeting.startedAt
-                });
-
-            }
-
+            io.to(roomId).emit("meeting-timer-start", {
+                startedAt: activeMeeting.startedAt
+            });
         }
 
         db.query(
@@ -806,7 +806,7 @@ io.on("connection", (socket) => {
 
         const clients = [];
 
-        const roomSockets = await io.in(roomId).fetchSockets();
+
 
         for (const s of roomSockets) {
 
@@ -1072,10 +1072,15 @@ io.on("connection", (socket) => {
 
             const progress = callAllProgress[roomId];
 
-            if (!progress)
-                return;
+            if (!progress) return;
+
+            io.to(progress.adminSocket).emit("call-all-progress", {
+                remaining: 0
+            });
 
             if (progress.accepted === 0) {
+
+                io.to(progress.adminSocket).emit("call-all-expired");
 
                 console.log("Call All expired.");
 
@@ -1085,7 +1090,7 @@ io.on("connection", (socket) => {
 
             delete callAllProgress[roomId];
 
-        }, 20000); // 20 seconds
+        }, 20000);
 
         socket.emit("call-all-started", {
             total: totalRequests

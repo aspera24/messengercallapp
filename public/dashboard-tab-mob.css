@@ -10,7 +10,7 @@
     .leftCont {
         width: 100%;
         height: calc(100% - 30px);
-        margin: auto 0;
+        margin: 15px 0 auto;
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
     }

@@ -3,7 +3,7 @@
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: #c4c4c4 transparent !important;
+    scrollbar-color: #6d6d6d transparent !important;
 }
 
 @font-face {
@@ -35,7 +35,7 @@ body {
 
 .topbar {
     height: 65px;
-    background: rgba(15, 23, 42, .9);
+    background: #272727;
     border-bottom: 1px solid rgba(255, 255, 255, .08);
     position: sticky;
     top: 0;
@@ -44,7 +44,6 @@ body {
     align-items: center;
     z-index: 1000;
     overflow: hidden;
-    background: rgba(17, 24, 39, .75);
     border: 1px solid rgba(255, 255, 255, .06);
 }
 
@@ -162,6 +161,7 @@ button:not(:disabled):hover {
     border-radius: 8px;
     padding: 12px;
     transform: none;
+    display: none;
 }
 
 #callAllBtn {
@@ -217,19 +217,21 @@ input:focus {
     grid-template-columns: 340px minmax(0, 1fr);
     height: calc(100dvh - 65px);
     overflow: hidden;
-    background: #ffffff;
+    background: #1d1d1d;
 }
 
 .leftCont {
     width: 95%;
+    max-height: 1000px;
+    margin: 30px 0 auto 30px;
     height: calc(100% - 60px);
-    margin: auto 0 auto 30px;
     background: #272727;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.13);
     display: flex;
     flex-direction: column;
     border-radius: 20px;
     min-height: 0;
+    transition: .3s ease-in-out;
     overflow: hidden;
 }
 
@@ -282,8 +284,8 @@ input:focus {
 .userListCont h3 {
     font-size: 18px;
     padding: 15px 0;
-    color: #111827;
-    font-weight: normal;
+    color: #bbbbbb;
+    font-weight: bold;
     letter-spacing: 2px;
 }
 
@@ -304,7 +306,7 @@ input:focus {
 .dt-layout-end {
     width: 50%;
     font-size: 10px;
-    color: rgb(133, 133, 133);
+    color: rgb(160, 159, 159);
 }
 
 .dt-layout-end {
@@ -312,31 +314,35 @@ input:focus {
 }
 
 .dt-length select {
-    width: 30px;
+    width: 40px;
     height: 30px;
-    border: 1px solid rgb(199, 199, 199);
+    border: 1px solid rgb(110, 110, 110);
+    background: transparent;
     border-radius: 8px;
     font-size: 8px;
     outline: none;
     cursor: pointer;
+    color: rgb(110, 110, 110);
 }
 
 .dt-search input {
     width: 80px;
     min-width: 0;
     height: 30px;
-    border: 1px solid rgb(199, 199, 199);
+    border: 1px solid rgb(110, 110, 110);
     font-size: 12px;
     margin-left: 5px;
     border-radius: 8px;
+    background: transparent;
+    color: rgb(110, 110, 110);
 }
 
 .dt-search input:hover {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.144);
 }
 
 .dt-search input:focus {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, .15);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.144);
 }
 
 #userTable {
@@ -346,8 +352,8 @@ input:focus {
 }
 
 #userTable thead th {
-    background: #f7f7f7;
-    color: #555;
+    background: #363636;
+    color: #a3a3a3;
     border: none !important;
     padding: 10px;
     font-size: 12px;
@@ -359,7 +365,7 @@ input:focus {
 }
 
 #userTable thead th:first-child:hover {
-    background: #f0f0f0;
+    background: #414141;
 }
 
 #userTable thead th:last-child {
@@ -373,6 +379,7 @@ input:focus {
     padding: 10px;
     font-size: 14px;
     letter-spacing: 1px;
+    color: #8a8a8a;
 }
 
 
@@ -428,6 +435,13 @@ input:focus {
     border-radius: 8px;
 }
 
+.dt-paging-button {
+    background: #414141;
+    color: #8a8a8a;
+}
+
+
+
 
 .video-grid {
     display: flex;
@@ -439,6 +453,9 @@ input:focus {
     overflow: hidden;
     position: relative;
     height: 150px;
+    width: 95%;
+    margin: 25px auto 0;
+    border-radius: 5px;
 }
 
 
@@ -552,9 +569,7 @@ input:focus {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background-color: #1e1e24;
     padding: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .filter-box label {
@@ -621,13 +636,12 @@ video {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    background: black;
     transform: scaleX(-1);
 }
 
 .rightCont {
     position: relative;
-    background: #ffffff;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.13);
     height: calc(100% - 60px);
     width: calc(100% - 60px);
     margin: auto auto;
@@ -638,6 +652,8 @@ video {
     display: flex;
     justify-content: center;
     align-items: center;
+    background: #272727;
+    transition: .3s ease-in-out;
 }
 
 .rightCont p {
@@ -673,10 +689,6 @@ video {
     overflow: hidden;
     transition: .25s;
     position: relative;
-}
-
-#videos .video-box:hover {
-    transform: translateY(-3px);
 }
 
 /* USER TAG */
@@ -722,7 +734,7 @@ video {
 .meeting-modal-content {
     width: 90%;
     max-width: 420px;
-    background: #fff;
+    background: #2c2c2c;
     border-radius: 16px;
     padding: 24px;
     text-align: center;
@@ -733,7 +745,7 @@ video {
 .meeting-modal-content h3 {
     margin: 0 0 12px;
     font-size: 22px;
-    color: #111827;
+    color: #aeaeaf;
 }
 
 .meeting-modal-content h3 i {
@@ -815,6 +827,76 @@ video {
         transform: scale(1);
     }
 }
+
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: -420px;
+    width: 360px;
+    background: #272727;
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, .18);
+    border-left: 5px solid #2563eb;
+    transition:
+        right .35s ease,
+        opacity .35s ease;
+    opacity: 0;
+    z-index: 999999;
+}
+
+.toast.show {
+    right: 20px;
+    opacity: 1;
+}
+
+.toast-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eff6ff;
+    color: #2563eb;
+    flex-shrink: 0;
+    font-size: 18px;
+}
+
+.toast-body {
+    flex: 1;
+}
+
+.toast-body h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #a0a0a0;
+}
+
+.toast-body p {
+    margin-top: 5px;
+    color: #8b8b8b;
+    line-height: 1.4;
+    font-size: 14px;
+}
+
+#toastClose {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #cccccc;
+    font-size: 18px;
+}
+
+#toastClose:hover {
+    color: #111;
+}
+
 
 .employee-header {
     display: flex;

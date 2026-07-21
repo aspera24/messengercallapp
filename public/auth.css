@@ -12,7 +12,7 @@
 }
 
 body {
-    background: #ffffff;
+    background: #1d1d1d;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -26,7 +26,7 @@ body {
     padding: 40px;
     border-radius: 22px;
 
-    background: rgba(255, 255, 255, 0.95);
+    background:#272727;
 
     border: 1px solid rgba(255, 255, 255, .08);
 
@@ -99,7 +99,7 @@ input {
     background: transparent;
     border: 1px solid rgb(150, 150, 150);
     border-radius: 12px;
-    color: #19283f;
+    color: rgb(150, 150, 150);
     padding: 0 16px;
     padding: 12px 15px 12px 45px;
     font-size: 15px;
@@ -107,14 +107,14 @@ input {
 }
 
 input::placeholder {
-    color: #64748b;
+    color: #5c5c5c;
 }
 
 input:focus {
     outline: none;
-    border-color: rgb(52, 84, 247);
+    border-color: rgb(73, 103, 250);
 
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, .15);
+    box-shadow: 0 0 0 4px rgba(77, 142, 247, 0.15);
 }
 
 button {

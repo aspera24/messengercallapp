@@ -16,7 +16,7 @@ let pendingUsers = [];
 
 let pendingCallAllResponses = 0;
 let callAllLoading = false;
-
+let toastTimeout;
 
 
 const localVideo = document.getElementById("local");
@@ -271,9 +271,10 @@ async function ensureMediaReady(attempt = 0) {
     try {
         const rawStream = await navigator.mediaDevices.getUserMedia({
             video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                frameRate: { ideal: 24, max: 30 }
+                width: { ideal: 640, max: 1280 },
+                height: { ideal: 480, max: 720 },
+                frameRate: { ideal: 30, max: 30 },
+                facingMode: "user"
             },
             audio: {
                 echoCancellation: false,
@@ -491,10 +492,6 @@ socket.on("meeting-started", async (data) => {
     roomId = data.roomId;
     activeRoom = roomId;
 
-    if (data.startedAt) {
-        startMeetingTimer(data.startedAt);
-    }
-
     if (!currentUser) {
         console.log("User not loaded yet.");
         return;
@@ -656,6 +653,12 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
     });
 
     stopMeetingTimer();
+
+    // showToast(
+    //     "info",
+    //     "Meeting Ended",
+    //     "The meeting has ended successfully."
+    // );
 
 });
 
@@ -859,8 +862,8 @@ function createPeer(userId) {
         const params = sender.getParameters();
 
         params.encodings = [{
-            maxBitrate: 300000,
-            maxFramerate: 20
+            maxBitrate: 1500000,
+            maxFramerate: 30
         }];
 
         sender.setParameters(params);
@@ -1177,6 +1180,102 @@ socket.on("call-all-progress", ({ remaining }) => {
 
 });
 
+
+
+function showToast(type, title, message) {
+
+    const toast =
+        document.getElementById("toast");
+
+    const icon =
+        document.getElementById("toastIcon");
+
+    document.getElementById("toastTitle").innerText =
+        title;
+
+    document.getElementById("toastMessage").innerText =
+        message;
+
+    toast.className = "toast";
+
+    switch (type) {
+
+        case "success":
+
+            toast.style.borderLeftColor = "#22c55e";
+            icon.className =
+                "fa-solid fa-circle-check";
+            icon.parentElement.style.background =
+                "#ecfdf5";
+            icon.parentElement.style.color =
+                "#22c55e";
+
+            break;
+
+        case "error":
+
+            toast.style.borderLeftColor = "#ef4444";
+            icon.className =
+                "fa-solid fa-circle-xmark";
+            icon.parentElement.style.background =
+                "#fef2f2";
+            icon.parentElement.style.color =
+                "#ef4444";
+
+            break;
+
+        case "warning":
+
+            toast.style.borderLeftColor = "#f59e0b";
+            icon.className =
+                "fa-solid fa-circle-exclamation";
+            icon.parentElement.style.background =
+                "#fffbeb";
+            icon.parentElement.style.color =
+                "#f59e0b";
+
+            break;
+
+        default:
+
+            toast.style.borderLeftColor = "#2563eb";
+            icon.className =
+                "fa-solid fa-circle-info";
+            icon.parentElement.style.background =
+                "#eff6ff";
+            icon.parentElement.style.color =
+                "#2563eb";
+    }
+
+    clearTimeout(toastTimeout);
+    toast.classList.add("show");
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 4000);
+
+}
+
+socket.on("call-all-expired", () => {
+
+    showToast(
+        "warning",
+        "Meeting Request Unsuccessful",
+        "No one accepted your meeting request. Please try again."
+    );
+
+});
+
+document
+    .getElementById("toastClose")
+    .addEventListener("click", () => {
+
+        document
+            .getElementById("toast")
+            .classList.remove("show");
+
+    });
+
+
 socket.on("user-deleted", (token) => {
 
     document.querySelector(`#delete-${token}`)
@@ -1270,6 +1369,30 @@ socket.on("request-declined", ({ token }) => {
 
 });
 
+socket.on("request-expired", ({ token }) => {
+
+    const reqBtn = document.getElementById(`req-${token}`);
+    const deleteBtn = document.getElementById(`delete-${token}`);
+
+    if (reqBtn) {
+        reqBtn.disabled = false;
+        reqBtn.innerHTML = `
+            <i class="fa-solid fa-paper-plane"></i>
+        `;
+    }
+
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+    }
+
+    showToast(
+        "warning",
+        "Meeting Request Unsuccessful",
+        "The employee did not accept the meeting request."
+    );
+
+});
+
 socket.on("removed-from-meeting", () => {
 
     roomId = null;
@@ -1278,14 +1401,14 @@ socket.on("removed-from-meeting", () => {
 
         peers[id].close();
 
-        const wrapper =
-            document.getElementById(
-                "wrap-" + id
-            );
+        const wrapper = document.getElementById(
+            "wrap-" + id
+        );
 
         if (wrapper) {
             wrapper.remove();
         }
+
     }
 
     Object.values(remoteAnimationFrames).forEach(id => {
@@ -1302,7 +1425,6 @@ socket.on("removed-from-meeting", () => {
 
     document.getElementById("videos").innerHTML = "";
 
-    // Reset local media
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
 
@@ -1311,7 +1433,6 @@ socket.on("removed-from-meeting", () => {
         audioTrack = null;
     }
 
-    // Restart camera & microphone
     setTimeout(async () => {
 
         await ensureMediaReady();
@@ -1411,7 +1532,6 @@ function addRemoteVideo(userId, stream) {
         wrapper.className = "video-box";
         wrapper.id = "wrap-" + userId;
 
-        // LOADING
         const loading = document.createElement("div");
         loading.className = "video-loading";
         loading.id = "loading-" + userId;
@@ -1430,7 +1550,6 @@ function addRemoteVideo(userId, stream) {
         tag.className = "tag";
         tag.innerText = peerNames[userId] || userId;
 
-        // MIC LEVEL
         const micLevel = document.createElement("div");
         micLevel.className = "mic-level userlevel";
         micLevel.id = "mic-" + userId;
@@ -1452,10 +1571,7 @@ function addRemoteVideo(userId, stream) {
         wrapper.appendChild(tag);
         wrapper.appendChild(status);
         wrapper.appendChild(micLevel);
-
-        document
-            .getElementById("videos")
-            .appendChild(wrapper);
+        document.getElementById("videos").appendChild(wrapper);
 
     }
 
@@ -1471,18 +1587,14 @@ function addRemoteVideo(userId, stream) {
     if (remoteVideo.srcObject !== stream) {
 
         remoteVideo.srcObject = stream;
-
         delete remoteVideo.dataset.micReady;
 
         remoteVideo.onplaying = () => {
 
-            if (remoteLoader)
-                remoteLoader.style.display = "none";
+            if (remoteLoader) remoteLoader.style.display = "none";
 
             if (!remoteVideo.dataset.micReady) {
-
                 setupRemoteMicLevel(userId, stream);
-
                 remoteVideo.dataset.micReady = "true";
             }
 
@@ -1495,11 +1607,9 @@ function addRemoteVideo(userId, stream) {
             if (promise) {
 
                 promise.catch(err => {
-
                     if (err.name !== "AbortError") {
                         console.error(err);
                     }
-
                 });
 
             }
@@ -1769,9 +1879,9 @@ function updateRemoteStatus(userId) {
 
 function logout() {
 
-    if (!confirm("Do you want to logout?")) {
-        return;
-    }
+    // if (!confirm("Do you want to logout?")) {
+    //     return;
+    // }
 
     const btn = document.getElementById("logoutBtn");
 
@@ -1868,7 +1978,11 @@ document.getElementById("saveEmployeeBtn").addEventListener("click", async () =>
             throw new Error(data.message);
         }
 
-        alert("Employee added successfully.");
+        showToast(
+            "success",
+            "Employee Added",
+            "The employee account has been created successfully."
+        );
 
         addEmployeeModal.style.display = "none";
 

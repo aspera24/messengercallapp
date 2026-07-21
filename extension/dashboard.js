@@ -18,7 +18,7 @@ let pendingUsers = [];
 
 let pendingCallAllResponses = 0;
 let callAllLoading = false;
-
+let toastTimeout;
 
 
 const localVideo = document.getElementById("local");
@@ -281,9 +281,10 @@ async function ensureMediaReady(attempt = 0) {
     try {
         const rawStream = await navigator.mediaDevices.getUserMedia({
             video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                frameRate: { ideal: 24, max: 30 }
+                width: { ideal: 640, max: 1280 },
+                height: { ideal: 480, max: 720 },
+                frameRate: { ideal: 30, max: 30 },
+                facingMode: "user"
             },
             audio: {
                 echoCancellation: false,
@@ -1196,6 +1197,100 @@ socket.on("call-all-progress", ({ remaining }) => {
 
 });
 
+
+function showToast(type, title, message) {
+
+    const toast =
+        document.getElementById("toast");
+
+    const icon =
+        document.getElementById("toastIcon");
+
+    document.getElementById("toastTitle").innerText =
+        title;
+
+    document.getElementById("toastMessage").innerText =
+        message;
+
+    toast.className = "toast";
+
+    switch (type) {
+
+        case "success":
+
+            toast.style.borderLeftColor = "#22c55e";
+            icon.className =
+                "fa-solid fa-circle-check";
+            icon.parentElement.style.background =
+                "#ecfdf5";
+            icon.parentElement.style.color =
+                "#22c55e";
+
+            break;
+
+        case "error":
+
+            toast.style.borderLeftColor = "#ef4444";
+            icon.className =
+                "fa-solid fa-circle-xmark";
+            icon.parentElement.style.background =
+                "#fef2f2";
+            icon.parentElement.style.color =
+                "#ef4444";
+
+            break;
+
+        case "warning":
+
+            toast.style.borderLeftColor = "#f59e0b";
+            icon.className =
+                "fa-solid fa-circle-exclamation";
+            icon.parentElement.style.background =
+                "#fffbeb";
+            icon.parentElement.style.color =
+                "#f59e0b";
+
+            break;
+
+        default:
+
+            toast.style.borderLeftColor = "#2563eb";
+            icon.className =
+                "fa-solid fa-circle-info";
+            icon.parentElement.style.background =
+                "#eff6ff";
+            icon.parentElement.style.color =
+                "#2563eb";
+    }
+
+    clearTimeout(toastTimeout);
+    toast.classList.add("show");
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 4000);
+
+}
+
+socket.on("call-all-expired", () => {
+
+    showToast(
+        "warning",
+        "Meeting Request Unsuccessful",
+        "No one accepted your meeting request. Please try again."
+    );
+
+});
+
+document
+    .getElementById("toastClose")
+    .addEventListener("click", () => {
+
+        document
+            .getElementById("toast")
+            .classList.remove("show");
+
+    });
+
 socket.on("user-deleted", (token) => {
 
     document.querySelector(`#delete-${token}`)
@@ -1259,6 +1354,30 @@ socket.on("request-declined", ({ token }) => {
 
 });
 
+socket.on("request-expired", ({ token }) => {
+
+    const reqBtn = document.getElementById(`req-${token}`);
+    const deleteBtn = document.getElementById(`delete-${token}`);
+
+    if (reqBtn) {
+        reqBtn.disabled = false;
+        reqBtn.innerHTML = `
+            <i class="fa-solid fa-paper-plane"></i>
+        `;
+    }
+
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+    }
+
+    showToast(
+        "warning",
+        "Meeting Request Unsuccessful",
+        "The employee did not accept the meeting request."
+    );
+
+});
+
 socket.on("removed-from-meeting", () => {
 
     roomId = null;
@@ -1275,6 +1394,7 @@ socket.on("removed-from-meeting", () => {
         if (wrapper) {
             wrapper.remove();
         }
+        
     }
 
     Object.values(remoteAnimationFrames).forEach(id => {
@@ -1760,8 +1880,8 @@ document
 
 async function logout() {
 
-    if (!confirm("Do you want to logout?"))
-        return;
+    // if (!confirm("Do you want to logout?"))
+    //     return;
 
     const btn = document.getElementById("logoutBtn");
 
