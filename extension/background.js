@@ -1,9 +1,6 @@
 importScripts("socket.io.min.js");
 
-const socket = io("https://meetflow-j39a.onrender.com", {
-    withCredentials: true
-});
-
+let socket = null;
 let meetflowWindowId = null;
 
 function broadcastToTabs(message) {
@@ -12,17 +9,9 @@ function broadcastToTabs(message) {
 
         tabs.forEach((tab) => {
 
-            chrome.tabs.sendMessage(
-                tab.id,
-                message,
-                () => {
-
-                    if (chrome.runtime.lastError) {
-                        return;
-                    }
-
-                }
-            );
+            chrome.tabs.sendMessage(tab.id, message, () => {
+                if (chrome.runtime.lastError) return;
+            });
 
         });
 
@@ -30,24 +19,64 @@ function broadcastToTabs(message) {
 
 }
 
-chrome.storage.local.get("meetflowToken", ({ meetflowToken }) => {
+function connectSocket() {
 
-    const socket = io("https://meetflow-j39a.onrender.com", {
-        auth: {
-            token: meetflowToken
+    chrome.storage.local.get("meetflowToken", ({ meetflowToken }) => {
+
+        if (socket && socket.connected) {
+            return;
         }
+
+        if (!meetflowToken) {
+            console.log("No MeetFlow token found.");
+            return;
+        }
+
+        socket = io("https://meetflow-j39a.onrender.com", {
+            auth: {
+                token: meetflowToken
+            }
+        });
+
+        socket.on("connect", () => {
+            console.log("Socket Connected:", socket.id);
+        });
+
+        socket.on("disconnect", () => {
+            console.log("Socket Disconnected");
+        });
+
+        socket.on("connect_error", (err) => {
+            console.error("Socket Auth Error:", err.message);
+        });
+
+        socket.on("meeting-request", (data) => {
+
+            console.log("[BACKGROUND] Incoming Call", data);
+
+            broadcastToTabs({
+                type: "INCOMING_CALL",
+                roomId: data.roomId,
+                admin: data.admin
+            });
+
+        });
+
+        socket.on("meeting-ended", () => {
+
+            console.log("[BACKGROUND] Meeting Ended");
+
+            broadcastToTabs({
+                type: "CALL_ENDED"
+            });
+
+        });
+
     });
 
-});
+}
 
-socket.on("connect", () => {
-    console.log("Socket Connected:", socket.id);
-});
-
-socket.on("disconnect", () => {
-    console.log("Socket Disconnected");
-});
-
+connectSocket();
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("MeetFlow Extension Installed");
@@ -56,7 +85,6 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
     console.log("Chrome Started");
 });
-
 
 chrome.runtime.onMessage.addListener((message, sender) => {
 
@@ -73,6 +101,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
                 });
 
             }
+
+            break;
+
+        case "CONNECT_SOCKET":
+
+            connectSocket();
 
             break;
 
@@ -98,19 +132,13 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
 });
 
-
 function openMeetFlow() {
 
     chrome.windows.create({
-
         url: "https://meetflow-j39a.onrender.com",
-
         type: "popup",
-
         width: 420,
-
         height: 720
-
     }, (window) => {
 
         meetflowWindowId = window.id;
@@ -122,9 +150,7 @@ function openMeetFlow() {
 chrome.windows.onRemoved.addListener((windowId) => {
 
     if (windowId === meetflowWindowId) {
-
         meetflowWindowId = null;
-
     }
 
 });

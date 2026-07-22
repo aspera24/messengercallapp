@@ -36,7 +36,19 @@ async function login() {
         const data = await res.json();
 
         if (data.success) {
+
+            // If inside extension iframe
+            if (window.parent !== window) {
+
+                window.parent.postMessage({
+                    type: "LOGIN_SUCCESS",
+                    sessionToken: data.sessionToken
+                }, "*");
+
+            }
+
             location.href = "/dashboard";
+
         } else {
             alert("Invalid username or password.");
 

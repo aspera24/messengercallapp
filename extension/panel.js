@@ -16,6 +16,26 @@
 
     window.addEventListener("message", (event) => {
 
+        if (event.data.type === "LOGIN_SUCCESS") {
+
+            console.log("Extension received token");
+
+            chrome.storage.local.set({
+                meetflowToken: event.data.sessionToken
+            }, () => {
+
+                console.log("Token saved!");
+
+                chrome.runtime.sendMessage({
+                    action: "CONNECT_SOCKET"
+                });
+
+            });
+
+            return;
+
+        }
+
         console.log("[PANEL] Message received", event);
 
         if (event.origin !== "https://meetflow-j39a.onrender.com")
