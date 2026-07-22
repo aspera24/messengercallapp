@@ -39,28 +39,6 @@ socket.on("disconnect", () => {
     console.log("Socket Disconnected");
 });
 
-socket.on("meeting-request", (data) => {
-
-    console.log("Incoming meeting request:", data);
-
-    broadcastToTabs({
-        type: "INCOMING_CALL",
-        roomId: data.roomId,
-        admin: data.admin
-    });
-
-});
-
-socket.on("meeting-ended", () => {
-
-    console.log("Meeting Ended");
-
-    broadcastToTabs({
-        type: "CALL_ENDED"
-    });
-
-});
-
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("MeetFlow Extension Installed");
@@ -84,6 +62,24 @@ chrome.runtime.onMessage.addListener((message, sender) => {
                 });
 
             }
+
+            break;
+
+        case "INCOMING_CALL":
+
+            broadcastToTabs({
+                type: "INCOMING_CALL",
+                roomId: message.roomId,
+                admin: message.admin
+            });
+
+            break;
+
+        case "CALL_ENDED":
+
+            broadcastToTabs({
+                type: "CALL_ENDED"
+            });
 
             break;
 

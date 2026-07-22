@@ -591,6 +591,14 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         updateMeetingButtons(false);
     }
 
+    if (window.chrome?.runtime) {
+
+        chrome.runtime.sendMessage({
+            action: "CALL_ENDED"
+        });
+
+    }
+
     // Close all peers
     for (let id in peers) {
         peers[id].close();
@@ -671,6 +679,14 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
     });
 
     stopMeetingTimer();
+
+    if (currentUser?.acc_type !== "admin") {
+        showToast(
+            "info",
+            "Meeting Ended",
+            "The meeting has ended by the administrator."
+        );
+    }
 
 });
 
@@ -1305,6 +1321,16 @@ socket.on("meeting-request", (data) => {
 
     requestedRoom = data.roomId;
 
+    if (window.chrome?.runtime) {
+
+        chrome.runtime.sendMessage({
+            action: "INCOMING_CALL",
+            roomId: data.roomId,
+            admin: data.admin
+        });
+
+    }
+
     document.getElementById("meetingRequestText").innerText =
         `${data.admin} wants you to join the meeting.`;
 
@@ -1394,7 +1420,7 @@ socket.on("removed-from-meeting", () => {
         if (wrapper) {
             wrapper.remove();
         }
-        
+
     }
 
     Object.values(remoteAnimationFrames).forEach(id => {
@@ -1446,9 +1472,13 @@ socket.on("removed-from-meeting", () => {
 
     }, 500);
 
-    alert(
-        "You were removed from the meeting."
-    );
+    if (currentUser?.acc_type !== "admin") {
+        showToast(
+            "warning",
+            "Removed From Meeting",
+            "You were removed from the meeting by the administrator."
+        );
+    }
 
     stopMeetingTimer();
 });

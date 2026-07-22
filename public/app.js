@@ -654,11 +654,13 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
 
     stopMeetingTimer();
 
-    // showToast(
-    //     "info",
-    //     "Meeting Ended",
-    //     "The meeting has ended successfully."
-    // );
+    if (currentUser?.acc_type !== "admin") {
+        showToast(
+            "info",
+            "Meeting Ended",
+            "The meeting has ended by the administrator."
+        );
+    }
 
 });
 
@@ -686,9 +688,7 @@ socket.on("user-disconnected", (userId) => {
     }
 
     if (peers[userId]) {
-
         peers[userId].close();
-
         delete peers[userId];
     }
 
@@ -1458,9 +1458,13 @@ socket.on("removed-from-meeting", () => {
 
     }, 500);
 
-    alert(
-        "You were removed from the meeting."
-    );
+    if (currentUser?.acc_type !== "admin") {
+        showToast(
+            "warning",
+            "Removed From Meeting",
+            "You were removed from the meeting by the administrator."
+        );
+    }
 
     stopMeetingTimer();
 });

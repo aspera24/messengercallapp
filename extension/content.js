@@ -89,11 +89,24 @@
 
             badge.style.display = "block";
 
+            launcher.animate([
+                { transform: "rotate(0deg)" },
+                { transform: "rotate(15deg)" },
+                { transform: "rotate(-15deg)" },
+                { transform: "rotate(15deg)" },
+                { transform: "rotate(0deg)" }
+            ], {
+                duration: 600,
+                iterations: Infinity
+            });
+
         }
 
         if (message.type === "CALL_ENDED") {
 
             badge.style.display = "none";
+
+            launcher.getAnimations().forEach(a => a.cancel());
 
         }
 

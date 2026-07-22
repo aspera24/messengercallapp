@@ -745,7 +745,7 @@ video {
 .meeting-modal-content h3 {
     margin: 0 0 12px;
     font-size: 22px;
-    color: #aeaeaf;
+    color: #c5c5c5;
 }
 
 .meeting-modal-content h3 i {
@@ -809,7 +809,7 @@ video {
 
 .employee-modal {
     width: 520px;
-    background: #fff;
+    background: #353535;
     border-radius: 16px;
     padding: 25px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, .18);
@@ -834,7 +834,7 @@ video {
     top: 20px;
     right: -420px;
     width: 360px;
-    background: #272727;
+    background: #353535;
     border-radius: 14px;
     padding: 12px;
     display: flex;
@@ -875,19 +875,19 @@ video {
 .toast-body h4 {
     margin: 0;
     font-size: 16px;
-    color: #a0a0a0;
+    color: #b6b6b6;
 }
 
 .toast-body p {
     margin-top: 5px;
-    color: #8b8b8b;
+    color: #a5a5a5;
     line-height: 1.4;
     font-size: 14px;
 }
 
 #toastClose {
     background: none;
-    border: none;
+    border: none; 
     cursor: pointer;
     color: #cccccc;
     font-size: 18px;
@@ -920,12 +920,12 @@ video {
 .employee-header h2 {
     margin: 0;
     font-size: 22px;
-    color: #2563eb;
+    color: #457cf3;
 }
 
 .employee-header p {
     margin-top: 5px;
-    color: #6b7280;
+    color: #a7acb6;
     font-size: 14px;
 }
 
@@ -944,7 +944,7 @@ video {
     margin-bottom: 7px;
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #8d8d8d;
 }
 
 .form-group input {
@@ -953,6 +953,8 @@ video {
     padding: 10px 14px;
     font-size: 15px;
     transition: .2s;
+    background: transparent;
+    color: rgb(194, 194, 194);
 }
 
 .form-group input:focus {
@@ -976,7 +978,7 @@ video {
     top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
-    color: #6b7280;
+    color: #bbbbbb;
 }
 
 .employee-actions {
