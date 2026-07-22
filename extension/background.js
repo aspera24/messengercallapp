@@ -30,6 +30,15 @@ function broadcastToTabs(message) {
 
 }
 
+chrome.storage.local.get("meetflowToken", ({ meetflowToken }) => {
+
+    const socket = io("https://meetflow-j39a.onrender.com", {
+        auth: {
+            token: meetflowToken
+        }
+    });
+
+});
 
 socket.on("connect", () => {
     console.log("Socket Connected:", socket.id);

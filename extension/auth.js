@@ -36,6 +36,9 @@ async function login() {
         const data = await res.json();
 
         if (data.success) {
+            chrome.storage.local.set({
+                meetflowToken: data.sessionToken
+            });
             location.replace("dashboard.html");
         } else {
             alert("Invalid username or password.");

@@ -104,6 +104,7 @@ router.post("/login", (req, res) => {
 
                     res.json({
                         success: true,
+                        sessionToken,
                         user: {
                             id: user.id,
                             firstname: user.firstname,

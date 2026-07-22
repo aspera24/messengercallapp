@@ -67,11 +67,23 @@ const callAllProgress = {};
 
 io.use((socket, next) => {
 
+    let token;
+
+    // Browser
     const cookies = parseCookie(
         socket.handshake.headers.cookie || ""
     );
 
-    const token = cookies.meetflow_session;
+    token = cookies.meetflow_session;
+
+    // Extension
+    if (!token) {
+        token = socket.handshake.auth?.token;
+    }
+
+    if (!token) {
+        return next(new Error("Unauthorized"));
+    }
 
     if (!token) {
         return next(new Error("Unauthorized"));
@@ -230,6 +242,7 @@ io.on("connection", (socket) => {
         }
 
         onlineUsers[user.token].sockets.add(socket.id);
+        socket.join(user.token);
 
         db.query(
             `
@@ -345,7 +358,7 @@ io.on("connection", (socket) => {
 
                     target.sockets.forEach(id => {
 
-                        io.to(id).emit("meeting-request", {
+                        io.to(token).emit("meeting-request", {
                             roomId,
                             admin: user.firstname
                         });
@@ -1051,9 +1064,9 @@ io.on("connection", (socket) => {
 
                 setTimeout(() => {
 
-                    io.to(id).emit("meeting-request", {
+                    io.to(token).emit("meeting-request", {
                         roomId,
-                        admin: room.admin
+                        admin: user.firstname
                     });
 
                 }, 50);
