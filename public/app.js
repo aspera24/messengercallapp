@@ -1293,6 +1293,14 @@ socket.on("meeting-request", (data) => {
 
     requestedRoom = data.roomId;
 
+    console.log("[DASHBOARD] meeting-request", data);
+
+    window.parent.postMessage({
+        type: "INCOMING_CALL",
+        roomId: data.roomId,
+        admin: data.admin
+    }, "*");
+
     document.getElementById("meetingRequestText").innerText =
         `${data.admin} wants you to join the meeting.`;
 

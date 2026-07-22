@@ -1321,15 +1321,13 @@ socket.on("meeting-request", (data) => {
 
     requestedRoom = data.roomId;
 
-    if (window.chrome?.runtime) {
+    console.log("[DASHBOARD] meeting-request", data);
 
-        chrome.runtime.sendMessage({
-            action: "INCOMING_CALL",
-            roomId: data.roomId,
-            admin: data.admin
-        });
-
-    }
+    window.parent.postMessage({
+        type: "INCOMING_CALL",
+        roomId: data.roomId,
+        admin: data.admin
+    }, "*");
 
     document.getElementById("meetingRequestText").innerText =
         `${data.admin} wants you to join the meeting.`;

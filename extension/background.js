@@ -51,6 +51,8 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.runtime.onMessage.addListener((message, sender) => {
 
+    console.log("[BACKGROUND]", message);
+
     switch (message.action) {
 
         case "OPEN_MEETFLOW":
