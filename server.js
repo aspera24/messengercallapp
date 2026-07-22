@@ -67,55 +67,59 @@ const callAllProgress = {};
 
 io.use((socket, next) => {
 
+    console.log("========== SOCKET AUTH ==========");
+    console.log("Origin:", socket.handshake.headers.origin);
+    console.log("Cookie:", socket.handshake.headers.cookie);
+    console.log("Auth:", socket.handshake.auth);
+
     let token;
 
-    // Browser
     const cookies = parseCookie(
         socket.handshake.headers.cookie || ""
     );
 
     token = cookies.meetflow_session;
 
-    // Extension
     if (!token) {
         token = socket.handshake.auth?.token;
     }
 
-    if (!token) {
-        return next(new Error("Unauthorized"));
-    }
+    console.log("Resolved Token:", token);
 
     if (!token) {
+        console.log("Unauthorized: No token");
         return next(new Error("Unauthorized"));
     }
 
     db.query(
-        `
-        SELECT
+        `SELECT
             users.id,
             users.firstname,
             users.lastname,
             users.username,
             users.acc_type,
             users.token
-        FROM sessions
-        INNER JOIN users
+         FROM sessions
+         INNER JOIN users
             ON sessions.user_id = users.id
-        WHERE
-            sessions.token = ?
-            AND sessions.expires_at > NOW()
-        `,
+         WHERE sessions.token = ?
+         AND sessions.expires_at > NOW()`,
         [token],
         (err, result) => {
 
+            console.log("DB Error:", err);
+            console.log("Rows:", result?.length);
+
             if (err || result.length === 0) {
+                console.log("Unauthorized: Invalid session");
                 return next(new Error("Unauthorized"));
             }
+
+            console.log("Authenticated:", result[0].username);
 
             socket.data.user = result[0];
 
             next();
-
         }
     );
 
