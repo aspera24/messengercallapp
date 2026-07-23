@@ -1525,10 +1525,14 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 
 document.getElementById("declineMeetingBtn").onclick = () => {
 
+    console.log("1. Decline clicked");
+
     if (requestCountdownTimer) {
         clearInterval(requestCountdownTimer);
         requestCountdownTimer = null;
     }
+
+    console.log("2. Sending CALL_HANDLED");
 
     window.parent.postMessage({
         type: "CALL_HANDLED"
@@ -1540,12 +1544,11 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 
     document.getElementById("meetingRequestModal").style.display = "none";
 
+    console.log("3. Emitting meeting-request-declined");
+
     socket.emit("meeting-request-declined");
 
     requestedRoom = null;
-
-
-
 };
 
 function addRemoteVideo(userId, stream) {

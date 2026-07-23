@@ -82,10 +82,13 @@
 
     window.addEventListener("message", (event) => {
 
+        console.log("CONTENT RECEIVED:", event.data);
+
         if (event.data.type === "CALL_HANDLED") {
 
-            badge.style.display = "none";
+            console.log("STOPPING ANIMATION");
 
+            badge.style.display = "none";
             launcher.getAnimations().forEach(a => a.cancel());
 
         }
