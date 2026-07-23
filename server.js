@@ -397,6 +397,14 @@ io.on("connection", (socket) => {
 
                         delete pendingRequests[token];
 
+                        const employee = onlineUsers[token];
+
+                        if (employee) {
+                            employee.sockets.forEach(id => {
+                                io.to(id).emit("request-expired");
+                            });
+                        }
+
                         const admin = onlineUsers[requesterToken];
 
                         if (admin) {

@@ -93,6 +93,16 @@ function connectSocket() {
 
         });
 
+        socket.on("request-expired", () => {
+
+            console.log("[BACKGROUND] request-expired");
+
+            broadcastToTabs({
+                type: "CALL_HANDLED"
+            });
+
+        });
+
     });
 
 }
