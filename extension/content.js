@@ -1,6 +1,15 @@
 (function () {
 
+    let isRinging = false;
+
     console.log("MeetFlow Content Script Loaded");
+
+    const ringtone = new Audio(
+        chrome.runtime.getURL("sounds/request.mp3")
+    );
+
+    ringtone.loop = true;
+    ringtone.volume = 1;
 
     if (
         location.hostname === "meetflow-j39a.onrender.com" ||
@@ -72,20 +81,46 @@
 
     launcher.onclick = () => {
 
+        isRinging = false;
+
         chrome.runtime.sendMessage({
             action: "OPEN_MEETFLOW"
         });
 
         badge.style.display = "none";
 
+        launcher.getAnimations().forEach(a => a.cancel());
+
+        ringtone.pause();
+        ringtone.currentTime = 0;
     };
 
     document.body.appendChild(launcher);
+
+    window.addEventListener("message", (event) => {
+
+        if (event.data.type === "STOP_RINGING") {
+
+            isRinging = false;
+
+            ringtone.pause();
+            ringtone.currentTime = 0;
+
+            badge.style.display = "none";
+
+            launcher.getAnimations().forEach(a => a.cancel());
+        }
+
+    });
 
     // LISTEN FROM BACKGROUND
     chrome.runtime.onMessage.addListener((message) => {
 
         if (message.type === "INCOMING_CALL") {
+
+            if (isRinging) return;
+
+            isRinging = true;
 
             badge.style.display = "block";
 
@@ -100,14 +135,20 @@
                 iterations: Infinity
             });
 
+            ringtone.currentTime = 0;
+            ringtone.play().catch(console.error);
         }
 
         if (message.type === "CALL_ENDED") {
+
+            isRinging = false;
 
             badge.style.display = "none";
 
             launcher.getAnimations().forEach(a => a.cancel());
 
+            ringtone.pause();
+            ringtone.currentTime = 0;
         }
 
     });

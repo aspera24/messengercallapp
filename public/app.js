@@ -1295,10 +1295,14 @@ socket.on("meeting-request", (data) => {
 
     console.log("[DASHBOARD] meeting-request", data);
 
+    // window.parent.postMessage({
+    //     type: "INCOMING_CALL",
+    //     roomId: data.roomId,
+    //     admin: data.admin
+    // }, "*");
+
     window.parent.postMessage({
-        type: "INCOMING_CALL",
-        roomId: data.roomId,
-        admin: data.admin
+        type: "STOP_RINGING"
     }, "*");
 
     document.getElementById("meetingRequestText").innerText =

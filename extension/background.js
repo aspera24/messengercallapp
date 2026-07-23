@@ -35,7 +35,8 @@ function connectSocket() {
         socket = io("https://meetflow-j39a.onrender.com", {
             auth: {
                 token: meetflowToken
-            }
+            },
+            transports: ["websocket"]
         });
 
         socket.on("connect", () => {
@@ -94,12 +95,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
         case "OPEN_MEETFLOW":
 
-            if (sender.tab) {
+            broadcastToTabs({
+                type: "STOP_RINGING"
+            });
 
+            if (sender.tab) {
                 chrome.sidePanel.open({
                     windowId: sender.tab.windowId
                 });
-
             }
 
             break;
