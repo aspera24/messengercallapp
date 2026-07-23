@@ -2,6 +2,7 @@ importScripts("socket.io.min.js");
 
 let socket = null;
 let meetflowWindowId = null;
+let sidePanelOpen = false;
 
 function broadcastToTabs(message) {
 
@@ -53,13 +54,15 @@ function connectSocket() {
 
         socket.on("meeting-request", (data) => {
 
-            console.log("[BACKGROUND] Incoming Call", data);
+            if (!sidePanelOpen) {
 
-            broadcastToTabs({
-                type: "INCOMING_CALL",
-                roomId: data.roomId,
-                admin: data.admin
-            });
+                broadcastToTabs({
+                    type: "INCOMING_CALL",
+                    roomId: data.roomId,
+                    admin: data.admin
+                });
+
+            }
 
         });
 
@@ -95,15 +98,19 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
         case "OPEN_MEETFLOW":
 
-            broadcastToTabs({
-                type: "STOP_RINGING"
-            });
+            sidePanelOpen = true;
 
             if (sender.tab) {
                 chrome.sidePanel.open({
                     windowId: sender.tab.windowId
                 });
             }
+
+            break;
+
+        case "SIDEPANEL_CLOSED":
+
+            sidePanelOpen = false;
 
             break;
 
