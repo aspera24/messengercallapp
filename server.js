@@ -562,11 +562,7 @@ io.on("connection", (socket) => {
         if (admin) {
 
             admin.sockets.forEach(id => {
-                // io.to(id).emit("request-declined", {
-                //     token: user.token
-                // });
-
-                io.emit("request-declined", {
+                io.to(id).emit("request-declined", {
                     token: user.token
                 });
             });
