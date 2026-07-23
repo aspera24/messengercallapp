@@ -1284,13 +1284,7 @@ socket.on("user-deleted", (token) => {
 
 });
 
-window.addEventListener("beforeunload", () => {
 
-    chrome.runtime.sendMessage({
-        action: "SIDEPANEL_CLOSED"
-    });
-
-});
 
 let requestedRoom = null;
 let requestCountdownTimer = null;
