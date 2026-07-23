@@ -16,10 +16,10 @@ async function createFilteredStream(stream) {
 
 
     let playAttempts = 0;
-    
+
     async function safePlay() {
         try {
-            const playPromise = video.play(); 
+            const playPromise = video.play();
 
             if (playPromise !== undefined) {
                 await playPromise;
@@ -40,10 +40,17 @@ async function createFilteredStream(stream) {
 
     await safePlay();
 
+    
+
+    
 
     canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 480;
+
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+
+    canvas.width = vw;
+    canvas.height = vh;
 
     renderer = new THREE.WebGLRenderer({
         canvas,
@@ -55,8 +62,8 @@ async function createFilteredStream(stream) {
         preserveDrawingBuffer: true
     });
     renderer.setPixelRatio(1);
-    renderer.setSize(640, 480, false);
     renderer.autoClear = false;
+    renderer.setSize(vw, vh, false);
 
     canvas.addEventListener("webglcontextlost", (event) => {
         event.preventDefault();
