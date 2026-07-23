@@ -1284,17 +1284,7 @@ socket.on("user-deleted", (token) => {
 
 });
 
-window.addEventListener("focus", () => {
-    window.parent.postMessage({
-        type: "STOP_RINGING"
-    }, "*");
-});
 
-window.addEventListener("blur", () => {
-    window.parent.postMessage({
-        type: "ENABLE_RINGING"
-    }, "*");
-});
 
 let requestedRoom = null;
 let requestCountdownTimer = null;
@@ -1305,11 +1295,11 @@ socket.on("meeting-request", (data) => {
 
     console.log("[DASHBOARD] meeting-request", data);
 
-    // window.parent.postMessage({
-    //     type: "INCOMING_CALL",
-    //     roomId: data.roomId,
-    //     admin: data.admin
-    // }, "*");
+    window.parent.postMessage({
+        type: "INCOMING_CALL",
+        roomId: data.roomId,
+        admin: data.admin
+    }, "*");
 
     document.getElementById("meetingRequestText").innerText =
         `${data.admin} wants you to join the meeting.`;

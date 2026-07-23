@@ -34,8 +34,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "widget.min.js",
-                "sounds/request.mp3"
+                "widget.min.js"
             ],
             "matches": [
                 "<all_urls>"

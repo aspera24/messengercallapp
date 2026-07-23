@@ -55,18 +55,10 @@ function connectSocket() {
 
             console.log("[BACKGROUND] Incoming Call", data);
 
-            chrome.storage.session.get("sidePanelOpen", ({ sidePanelOpen }) => {
-
-                if (!sidePanelOpen) {
-
-                    broadcastToTabs({
-                        type: "INCOMING_CALL",
-                        roomId: data.roomId,
-                        admin: data.admin
-                    });
-
-                }
-
+            broadcastToTabs({
+                type: "INCOMING_CALL",
+                roomId: data.roomId,
+                admin: data.admin
             });
 
         });
@@ -103,18 +95,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
         case "OPEN_MEETFLOW":
 
-            chrome.storage.session.set({
-                sidePanelOpen: true
-            });
-
-            broadcastToTabs({
-                type: "STOP_RINGING"
-            });
-
             if (sender.tab) {
+
                 chrome.sidePanel.open({
                     windowId: sender.tab.windowId
                 });
+
             }
 
             break;
