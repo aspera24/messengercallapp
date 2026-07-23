@@ -500,9 +500,15 @@ io.on("connection", (socket) => {
 
         }
 
-        io.emit("request-accepted", {
-            token: user.token
-        });
+        const employee = onlineUsers[user.token];
+
+        if (employee) {
+            employee.sockets.forEach(id => {
+                io.to(id).emit("request-accepted", {
+                    token: user.token
+                });
+            });
+        }
 
         const progress = callAllProgress[roomId];
 
@@ -567,6 +573,16 @@ io.on("connection", (socket) => {
                 });
             });
 
+        }
+
+        const employee = onlineUsers[user.token];
+
+        if (employee) {
+            employee.sockets.forEach(id => {
+                io.to(id).emit("request-declined", {
+                    token: user.token
+                });
+            });
         }
 
         delete pendingRequests[user.token];
