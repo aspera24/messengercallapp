@@ -525,19 +525,22 @@ io.on("connection", (socket) => {
 
     socket.on("meeting-request-declined", () => {
 
+        console.log("DECLINE RECEIVED");
+
         const user = socket.data.user;
 
-        if (!user) return;
-
-        if (!activeMeeting) {
-            return socket.emit("meeting-ended");
-        }
-
-        const roomId = activeMeeting.roomId;
+        console.log("USER:", user.token);
 
         const requesterToken = pendingRequests[user.token];
 
-        if (!requesterToken) return;
+        console.log("REQUESTER:", requesterToken);
+
+        if (!requesterToken) {
+            console.log("NO REQUESTER TOKEN");
+            return;
+        }
+
+        const roomId = activeMeeting.roomId;
 
         db.query(
             `UPDATE meeting_requests
@@ -559,7 +562,11 @@ io.on("connection", (socket) => {
         if (admin) {
 
             admin.sockets.forEach(id => {
-                io.to(id).emit("request-declined", {
+                // io.to(id).emit("request-declined", {
+                //     token: user.token
+                // });
+
+                io.emit("request-declined", {
                     token: user.token
                 });
             });
