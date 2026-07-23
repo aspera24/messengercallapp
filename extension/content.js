@@ -1,6 +1,7 @@
 (function () {
 
     let isRinging = false;
+    let allowLauncherNotification = true;
 
     console.log("MeetFlow Content Script Loaded");
 
@@ -102,6 +103,7 @@
         if (event.data.type === "STOP_RINGING") {
 
             isRinging = false;
+            allowLauncherNotification = false;
 
             ringtone.pause();
             ringtone.currentTime = 0;

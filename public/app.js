@@ -1284,12 +1284,16 @@ socket.on("user-deleted", (token) => {
 
 });
 
-window.addEventListener("pagehide", () => {
+window.addEventListener("focus", () => {
+    window.parent.postMessage({
+        type: "STOP_RINGING"
+    }, "*");
+});
 
-    chrome.storage.session.set({
-        sidePanelOpen: false
-    });
-
+window.addEventListener("blur", () => {
+    window.parent.postMessage({
+        type: "ENABLE_RINGING"
+    }, "*");
 });
 
 let requestedRoom = null;
