@@ -1289,10 +1289,6 @@ socket.on("user-deleted", (token) => {
 let requestedRoom = null;
 let requestCountdownTimer = null;
 
-const isExtension =
-    new URLSearchParams(location.search)
-        .get("extension") === "1";
-
 socket.on("meeting-request", (data) => {
 
     requestedRoom = data.roomId;
@@ -1305,30 +1301,16 @@ socket.on("meeting-request", (data) => {
     //     admin: data.admin
     // }, "*");
 
-    // window.parent.postMessage({
-    //     type: "STOP_RINGING"
-    // }, "*");
-
     document.getElementById("meetingRequestText").innerText =
         `${data.admin} wants you to join the meeting.`;
 
     document.getElementById("meetingRequestModal").style.display = "flex";
 
-    if (isExtension) {
-
-        window.parent.postMessage({
-            type: "STOP_RINGING"
-        }, "*");
-
-    } else {
-
-        if (!requestSoundPlaying) {
-            requestSoundPlaying = true;
-            sounds.request.currentTime = 0;
-            sounds.request.loop = true;
-            sounds.request.play().catch(() => { });
-        }
-
+    if (!requestSoundPlaying) {
+        requestSoundPlaying = true;
+        sounds.request.currentTime = 0;
+        sounds.request.loop = true;
+        sounds.request.play().catch(() => { });
     }
 
     if (requestCountdownTimer) {
