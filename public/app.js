@@ -1336,6 +1336,10 @@ socket.on("meeting-request", (data) => {
 
             document.getElementById("meetingRequestModal").style.display = "none";
 
+            window.parent.postMessage({
+                type: "CALL_HANDLED"
+            }, "*");
+
         }
 
     }, 1000);
@@ -1513,6 +1517,10 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
         camera: videoTrack.enabled,
         mic: audioTrack.enabled
     });
+
+    window.parent.postMessage({
+        type: "CALL_HANDLED"
+    }, "*");
 };
 
 document.getElementById("declineMeetingBtn").onclick = () => {
@@ -1531,6 +1539,10 @@ document.getElementById("declineMeetingBtn").onclick = () => {
     socket.emit("meeting-request-declined");
 
     requestedRoom = null;
+
+    window.parent.postMessage({
+        type: "CALL_HANDLED"
+    }, "*");
 
 };
 

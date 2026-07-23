@@ -76,8 +76,6 @@
             action: "OPEN_MEETFLOW"
         });
 
-        badge.style.display = "none";
-
     };
 
     document.body.appendChild(launcher);
