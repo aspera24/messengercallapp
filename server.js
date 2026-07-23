@@ -362,7 +362,7 @@ io.on("connection", (socket) => {
 
                     target.sockets.forEach(id => {
 
-                        io.to(token).emit("meeting-request", {
+                        io.to(id).emit("meeting-request", {
                             roomId,
                             admin: user.firstname
                         });
@@ -395,14 +395,18 @@ io.on("connection", (socket) => {
 
                         const requesterToken = pendingRequests[token];
 
-                        delete pendingRequests[token];
+                        if (!requesterToken) {
+                            return;
+                        }
 
                         const employee = onlineUsers[token];
 
                         if (employee) {
+
                             employee.sockets.forEach(id => {
                                 io.to(id).emit("request-expired");
                             });
+
                         }
 
                         const admin = onlineUsers[requesterToken];
@@ -418,6 +422,8 @@ io.on("connection", (socket) => {
                             });
 
                         }
+
+                        delete pendingRequests[token];
 
                         console.log(`${token} request expired.`);
 
