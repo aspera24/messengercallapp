@@ -1284,7 +1284,13 @@ socket.on("user-deleted", (token) => {
 
 });
 
+window.addEventListener("pagehide", () => {
 
+    chrome.storage.session.set({
+        sidePanelOpen: false
+    });
+
+});
 
 let requestedRoom = null;
 let requestCountdownTimer = null;
