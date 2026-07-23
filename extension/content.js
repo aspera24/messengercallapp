@@ -80,6 +80,18 @@
 
     document.body.appendChild(launcher);
 
+    window.addEventListener("message", (event) => {
+
+        if (event.data.type === "CALL_HANDLED") {
+
+            badge.style.display = "none";
+
+            launcher.getAnimations().forEach(a => a.cancel());
+
+        }
+
+    });
+
     // LISTEN FROM BACKGROUND
     chrome.runtime.onMessage.addListener((message) => {
 
@@ -97,6 +109,14 @@
                 duration: 600,
                 iterations: Infinity
             });
+
+        }
+
+        if (message.type === "CALL_HANDLED") {
+
+            badge.style.display = "none";
+
+            launcher.getAnimations().forEach(a => a.cancel());
 
         }
 

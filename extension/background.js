@@ -73,6 +73,26 @@ function connectSocket() {
 
         });
 
+        socket.on("request-accepted", () => {
+
+            console.log("[BACKGROUND] request-accepted");
+
+            broadcastToTabs({
+                type: "CALL_HANDLED"
+            });
+
+        });
+
+        socket.on("request-declined", () => {
+
+            console.log("[BACKGROUND] request-declined");
+
+            broadcastToTabs({
+                type: "CALL_HANDLED"
+            });
+
+        });
+
     });
 
 }

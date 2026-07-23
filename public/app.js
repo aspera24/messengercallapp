@@ -1530,6 +1530,10 @@ document.getElementById("declineMeetingBtn").onclick = () => {
         requestCountdownTimer = null;
     }
 
+    window.parent.postMessage({
+        type: "CALL_HANDLED"
+    }, "*");
+
     sounds.request.pause();
     sounds.request.currentTime = 0;
     requestSoundPlaying = false;
@@ -1540,9 +1544,7 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 
     requestedRoom = null;
 
-    window.parent.postMessage({
-        type: "CALL_HANDLED"
-    }, "*");
+
 
 };
 
