@@ -78,6 +78,7 @@ socket.on("connect", async () => {
     console.log("Socket connected:", socket.id);
 
     await loadCurrentUser();
+    loadMissedCalls();
 
     if (roomId && currentUser) {
 
@@ -137,6 +138,67 @@ async function loadCurrentUser() {
     }
 
 }
+
+async function loadMissedCalls() {
+    try {
+        const res = await fetch("/missed-calls", { credentials: "include" });
+        const calls = await res.json();
+        const list = document.getElementById("missedCallList");
+
+        const emptyMsg = list.querySelector('.empty');
+        if (emptyMsg && calls.length > 0) {
+            emptyMsg.remove();
+        }
+
+        if (!calls.length) {
+            list.innerHTML = `<div class="empty">No missed calls.</div>`;
+            return;
+        }
+
+        calls.reverse().forEach((call) => {
+            const callId = call.id || call.created_at;
+            const exists = list.querySelector(`[data-id="${callId}"]`);
+
+            if (exists) return;
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "missed-item-wrapper";
+            wrapper.setAttribute("data-id", callId);
+
+            const innerDiv = document.createElement("div");
+            innerDiv.className = "missed-item";
+            innerDiv.innerHTML = `
+                <div class="left">
+                    <i class="fa-solid fa-phone-volume"></i>
+                </div>
+                <div class="right">
+                    <div>
+                    You missed a call from <span class="name">${call.firstname}</span>
+                    </div>
+                    <div class="time">
+                    ${new Date(call.created_at).toLocaleString()}
+                    </div>
+                </div>
+            `;
+
+            wrapper.appendChild(innerDiv);
+
+            list.insertBefore(wrapper, list.firstChild);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    wrapper.classList.add("show");
+                });
+            });
+        });
+
+    } catch (error) {
+        console.error("Error fetching missed calls:", error);
+    }
+}
+
+
+
 
 let userMediaStates = {};
 
@@ -225,12 +287,12 @@ function setupUI() {
     if (currentUser.acc_type !== "admin") {
 
         document.querySelector(".userListCont").style.display = "none";
-
         callAllBtn?.remove();
 
     } else {
 
         loadUsers();
+        document.getElementById("missedCallContainer").style.display = "none";
 
     }
 
@@ -1180,7 +1242,10 @@ socket.on("call-all-progress", ({ remaining }) => {
 
 });
 
-
+socket.on("call-all-expired", () => {
+    pendingCallAllResponses = 0;
+    setCallAllLoading(false);
+});
 
 function showToast(type, title, message) {
 
@@ -1381,7 +1446,35 @@ socket.on("request-declined", ({ token }) => {
 
 });
 
-socket.on("request-expired", ({ token }) => {
+socket.on("request-expired", async (data = {}) => {
+
+    // EMPLOYEE
+    if (!data.token) {
+
+        await loadMissedCalls();
+
+        document.getElementById("meetingRequestModal").style.display = "none";
+
+        if (requestCountdownTimer) {
+            clearInterval(requestCountdownTimer);
+            requestCountdownTimer = null;
+        }
+
+        sounds.request.pause();
+        sounds.request.currentTime = 0;
+        requestSoundPlaying = false;
+
+        showToast(
+            "warning",
+            "Missed Call",
+            "You missed a meeting request."
+        );
+
+        return;
+    }
+
+    // ADMIN
+    const token = data.token;
 
     const reqBtn = document.getElementById(`req-${token}`);
     const deleteBtn = document.getElementById(`delete-${token}`);
@@ -1402,7 +1495,6 @@ socket.on("request-expired", ({ token }) => {
         "Meeting Request Unsuccessful",
         "The employee did not accept the meeting request."
     );
-
 });
 
 socket.on("removed-from-meeting", () => {
@@ -1525,14 +1617,10 @@ document.getElementById("acceptMeetingBtn").onclick = async () => {
 
 document.getElementById("declineMeetingBtn").onclick = () => {
 
-    console.log("1. Decline clicked");
-
     if (requestCountdownTimer) {
         clearInterval(requestCountdownTimer);
         requestCountdownTimer = null;
     }
-
-    console.log("2. Sending CALL_HANDLED");
 
     window.parent.postMessage({
         type: "CALL_HANDLED"
@@ -1544,10 +1632,7 @@ document.getElementById("declineMeetingBtn").onclick = () => {
 
     document.getElementById("meetingRequestModal").style.display = "none";
 
-    console.log("3. Emitting meeting-request-declined");
-
     socket.emit("meeting-request-declined");
-
     requestedRoom = null;
 };
 

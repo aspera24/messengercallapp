@@ -57,7 +57,7 @@ async function createFilteredStream(stream) {
         antialias: false,
         alpha: false,
         depth: false,
-        stencil: false,
+        stencil: false, 
         powerPreference: "high-performance",
         preserveDrawingBuffer: true
     });

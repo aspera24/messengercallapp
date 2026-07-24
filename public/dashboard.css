@@ -382,6 +382,9 @@ input:focus {
     color: #8a8a8a;
 }
 
+#userTable tbody tr:hover {
+    background: #36363644;
+}
 
 #userTable tbody td:last-of-type {
     text-align: center;
@@ -440,6 +443,85 @@ input:focus {
     color: #8a8a8a;
 }
 
+
+
+
+.missedCallContainer {
+    height: calc(80% - 40px);
+    overflow-y: auto;
+}
+
+.missedCallContainer .title {
+    padding: 2px 10px;
+}
+
+.missedCallContainer #missedCallList {
+    display: flex;
+    flex-direction: column;
+    padding: 0 5px;
+}
+
+#missedCallList .missed-item-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+
+    transition: grid-template-rows 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#missedCallList .missed-item-wrapper.show {
+    grid-template-rows: 1fr;
+}
+
+#missedCallList .missed-item {
+    min-height: 0;
+    font-size: 14px;
+    color: rgb(207, 207, 207);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-top: 1px solid transparent;
+    opacity: 0;
+    transform: translateY(-5px);
+
+    transition:
+        padding 0.5s cubic-bezier(0.25, 1, 0.5, 1),
+        border-color 0.5s ease,
+        opacity 0.4s ease-in-out 0.1s,
+        transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.1s;
+}
+
+#missedCallList .missed-item-wrapper.show .missed-item {
+    padding: 10px;
+    border-style: solid;
+    border-color: rgb(94, 94, 94);
+    border-width: 1px;
+    border-bottom-width: 0; 
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#missedCallList .missed-item-wrapper:last-child .missed-item {
+    border-bottom-width: 1px;
+}
+
+.missed-item .left {
+    height: 30px;
+    width: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+
+.missed-item .name {
+    color: #4a90e2;
+    font-weight: bold;
+}
+
+.missed-item .time {
+    font-size: 12px;
+    color: gray;
+}
 
 
 
@@ -887,7 +969,7 @@ video {
 
 #toastClose {
     background: none;
-    border: none; 
+    border: none;
     cursor: pointer;
     color: #cccccc;
     font-size: 18px;
