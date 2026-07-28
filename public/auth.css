@@ -25,38 +25,52 @@ body {
     width: 380px;
     padding: 40px;
     border-radius: 22px;
-
-    background:#272727;
-
+    background: #272727;
     border: 1px solid rgba(255, 255, 255, .08);
-
-    box-shadow:
-        0 10px 20px rgba(0, 0, 0, 0.253);
-
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.253);
     backdrop-filter: blur(18px);
 }
 
 .logo {
     width: 70px;
     height: 70px;
-
-    margin: auto;
-    margin-bottom: 18px;
-
-    border-radius: 50%;
-
     display: flex;
     justify-content: center;
     align-items: center;
-
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
-
     color: white;
-    font-size: 30px;
+    margin: auto;
+    margin-bottom: 18px;
+    font-size: 25px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    color: white;
+    background: linear-gradient(135deg,
+            #3b82f6 0%,
+            #2563eb 45%,
+            #1d4ed8 100%);
+    position: relative;
+    border-radius: 42% 58% 61% 39% / 39% 40% 60% 61%;
+    backdrop-filter: blur(8px);
+    z-index: 2147483647;
     font-weight: bold;
 
-    box-shadow: 0 10px 25px rgba(37, 99, 235, .4);
+    box-shadow: 0 15px 35px rgba(37, 99, 235, .45),
+        inset 0 2px 8px rgba(255, 255, 255, .35),
+        inset 0 -8px 12px rgba(0, 0, 0, .18);
 }
+
+.logo .bubble {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .35);
+    filter: blur(.5px);
+}
+
+
 
 h2 {
     color: #3b82f6;

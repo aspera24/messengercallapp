@@ -63,18 +63,19 @@ body {
     font-weight: 900;
     letter-spacing: .5px;
     color: white;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, .25);
-    background: linear-gradient(
-    135deg,
-    #3b82f6 0%,
-    #2563eb 45%,
-    #1d4ed8 100%
-    );
+    background: linear-gradient(135deg,
+            #3b82f6 0%,
+            #2563eb 45%,
+            #1d4ed8 100%);
     position: relative;
     border-radius: 42% 58% 61% 39% / 39% 40% 60% 61%;
     backdrop-filter: blur(8px);
     z-index: 2147483647;
     font-weight: bold;
+
+    box-shadow: 0 15px 35px rgba(37, 99, 235, .45),
+        inset 0 2px 8px rgba(255, 255, 255, .35),
+        inset 0 -8px 12px rgba(0, 0, 0, .18);
 }
 
 .logo .bubble {
@@ -84,7 +85,7 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: rgba(255,255,255,.35);
+    background: rgba(255, 255, 255, .35);
     filter: blur(.5px);
 }
 
