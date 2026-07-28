@@ -40,15 +40,13 @@ setInterval(() => {
             return;
         }
 
-        console.log("Connected Thread:", conn.threadId);
+        // console.log("Connected Thread:", conn.threadId);
 
         conn.ping((err) => {
 
             if (err) {
                 console.error("PING FAILED");
                 console.error(err);
-            } else {
-                console.log("PING OK");
             }
 
             conn.release();
@@ -69,7 +67,7 @@ db.on("error", (err) => {
         err.code === "PROTOCOL_CONNECTION_LOST" ||
         err.code === "ECONNRESET"
     ) {
-        console.error("❌ Database connection lost!");
+        console.error("Database connection lost!");
     }
 });
 
