@@ -925,7 +925,7 @@ function createPeer(userId) {
 
         params.encodings = [{
             maxBitrate: 1500000,
-            maxFramerate: 30
+            maxFramerate: 20
         }];
 
         sender.setParameters(params);

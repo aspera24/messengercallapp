@@ -17,9 +17,9 @@ const db = mysql.createPool({
   database: process.env.MYSQLDATABASE,
   timezone: "+08:00",
   waitForConnections: true,
-  connectionLimit: 10,
-  maxIdle: 10,
-  idleTimeout: 60000,
+  connectionLimit: 20,
+  maxIdle: 20,
+  idleTimeout: 120000,
   queueLimit: 0,
 
   enableKeepAlive: true,
