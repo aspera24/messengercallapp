@@ -1459,35 +1459,6 @@ io.on("connection", (socket) => {
             accepted: 0
         };
 
-        // setTimeout(() => {
-
-        //     const progress = callAllProgress[roomId];
-
-        //     if (!progress) return;
-
-        //     if (!activeMeeting || activeMeeting.roomId !== roomId) {
-        //         delete callAllProgress[roomId];
-        //         return;
-        //     }
-
-        //     io.to(progress.adminSocket).emit("call-all-progress", {
-        //         remaining: Math.max(0, progress.remaining)
-        //     });
-
-        //     if (progress.accepted === 0) {
-
-        //         io.to(progress.adminSocket).emit("call-all-expired");
-
-        //         console.log("Call All expired.");
-
-        //         endMeeting(roomId);
-
-        //     }
-
-        //     delete callAllProgress[roomId];
-
-        // }, 20000);
-
         socket.emit("call-all-started", {
             total: totalRequests
         });
@@ -1622,38 +1593,846 @@ io.on("connection", (socket) => {
 
     });
 
+
+    socket.on("chat-message", async (data) => {
+
+        try {
+
+            const {
+                to,
+                message
+            } = data;
+
+
+            // VALIDATION
+            if (!to || typeof to !== "string") {
+                return;
+            }
+
+            if (!message || typeof message !== "string") {
+                return;
+            }
+
+            const cleanMessage = message.trim();
+
+            if (!cleanMessage) {
+                return;
+            }
+
+            if (cleanMessage.length > 5000) {
+                return;
+            }
+
+
+            // GET AUTHENTICATED SENDER
+            const sender = socket.data.user;
+
+            if (!sender) {
+
+                console.log(
+                    "Chat rejected: socket has no authenticated user"
+                );
+
+                return;
+            }
+
+
+            const senderToken = sender.token;
+            const senderId = sender.id;
+            const senderType = sender.acc_type;
+
+
+            console.log("CHAT SENDER:", {
+                id: senderId,
+                token: senderToken,
+                type: senderType
+            });
+
+
+            // FIND RECIPIENT
+            const recipient = onlineUsers[to];
+
+
+            if (!recipient) {
+
+                console.log(
+                    "Chat recipient is offline:",
+                    to
+                );
+
+            }
+
+
+            // FIND RECIPIENT IN DATABASE
+            db.query(
+                `
+            SELECT
+                id,
+                firstname,
+                lastname,
+                username,
+                acc_type,
+                token
+            FROM users
+            WHERE token = ?
+            AND is_active = 1
+            LIMIT 1
+            `,
+                [to],
+                (err, rows) => {
+
+                    if (err) {
+
+                        console.error(
+                            "CHAT RECIPIENT DB ERROR:",
+                            err
+                        );
+
+                        return;
+                    }
+
+
+                    if (!rows.length) {
+
+                        console.log(
+                            "Chat recipient not found:",
+                            to
+                        );
+
+                        return;
+                    }
+
+
+                    const receiver = rows[0];
+
+
+                    // SAVE MESSAGE
+                    db.query(
+                        `
+                    INSERT INTO messages (
+                        sender_type,
+                        sender_id,
+                        receiver_type,
+                        receiver_id,
+                        message
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    `,
+                        [
+                            senderType,
+                            senderId,
+                            receiver.acc_type,
+                            receiver.id,
+                            cleanMessage
+                        ],
+                        (err, result) => {
+
+                            if (err) {
+
+                                console.error(
+                                    "CHAT MESSAGE INSERT ERROR:",
+                                    err
+                                );
+
+                                return;
+                            }
+
+
+                            // MESSAGE DATA
+                            const messageData = {
+
+                                id: result.insertId,
+
+                                from: senderToken,
+
+                                fromType: senderType,
+
+                                to: receiver.token,
+
+                                toType: receiver.acc_type,
+
+                                message: cleanMessage,
+
+                                createdAt: new Date()
+
+                            };
+
+
+                            // SEND TO RECIPIENT
+                            if (recipient) {
+
+                                recipient.sockets.forEach(
+                                    socketId => {
+
+                                        io.to(socketId).emit(
+                                            "chat-message",
+                                            messageData
+                                        );
+
+                                    }
+                                );
+
+                            }
+
+
+                            // CONFIRM TO SENDER
+                            socket.emit(
+                                "chat-message-sent",
+                                messageData
+                            );
+
+
+                            console.log(
+                                "CHAT MESSAGE SENT:",
+                                messageData
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "chat-message error:",
+                error
+            );
+
+        }
+
+    });
+
+    socket.on("delete-chat-message", async (data) => {
+
+        try {
+
+            const {
+                messageId
+            } = data;
+
+
+            // VALIDATION
+            if (
+                !messageId ||
+                !Number.isInteger(Number(messageId))
+            ) {
+
+                return;
+
+            }
+
+
+            const id = Number(messageId);
+
+
+            // AUTHENTICATED USER
+            const sender = socket.data.user;
+
+
+            if (!sender) {
+
+                console.log(
+                    "Delete rejected: socket has no authenticated user"
+                );
+
+                return;
+
+            }
+
+
+            const senderId = sender.id;
+            const senderType = sender.acc_type;
+
+
+            // FIND MESSAGE
+            const [rows] =
+                await db.promise().query(
+                    `
+                        SELECT
+                            id,
+                            sender_id,
+                            sender_type,
+                            receiver_id,
+                            receiver_type,
+                            is_deleted
+                        FROM messages
+                        WHERE id = ?
+                        LIMIT 1
+                        `,
+                    [id]
+                );
+
+
+            if (!rows.length) {
+
+                console.log(
+                    "Message not found:",
+                    id
+                );
+
+                return;
+
+            }
+
+
+            const msg = rows[0];
+
+
+            // SECURITY
+            if (
+                Number(msg.sender_id) !==
+                Number(senderId)
+                ||
+                msg.sender_type !==
+                senderType
+            ) {
+
+                console.log(
+                    "Unauthorized message delete attempt:",
+                    {
+                        messageId: id,
+                        userId: senderId
+                    }
+                );
+
+                return;
+
+            }
+
+
+            // ALREADY DELETED
+            if (
+                Number(msg.is_deleted) === 1
+            ) {
+
+                return;
+
+            }
+
+
+            // SOFT DELETE
+            const [updateResult] =
+                await db.promise().query(
+                    `
+                            UPDATE messages
+                            SET is_deleted = 1
+                            WHERE id = ?
+                            AND sender_id = ?
+                            AND sender_type = ?
+                            AND is_deleted = 0
+                        `,
+                    [
+                        id,
+                        senderId,
+                        senderType
+                    ]
+                );
+
+            if (
+                updateResult.affectedRows === 0
+            ) {
+
+                console.log(
+                    "Message was not deleted:",
+                    id
+                );
+
+                return;
+
+            }
+
+
+            // DELETE EVENT DATA
+            const deleteData = {
+
+                messageId: id
+
+            };
+
+
+            // UPDATE SENDER
+            socket.emit(
+                "chat-message-deleted",
+                deleteData
+            );
+
+
+            // FIND RECIPIENT
+            const [receiverRows] =
+                await db.promise().query(
+                    `
+                    SELECT
+                        token
+
+                    FROM users
+
+                    WHERE id = ?
+
+                    AND acc_type = ?
+
+                    LIMIT 1
+                    `,
+                    [
+                        msg.receiver_id,
+                        msg.receiver_type
+                    ]
+                );
+
+
+            // UPDATE RECIPIENT
+            if (receiverRows.length) {
+
+                const receiverToken =
+                    receiverRows[0].token;
+
+
+                const onlineRecipient =
+                    onlineUsers[receiverToken];
+
+
+                if (onlineRecipient) {
+
+                    onlineRecipient.sockets.forEach(
+                        socketId => {
+
+                            io.to(socketId).emit(
+                                "chat-message-deleted",
+                                deleteData
+                            );
+
+                        }
+                    );
+
+                }
+
+            }
+
+
+            console.log(
+                "CHAT MESSAGE SOFT-DELETED:",
+                id
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "delete-chat-message error:",
+                error
+            );
+
+        }
+
+    }
+    );
 });
 
 
+app.get("/messages/:token", async (req, res) => {
+
+    try {
+
+        const otherToken = req.params.token;
+
+        const limit = Math.min(
+            Math.max(
+                parseInt(req.query.limit) || 30,
+                1
+            ),
+            50
+        );
+
+        const cursor = req.query.cursor
+            ? parseInt(req.query.cursor)
+            : null;
+
+
+        // =========================
+        // GET CURRENT USER
+        // =========================
+
+        const sessionToken =
+            req.cookies?.meetflow_session;
+
+        if (!sessionToken) {
+
+            return res.status(401).json({
+                error: "Unauthorized"
+            });
+
+        }
+
+
+        const [currentRows] =
+            await db.promise().query(
+                `
+                SELECT
+                    u.id,
+                    u.token,
+                    u.acc_type
+
+                FROM sessions s
+
+                INNER JOIN users u
+                    ON s.user_id = u.id
+
+                WHERE s.token = ?
+
+                LIMIT 1
+                `,
+                [sessionToken]
+            );
+
+
+        if (!currentRows.length) {
+
+            return res.status(401).json({
+                error: "Unauthorized"
+            });
+
+        }
+
+
+        const currentUser =
+            currentRows[0];
+
+
+        // =========================
+        // GET OTHER USER
+        // =========================
+
+        const [otherRows] =
+            await db.promise().query(
+                `
+                SELECT
+                    id,
+                    token,
+                    acc_type,
+                    firstname,
+                    lastname
+
+                FROM users
+
+                WHERE token = ?
+                AND is_active = 1
+
+                LIMIT 1
+                `,
+                [otherToken]
+            );
+
+
+        if (!otherRows.length) {
+
+            return res.status(404).json({
+                error: "User not found"
+            });
+
+        }
+
+
+        const otherUser =
+            otherRows[0];
+
+
+        // =========================
+        // MESSAGE QUERY
+        // =========================
+
+        let sql = `
+            SELECT
+                id,
+                sender_type,
+                sender_id,
+                receiver_type,
+                receiver_id,
+                message,
+                is_deleted,
+                is_read,
+                created_at
+
+            FROM messages
+
+            WHERE
+
+            (
+
+                (
+                    sender_type = ?
+                    AND sender_id = ?
+                    AND receiver_type = ?
+                    AND receiver_id = ?
+                )
+
+                OR
+
+                (
+                    sender_type = ?
+                    AND sender_id = ?
+                    AND receiver_type = ?
+                    AND receiver_id = ?
+                )
+
+            )
+        `;
+
+
+        const params = [
+
+            // CURRENT → OTHER
+            currentUser.acc_type,
+            currentUser.id,
+            otherUser.acc_type,
+            otherUser.id,
+
+            // OTHER → CURRENT
+            otherUser.acc_type,
+            otherUser.id,
+            currentUser.acc_type,
+            currentUser.id
+
+        ];
+
+
+        // =========================
+        // CURSOR
+        // =========================
+
+        if (cursor) {
+
+            sql += `
+                AND id < ?
+            `;
+
+            params.push(cursor);
+
+        }
+
+
+        // =========================
+        // GET NEWEST FIRST
+        // =========================
+
+        sql += `
+            ORDER BY id DESC
+            LIMIT ?
+        `;
+
+        params.push(limit);
+
+
+        const [rows] =
+            await db.promise().query(
+                sql,
+                params
+            );
+
+
+        // =========================
+        // OLDEST → NEWEST
+        // =========================
+
+        rows.reverse();
+
+
+        // =========================
+        // IS MINE
+        // =========================
+
+        rows.forEach(row => {
+
+            row.isMine =
+                row.sender_type === currentUser.acc_type &&
+                row.sender_id === currentUser.id;
+
+        });
+
+
+        // =========================
+        // NEXT CURSOR
+        // =========================
+
+        const nextCursor =
+            rows.length > 0
+                ? rows[0].id
+                : null;
+
+
+        // =========================
+        // HAS MORE
+        // =========================
+
+        let hasMore = false;
+
+
+        if (nextCursor !== null) {
+
+            const [moreRows] =
+                await db.promise().query(
+                    `
+                    SELECT id
+
+                    FROM messages
+
+                    WHERE id < ?
+
+                    AND
+                    (
+
+                        (
+                            sender_type = ?
+                            AND sender_id = ?
+                            AND receiver_type = ?
+                            AND receiver_id = ?
+                        )
+
+                        OR
+
+                        (
+                            sender_type = ?
+                            AND sender_id = ?
+                            AND receiver_type = ?
+                            AND receiver_id = ?
+                        )
+
+                    )
+
+                    LIMIT 1
+                    `,
+                    [
+
+                        nextCursor,
+
+                        // CURRENT → OTHER
+                        currentUser.acc_type,
+                        currentUser.id,
+                        otherUser.acc_type,
+                        otherUser.id,
+
+                        // OTHER → CURRENT
+                        otherUser.acc_type,
+                        otherUser.id,
+                        currentUser.acc_type,
+                        currentUser.id
+
+                    ]
+                );
+
+
+            hasMore =
+                moreRows.length > 0;
+
+        }
+
+
+        // =========================
+        // RESPONSE
+        // =========================
+
+        res.json({
+
+            messages: rows,
+
+            nextCursor,
+
+            hasMore
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "GET CHAT MESSAGES ERROR:",
+            error
+        );
+
+
+        res.status(500).json({
+            error: "Failed to load messages"
+        });
+
+    }
+
+});
 
 
 app.get("/users", authMiddleware, (req, res) => {
 
+    const currentUser = req.user;
+
+    if (!currentUser) {
+        return res.status(401).json({
+            error: "Unauthorized"
+        });
+    }
+
+    let targetAccType;
+
+    // Admin → fetch employees
+    if (currentUser.acc_type === "admin") {
+        targetAccType = "employee";
+    }
+
+    // Employee → fetch admins
+    else if (currentUser.acc_type === "employee") {
+        targetAccType = "admin";
+    }
+
+    // Unknown account type
+    else {
+        return res.status(403).json({
+            error: "Invalid account type"
+        });
+    }
+
+
     db.query(
         `
-            SELECT
-                token,
-                firstname,
-                lastname,
-                acc_type
-            FROM users
-            WHERE acc_type='employee'
-            AND is_active=1
-            `,
+        SELECT
+            token,
+            firstname,
+            lastname,
+            acc_type
+        FROM users
+        WHERE acc_type = ?
+        AND is_active = 1
+        `,
+        [targetAccType],
         (err, result) => {
 
             if (err) {
-                return res.status(500).json(err);
+
+                console.error(
+                    "GET USERS ERROR:",
+                    err
+                );
+
+                return res.status(500).json({
+                    error: "Failed to fetch users"
+                });
+
             }
 
+
             const users = result.map(user => ({
+
                 ...user,
-                joined: !!joinedUsersInMeeting[user.token]
+
+                joined:
+                    !!joinedUsersInMeeting[user.token]
+
             }));
 
+
             res.json(users);
+
         }
     );
+
 });
 
 const crypto = require("crypto");
