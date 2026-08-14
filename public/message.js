@@ -7,7 +7,7 @@ let chatHasMore = false;
 let chatLoading = false;
 
 const loadedMessageIds = new Set();
-
+const pendingReadMessageIds = new Set();
 
 
 async function loadUsers() {
@@ -38,7 +38,8 @@ async function loadUsers() {
                             class="employeeName"
                             onclick="openChat(
                                 '${data.token}',
-                                '${data.firstname}'
+                                '${data.firstname}',
+                                '${data.lastname}'
                             )"
                         >
                             ${data.firstname}
@@ -117,7 +118,7 @@ async function loadUsers() {
 
 }
 
-async function openChat(token, firstname) {
+async function openChat(token, firstname, lastname) {
 
     activeChatUser = {
         token: token,
@@ -138,7 +139,7 @@ async function openChat(token, firstname) {
     const messageBody = document.getElementById("messageBody");
     const messageText = document.getElementById("messageText");
 
-    userName.textContent = firstname;
+    userName.textContent = firstname + " " + lastname;
     container.style.display = "flex";
 
 
@@ -172,6 +173,9 @@ async function openChat(token, firstname) {
 
         const data = await response.json();
 
+        socket.emit("mark-chat-read", {
+            from: token
+        });
 
         // Make sure this is still the selected user
         if (
@@ -205,7 +209,8 @@ async function openChat(token, firstname) {
                     message.id,
                     message.created_at,
                     false,
-                    Number(message.is_deleted) === 1
+                    Number(message.is_deleted) === 1,
+                    Number(message.is_read) === 1
                 );
 
             });
@@ -272,6 +277,7 @@ socket.on("chat-message-sent", function (data) {
         data.id,
         data.createdAt,
         true,
+        false,
         false
     );
 
@@ -311,18 +317,18 @@ function addChatMessage(
     id = null,
     createdAt = null,
     scroll = true,
-    isDeleted = false
+    isDeleted = false,
+    isRead = false
 ) {
 
     const body = document.getElementById("messageBody");
-
     const empty = body.querySelector(".messageEmpty");
 
     if (empty) {
         empty.remove();
     }
 
-    // Prevent duplicates
+    // PREVENT DUPLICATES
     if (
         id !== null &&
         loadedMessageIds.has(Number(id))
@@ -334,61 +340,127 @@ function addChatMessage(
         loadedMessageIds.add(Number(id));
     }
 
+    // MESSAGE WRAPPER
     const wrapper = document.createElement("div");
-
-    wrapper.className =
-        `chatMessageWrapper ${type}`;
+    wrapper.className = `chatMessageWrapper ${type}`;
 
     if (id !== null) {
         wrapper.dataset.messageId = id;
     }
 
-    // =========================
+    // AVATAR
+    const avatar = document.createElement("div");
+    avatar.className = "chatMessageAvatar";
+    avatar.innerHTML = `<i class="fa-solid fa-user"></i>`;
+
+    // CONTENT
+    const content = document.createElement("div");
+    content.className = "chatMessageContent";
+
     // MESSAGE BUBBLE
-    // =========================
-
     const bubble = document.createElement("div");
-
     bubble.className = "chatMessage";
 
     if (isDeleted) {
         bubble.classList.add("deleted");
     }
 
-    bubble.textContent =
-        isDeleted
-            ? "This message was deleted."
-            : message;
+    bubble.textContent = isDeleted
+        ? "This message was deleted."
+        : message;
 
-    wrapper.appendChild(bubble);
+    content.appendChild(bubble);
 
+    // TIMESTAMP
+    // if (createdAt) {
 
-    // =========================
+    //     const timestamp = document.createElement("div");
+
+    //     timestamp.className = "messageTimestamp";
+
+    //     const date = new Date(createdAt);
+
+    //     timestamp.textContent = date.toLocaleString("en-US", {
+    //         month: "short",
+    //         day: "numeric",
+    //         year: "numeric",
+    //         hour: "numeric",
+    //         minute: "2-digit"
+    //     });
+
+    //     content.appendChild(timestamp);
+
+    //     bubble.addEventListener(
+    //         "click",
+    //         function (e) {
+    //             e.stopPropagation();
+    //             timestamp.classList.toggle("show");
+    //         }
+    //     );
+    // }
+
+    if (createdAt) {
+
+        const timestamp = document.createElement("div");
+
+        timestamp.className = "messageTimestamp";
+
+        const date = new Date(createdAt);
+
+        timestamp.textContent = date.toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        });
+
+        content.appendChild(timestamp);
+    }
+
+    // READ STATUS
+    if (
+        type === "sent" &&
+        id !== null &&
+        !isDeleted
+    ) {
+
+        const readStatus = document.createElement("div");
+        readStatus.className = "messageReadStatus";
+        readStatus.dataset.messageId = id;
+        const messageId = Number(id);
+
+        const alreadyRead =
+            Number(isRead) === 1 ||
+            pendingReadMessageIds.has(messageId);
+
+        readStatus.textContent =
+            alreadyRead
+                ? "Seen"
+                : "Sent";
+
+        if (alreadyRead) {
+            pendingReadMessageIds.delete(messageId);
+        }
+
+        content.appendChild(
+            readStatus
+        );
+    }
+
     // 3 DOT MENU
-    // =========================
+    if (
+        type === "sent" &&
+        !isDeleted
+    ) {
 
-    if (type === "sent" && !isDeleted) {
-
-        const menuBtn =
-            document.createElement("button");
-
+        const menuBtn = document.createElement("button");
         menuBtn.className = "messageMenuBtn";
-
         menuBtn.title = "Message options";
+        menuBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical"></i>`;
 
-        menuBtn.innerHTML =
-            `<i class="fa-solid fa-ellipsis-vertical"></i>`;
-
-
-        // =========================
-        // MENU
-        // =========================
-
-        const menu =
-            document.createElement("div");
-
+        const menu = document.createElement("div");
         menu.className = "messageMenu";
-
         menu.innerHTML = `
             <button
                 class="messageMenuItem deleteMessageBtn"
@@ -408,38 +480,54 @@ function addChatMessage(
             </button>
         `;
 
-
         menuBtn.addEventListener(
             "click",
             function (e) {
 
                 e.stopPropagation();
 
-                // Close other menus
                 document
-                    .querySelectorAll(".messageMenu.open")
+                    .querySelectorAll(
+                        ".messageMenu.open"
+                    )
                     .forEach(otherMenu => {
 
-                        if (otherMenu !== menu) {
-                            otherMenu.classList.remove("open");
+                        if (
+                            otherMenu !== menu
+                        ) {
+                            otherMenu.classList
+                                .remove("open");
                         }
 
                     });
 
-                menu.classList.toggle("open");
+                menu.classList.toggle(
+                    "open"
+                );
 
             }
         );
-
 
         wrapper.appendChild(menuBtn);
         wrapper.appendChild(menu);
     }
 
+    // MESSAGE POSITION
+    if (type === "received") {
+
+        // LEFT
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(content);
+
+    } else {
+
+        // RIGHT
+        wrapper.appendChild(content);
+    }
 
     body.appendChild(wrapper);
 
-
+    // AUTO SCROLL
     if (scroll) {
 
         body.scrollTop =
@@ -495,23 +583,6 @@ document.addEventListener("click", function (e) {
 
 });
 
-
-menuBtn.addEventListener("click", function (e) {
-
-    e.stopPropagation();
-
-    createDocumentFragment.querySelectorAll(".messageMenu.open")
-        .forEach(otherMenu => {
-
-            if (otherMenu !== menu) {
-                otherMenu.classList.remove("open");
-            }
-
-        });
-
-    menu.classList.toggle("open");
-
-});
 
 
 async function loadOlderMessages() {
@@ -610,40 +681,144 @@ async function loadOlderMessages() {
 
             const div = document.createElement("div");
 
-            // div.textContent =
-            //     message.message;
-
-
-            // fragment.appendChild(div);
-
             div.className =
                 `chatMessageWrapper ${message.isMine
                     ? "sent"
                     : "received"
                 }`;
 
-            div.dataset.messageId =
-                message.id;
+            div.dataset.messageId = message.id;
 
 
-            // MESSAGE BUBBLE
-            const bubble = document.createElement("div");
+            // =========================
+            // AVATAR
+            // =========================
 
-            bubble.className = "chatMessage";
+            if (!message.isMine) {
 
-            const isDeleted = Number(message.is_deleted) === 1;
+                const avatar = document.createElement("div");
 
-            if (isDeleted) {
-                bubble.classList.add("deleted");
+                avatar.className = "chatMessageAvatar";
+
+                avatar.innerHTML =
+                    `<i class="fa-solid fa-user"></i>`;
+
+                div.appendChild(avatar);
             }
 
-            bubble.textContent = isDeleted
-                ? "This message was deleted."
-                : message.message;
 
-            div.appendChild(bubble);
+            // =========================
+            // CONTENT
+            // =========================
 
-            // MENU FOR OWN MESSAGE
+            const content = document.createElement("div");
+
+            content.className =
+                "chatMessageContent";
+
+
+            // =========================
+            // MESSAGE BUBBLE
+            // =========================
+
+            const bubble = document.createElement("div");
+
+            bubble.className =
+                "chatMessage";
+
+            const isDeleted =
+                Number(message.is_deleted) === 1;
+
+            if (isDeleted) {
+
+                bubble.classList.add("deleted");
+
+            }
+
+            bubble.textContent =
+                isDeleted
+                    ? "This message was deleted."
+                    : message.message;
+
+            content.appendChild(bubble);
+
+
+            // =========================
+            // TIMESTAMP
+            // =========================
+
+            if (message.created_at) {
+
+                const timestamp =
+                    document.createElement("div");
+
+                timestamp.className =
+                    "messageTimestamp";
+
+                const date =
+                    new Date(message.created_at);
+
+                timestamp.textContent =
+                    date.toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit"
+                    });
+
+                content.appendChild(timestamp);
+            }
+
+
+            // =========================
+            // READ STATUS
+            // =========================
+
+            if (
+                message.isMine &&
+                !isDeleted
+            ) {
+
+                const readStatus =
+                    document.createElement("div");
+
+                readStatus.className =
+                    "messageReadStatus";
+
+                readStatus.dataset.messageId =
+                    message.id;
+
+                const messageId =
+                    Number(message.id);
+
+                const alreadyRead =
+                    Number(message.is_read) === 1 ||
+                    pendingReadMessageIds.has(messageId);
+
+                readStatus.textContent =
+                    alreadyRead
+                        ? "Seen"
+                        : "Sent";
+
+                if (alreadyRead) {
+
+                    pendingReadMessageIds.delete(
+                        messageId
+                    );
+
+                }
+
+                content.appendChild(
+                    readStatus
+                );
+            }
+
+
+            // =========================
+            // 3 DOT MENU
+            // =========================
+
             if (
                 message.isMine &&
                 !isDeleted
@@ -669,23 +844,23 @@ async function loadOlderMessages() {
                     "messageMenu";
 
                 menu.innerHTML = `
-                    <button
-                        class="messageMenuItem deleteMessageBtn"
-                        data-message-id="${message.id}"
-                    >
-                        <i class="fa-solid fa-trash"></i>
-                        Delete
-                    </button>
+        <button
+            class="messageMenuItem deleteMessageBtn"
+            data-message-id="${message.id}"
+        >
+            <i class="fa-solid fa-trash"></i>
+            Delete
+        </button>
 
-                    <button
-                        class="messageMenuItem editMessageBtn"
-                        data-message-id="${message.id}"
-                        disabled
-                    >
-                        <i class="fa-solid fa-pen"></i>
-                        Edit
-                    </button>
-                `;
+        <button
+            class="messageMenuItem editMessageBtn"
+            data-message-id="${message.id}"
+            disabled
+        >
+            <i class="fa-solid fa-pen"></i>
+            Edit
+        </button>
+    `;
 
 
                 menuBtn.addEventListener(
@@ -695,11 +870,16 @@ async function loadOlderMessages() {
                         e.stopPropagation();
 
                         document
-                            .querySelectorAll(".messageMenu.open")
+                            .querySelectorAll(
+                                ".messageMenu.open"
+                            )
                             .forEach(otherMenu => {
 
                                 if (otherMenu !== menu) {
-                                    otherMenu.classList.remove("open");
+
+                                    otherMenu.classList
+                                        .remove("open");
+
                                 }
 
                             });
@@ -714,6 +894,12 @@ async function loadOlderMessages() {
                 div.appendChild(menu);
             }
 
+
+            // =========================
+            // APPEND CONTENT
+            // =========================
+
+            div.appendChild(content);
 
             fragment.appendChild(div);
 
@@ -873,9 +1059,11 @@ socket.on("chat-message", function (data) {
         return;
     }
 
+    const body =
+        document.getElementById("messageBody");
 
-    const body = document.getElementById("messageBody");
-    const nearBottom = isNearBottom(body);
+    const nearBottom =
+        isNearBottom(body);
 
     addChatMessage(
         data.message,
@@ -883,7 +1071,43 @@ socket.on("chat-message", function (data) {
         data.id,
         data.createdAt,
         nearBottom,
-        false
+        false,
+        true
     );
+
+    // Tell sender that this message was seen
+    socket.emit("mark-chat-read", {
+        from: data.from
+    });
+
+});
+
+socket.on("chat-messages-read", function (data) {
+
+    const messageIds = Array.isArray(data.messageIds)
+        ? data.messageIds
+        : [];
+
+    messageIds.forEach(messageId => {
+
+        const id = Number(messageId);
+
+        const status = document.querySelector(
+            `.messageReadStatus[data-message-id="${id}"]`
+        );
+
+        if (status) {
+
+            status.textContent = "Seen";
+
+        } else {
+
+            // Message has not been rendered yet.
+            // Remember that it was already read.
+            pendingReadMessageIds.add(id);
+
+        }
+
+    });
 
 });

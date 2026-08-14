@@ -346,10 +346,14 @@ input:focus {
 
 .chatMessageWrapper {
     position: relative;
+
     display: flex;
+    align-items: flex-end;
+
     width: fit-content;
-    max-width: 55%;
-    align-items: center;
+    max-width: 75%;
+
+    gap: 7px;
 }
 
 .chatMessageWrapper.sent {
@@ -360,15 +364,152 @@ input:focus {
     align-self: flex-start;
 }
 
+
+/* =========================
+   AVATAR
+========================= */
+
+.chatMessageAvatar {
+    flex: 0 0 30px;
+
+    width: 30px;
+    height: 30px;
+
+    border-radius: 50%;
+
+    background: #444;
+
+    color: #aaa;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 13px;
+
+    margin-bottom: 2px;
+}
+
+
+/* =========================
+   MESSAGE CONTENT
+========================= */
+
+.chatMessageContent {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+    max-width: 100%;
+
+}
+
+.chatMessageWrapper.sent .chatMessageContent {
+    justify-content: right;
+    align-items: end;
+}
+
+/* =========================
+   MESSAGE BUBBLE
+========================= */
+
 .chatMessage {
     width: fit-content;
     max-width: 100%;
+
     padding: 9px 12px;
+
     border-radius: 14px;
+
     font-size: 14px;
+
     word-wrap: break-word;
     overflow-wrap: anywhere;
+
+    cursor: pointer;
 }
+
+
+/* SENT */
+
+.chatMessageWrapper.sent .chatMessage {
+    background: #2563eb;
+    color: white;
+
+    border-bottom-right-radius: 4px;
+}
+
+
+/* RECEIVED */
+
+.chatMessageWrapper.received .chatMessage {
+    background: white;
+    color: #222;
+
+    border-bottom-left-radius: 4px;
+}
+
+
+/* =========================
+   TIMESTAMP
+========================= */
+
+.messageTimestamp {
+    width: 100%;
+
+    font-size: 10px;
+    color: #888;
+
+    margin-top: 3px;
+
+    opacity: 1;
+    visibility: visible;
+
+    max-height: none;
+    overflow: visible;
+
+    text-align: left;
+}
+
+/* RECEIVED TIME */
+
+.chatMessageWrapper.received .messageTimestamp {
+    text-align: left;
+}
+
+/* SENT TIME */
+
+.chatMessageWrapper.sent .messageTimestamp {
+    text-align: right;
+}
+
+
+/* =========================
+   READ STATUS
+========================= */
+
+.messageReadStatus {
+    width: 100%;
+
+    margin-top: 2px;
+
+    font-size: 9px;
+    color: #888;
+
+    text-align: right;
+
+    user-select: none;
+}
+
+/* RECEIVED */
+
+.chatMessageWrapper.received .messageTimestamp {
+    text-align: left;
+}
+
+
+
+
 
 .chatMessageWrapper.sent .chatMessage {
     background: #2563eb;
@@ -437,7 +578,7 @@ input:focus {
     background: #333;
     border-radius: 10px;
     padding: 5px;
-    box-shadow:0 8px 25px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;

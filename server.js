@@ -1805,6 +1805,184 @@ io.on("connection", (socket) => {
 
     });
 
+    socket.on("mark-chat-read", async (data) => {
+
+        try {
+
+            const { from } = data;
+
+            if (!from || typeof from !== "string") {
+                return;
+            }
+
+            const currentUser = socket.data.user;
+
+            if (!currentUser) {
+                return;
+            }
+
+            const currentUserId =
+                currentUser.id;
+
+            const currentUserType =
+                currentUser.acc_type;
+
+
+            // =========================
+            // FIND SENDER
+            // =========================
+
+            const [senderRows] =
+                await db.promise().query(
+                    `
+                SELECT
+                    id,
+                    token,
+                    acc_type
+
+                FROM users
+
+                WHERE token = ?
+
+                AND is_active = 1
+
+                LIMIT 1
+                `,
+                    [from]
+                );
+
+
+            if (!senderRows.length) {
+                return;
+            }
+
+
+            const sender =
+                senderRows[0];
+
+
+            // =========================
+            // GET UNREAD MESSAGE IDS
+            // =========================
+
+            const [unreadMessages] =
+                await db.promise().query(
+                    `
+                SELECT
+                    id
+
+                FROM messages
+
+                WHERE sender_id = ?
+                AND sender_type = ?
+
+                AND receiver_id = ?
+                AND receiver_type = ?
+
+                AND is_read = 0
+
+                AND is_deleted = 0
+                `,
+                    [
+                        sender.id,
+                        sender.acc_type,
+
+                        currentUserId,
+                        currentUserType
+                    ]
+                );
+
+
+            const messageIds =
+                unreadMessages.map(
+                    row => Number(row.id)
+                );
+
+
+            // Nothing unread
+            if (!messageIds.length) {
+                return;
+            }
+
+
+            // =========================
+            // MARK AS READ
+            // =========================
+
+            await db.promise().query(
+                `
+            UPDATE messages
+
+            SET is_read = 1
+
+            WHERE sender_id = ?
+            AND sender_type = ?
+
+            AND receiver_id = ?
+            AND receiver_type = ?
+
+            AND is_read = 0
+
+            AND is_deleted = 0
+            `,
+                [
+                    sender.id,
+                    sender.acc_type,
+
+                    currentUserId,
+                    currentUserType
+                ]
+            );
+
+
+            // =========================
+            // NOTIFY SENDER
+            // =========================
+
+            const senderOnline =
+                onlineUsers[sender.token];
+
+
+            if (senderOnline) {
+
+                senderOnline.sockets.forEach(
+                    socketId => {
+
+                        io.to(socketId).emit(
+                            "chat-messages-read",
+                            {
+                                by: currentUser.token,
+                                messageIds
+                            }
+                        );
+
+                    }
+                );
+
+            }
+
+
+            console.log(
+                "CHAT MESSAGES READ:",
+                {
+                    from: sender.token,
+                    by: currentUser.token,
+                    messageIds
+                }
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "mark-chat-read error:",
+                error
+            );
+
+        }
+
+    });
+
     socket.on("delete-chat-message", async (data) => {
 
         try {
