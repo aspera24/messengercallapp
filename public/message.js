@@ -311,109 +311,85 @@ function sendChatMessage() {
 
 }
 
-function addChatMessage(
+
+function createChatMessageElement(
     message,
     type,
     id = null,
     createdAt = null,
-    scroll = true,
     isDeleted = false,
     isRead = false
 ) {
 
-    const body = document.getElementById("messageBody");
-    const empty = body.querySelector(".messageEmpty");
-
-    if (empty) {
-        empty.remove();
-    }
-
-    // PREVENT DUPLICATES
-    if (
-        id !== null &&
-        loadedMessageIds.has(Number(id))
-    ) {
-        return;
-    }
-
-    if (id !== null) {
-        loadedMessageIds.add(Number(id));
-    }
-
-    // MESSAGE WRAPPER
     const wrapper = document.createElement("div");
-    wrapper.className = `chatMessageWrapper ${type}`;
+
+    wrapper.className =
+        `chatMessageWrapper ${type}`;
 
     if (id !== null) {
         wrapper.dataset.messageId = id;
     }
 
     // AVATAR
-    const avatar = document.createElement("div");
-    avatar.className = "chatMessageAvatar";
-    avatar.innerHTML = `<i class="fa-solid fa-user"></i>`;
+    if (type === "received") {
+
+        const avatar =
+            document.createElement("div");
+
+        avatar.className =
+            "chatMessageAvatar";
+
+        avatar.innerHTML =
+            `<i class="fa-solid fa-user"></i>`;
+
+        wrapper.appendChild(avatar);
+    }
 
     // CONTENT
-    const content = document.createElement("div");
-    content.className = "chatMessageContent";
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "chatMessageContent";
 
     // MESSAGE BUBBLE
-    const bubble = document.createElement("div");
-    bubble.className = "chatMessage";
+    const bubble =
+        document.createElement("div");
+
+    bubble.className =
+        "chatMessage";
 
     if (isDeleted) {
         bubble.classList.add("deleted");
     }
 
-    bubble.textContent = isDeleted
-        ? "This message was deleted."
-        : message;
+    bubble.textContent =
+        isDeleted
+            ? "This message was deleted."
+            : message;
 
     content.appendChild(bubble);
 
     // TIMESTAMP
-    // if (createdAt) {
-
-    //     const timestamp = document.createElement("div");
-
-    //     timestamp.className = "messageTimestamp";
-
-    //     const date = new Date(createdAt);
-
-    //     timestamp.textContent = date.toLocaleString("en-US", {
-    //         month: "short",
-    //         day: "numeric",
-    //         year: "numeric",
-    //         hour: "numeric",
-    //         minute: "2-digit"
-    //     });
-
-    //     content.appendChild(timestamp);
-
-    //     bubble.addEventListener(
-    //         "click",
-    //         function (e) {
-    //             e.stopPropagation();
-    //             timestamp.classList.toggle("show");
-    //         }
-    //     );
-    // }
-
     if (createdAt) {
 
-        const timestamp = document.createElement("div");
+        const timestamp =
+            document.createElement("div");
 
-        timestamp.className = "messageTimestamp";
+        timestamp.className =
+            "messageTimestamp";
 
-        const date = new Date(createdAt);
+        const date =
+            new Date(createdAt);
 
-        timestamp.textContent = date.toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit"
-        });
+        timestamp.textContent =
+            date.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit"
+            });
 
         content.appendChild(timestamp);
     }
@@ -425,10 +401,17 @@ function addChatMessage(
         !isDeleted
     ) {
 
-        const readStatus = document.createElement("div");
-        readStatus.className = "messageReadStatus";
-        readStatus.dataset.messageId = id;
-        const messageId = Number(id);
+        const readStatus =
+            document.createElement("div");
+
+        readStatus.className =
+            "messageReadStatus";
+
+        readStatus.dataset.messageId =
+            id;
+
+        const messageId =
+            Number(id);
 
         const alreadyRead =
             Number(isRead) === 1 ||
@@ -440,7 +423,10 @@ function addChatMessage(
                 : "Sent";
 
         if (alreadyRead) {
-            pendingReadMessageIds.delete(messageId);
+
+            pendingReadMessageIds.delete(
+                messageId
+            );
         }
 
         content.appendChild(
@@ -451,16 +437,29 @@ function addChatMessage(
     // 3 DOT MENU
     if (
         type === "sent" &&
+        id !== null &&
         !isDeleted
     ) {
 
-        const menuBtn = document.createElement("button");
-        menuBtn.className = "messageMenuBtn";
-        menuBtn.title = "Message options";
-        menuBtn.innerHTML = `<i class="fa-solid fa-ellipsis-vertical"></i>`;
+        const menuBtn =
+            document.createElement("button");
 
-        const menu = document.createElement("div");
-        menu.className = "messageMenu";
+        menuBtn.className =
+            "messageMenuBtn";
+
+        menuBtn.title =
+            "Message options";
+
+        menuBtn.innerHTML =
+            `<i class="fa-solid fa-ellipsis-vertical"></i>`;
+
+
+        const menu =
+            document.createElement("div");
+
+        menu.className =
+            "messageMenu";
+
         menu.innerHTML = `
             <button
                 class="messageMenuItem deleteMessageBtn"
@@ -480,6 +479,7 @@ function addChatMessage(
             </button>
         `;
 
+
         menuBtn.addEventListener(
             "click",
             function (e) {
@@ -495,8 +495,10 @@ function addChatMessage(
                         if (
                             otherMenu !== menu
                         ) {
+
                             otherMenu.classList
                                 .remove("open");
+
                         }
 
                     });
@@ -508,22 +510,66 @@ function addChatMessage(
             }
         );
 
+
         wrapper.appendChild(menuBtn);
         wrapper.appendChild(menu);
     }
 
-    // MESSAGE POSITION
-    if (type === "received") {
+    // APPEND CONTENT
+    wrapper.appendChild(content);
 
-        // LEFT
-        wrapper.appendChild(avatar);
-        wrapper.appendChild(content);
+    return wrapper;
+}
 
-    } else {
 
-        // RIGHT
-        wrapper.appendChild(content);
+
+
+
+
+
+function addChatMessage(
+    message,
+    type,
+    id = null,
+    createdAt = null,
+    scroll = true,
+    isDeleted = false,
+    isRead = false
+) {
+
+    const body =
+        document.getElementById("messageBody");
+
+    const empty =
+        body.querySelector(".messageEmpty");
+
+    if (empty) {
+        empty.remove();
     }
+
+    // PREVENT DUPLICATES
+    if (
+        id !== null &&
+        loadedMessageIds.has(Number(id))
+    ) {
+        return;
+    }
+
+    if (id !== null) {
+        loadedMessageIds.add(Number(id));
+    }
+
+
+    const wrapper =
+        createChatMessageElement(
+            message,
+            type,
+            id,
+            createdAt,
+            isDeleted,
+            isRead
+        );
+
 
     body.appendChild(wrapper);
 
@@ -532,7 +578,6 @@ function addChatMessage(
 
         body.scrollTop =
             body.scrollHeight;
-
     }
 }
 
@@ -556,11 +601,13 @@ messageBody.addEventListener(
     function () {
 
         if (
-            this.scrollTop <= 20 &&
+            this.scrollTop <= 5 &&
             !chatLoading &&
             chatHasMore
         ) {
+
             loadOlderMessages();
+
         }
 
     }
@@ -599,23 +646,58 @@ async function loadOlderMessages() {
     const body =
         document.getElementById("messageBody");
 
+    const currentToken =
+        activeChatUser.token;
 
-    // SAVE SCROLL POSITION
-    const oldScrollHeight = body.scrollHeight;
-    const oldScrollTop = body.scrollTop;
-    const currentToken = activeChatUser.token;
+    // SAVE ANCHOR MESSAGE
+    const messages =
+        [
+            ...body.querySelectorAll(
+                ".chatMessageWrapper"
+            )
+        ];
+
+
+    const bodyRect =
+        body.getBoundingClientRect();
+
+
+    const anchor =
+        messages.find(message => {
+
+            const rect =
+                message.getBoundingClientRect();
+
+            return (
+                rect.bottom >
+                bodyRect.top
+            );
+
+        });
+
+
+    const anchorId =
+        anchor?.dataset.messageId;
+
+
+    const anchorOffset =
+        anchor
+            ? anchor.getBoundingClientRect().top -
+            bodyRect.top
+            : 0;
 
 
     try {
 
-        const response = await fetch(
-            `/messages/${encodeURIComponent(
-                currentToken
-            )}?limit=10&cursor=${chatCursor}`,
-            {
-                credentials: "include"
-            }
-        );
+        const response =
+            await fetch(
+                `/messages/${encodeURIComponent(
+                    currentToken
+                )}?limit=10&cursor=${chatCursor}`,
+                {
+                    credentials: "include"
+                }
+            );
 
 
         if (!response.ok) {
@@ -627,10 +709,11 @@ async function loadOlderMessages() {
         }
 
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
 
-        // User changed chat while loading
+        // USER CHANGED CHAT
         if (
             !activeChatUser ||
             activeChatUser.token !== currentToken
@@ -640,10 +723,12 @@ async function loadOlderMessages() {
 
         }
 
-
         // UPDATE PAGINATION
-        chatCursor = data.nextCursor;
-        chatHasMore = data.hasMore;
+        chatCursor =
+            data.nextCursor;
+
+        chatHasMore =
+            data.hasMore;
 
 
         if (!data.messages.length) {
@@ -651,15 +736,18 @@ async function loadOlderMessages() {
             chatHasMore = false;
 
             return;
-
         }
 
+
         // CREATE FRAGMENT
-        const fragment = document.createDocumentFragment();
+        const fragment =
+            document.createDocumentFragment();
+
 
         data.messages.forEach(message => {
 
-            const messageId = Number(message.id);
+            const messageId =
+                Number(message.id);
 
 
             // Prevent duplicates
@@ -679,250 +767,62 @@ async function loadOlderMessages() {
             );
 
 
-            const div = document.createElement("div");
-
-            div.className =
-                `chatMessageWrapper ${message.isMine
-                    ? "sent"
-                    : "received"
-                }`;
-
-            div.dataset.messageId = message.id;
-
-
-            // =========================
-            // AVATAR
-            // =========================
-
-            if (!message.isMine) {
-
-                const avatar = document.createElement("div");
-
-                avatar.className = "chatMessageAvatar";
-
-                avatar.innerHTML =
-                    `<i class="fa-solid fa-user"></i>`;
-
-                div.appendChild(avatar);
-            }
-
-
-            // =========================
-            // CONTENT
-            // =========================
-
-            const content = document.createElement("div");
-
-            content.className =
-                "chatMessageContent";
-
-
-            // =========================
-            // MESSAGE BUBBLE
-            // =========================
-
-            const bubble = document.createElement("div");
-
-            bubble.className =
-                "chatMessage";
-
-            const isDeleted =
-                Number(message.is_deleted) === 1;
-
-            if (isDeleted) {
-
-                bubble.classList.add("deleted");
-
-            }
-
-            bubble.textContent =
-                isDeleted
-                    ? "This message was deleted."
-                    : message.message;
-
-            content.appendChild(bubble);
-
-
-            // =========================
-            // TIMESTAMP
-            // =========================
-
-            if (message.created_at) {
-
-                const timestamp =
-                    document.createElement("div");
-
-                timestamp.className =
-                    "messageTimestamp";
-
-                const date =
-                    new Date(message.created_at);
-
-                timestamp.textContent =
-                    date.toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit"
-                    });
-
-                content.appendChild(timestamp);
-            }
-
-
-            // =========================
-            // READ STATUS
-            // =========================
-
-            if (
-                message.isMine &&
-                !isDeleted
-            ) {
-
-                const readStatus =
-                    document.createElement("div");
-
-                readStatus.className =
-                    "messageReadStatus";
-
-                readStatus.dataset.messageId =
-                    message.id;
-
-                const messageId =
-                    Number(message.id);
-
-                const alreadyRead =
-                    Number(message.is_read) === 1 ||
-                    pendingReadMessageIds.has(messageId);
-
-                readStatus.textContent =
-                    alreadyRead
-                        ? "Seen"
-                        : "Sent";
-
-                if (alreadyRead) {
-
-                    pendingReadMessageIds.delete(
-                        messageId
-                    );
-
-                }
-
-                content.appendChild(
-                    readStatus
-                );
-            }
-
-
-            // =========================
-            // 3 DOT MENU
-            // =========================
-
-            if (
-                message.isMine &&
-                !isDeleted
-            ) {
-
-                const menuBtn =
-                    document.createElement("button");
-
-                menuBtn.className =
-                    "messageMenuBtn";
-
-                menuBtn.title =
-                    "Message options";
-
-                menuBtn.innerHTML =
-                    `<i class="fa-solid fa-ellipsis-vertical"></i>`;
-
-
-                const menu =
-                    document.createElement("div");
-
-                menu.className =
-                    "messageMenu";
-
-                menu.innerHTML = `
-        <button
-            class="messageMenuItem deleteMessageBtn"
-            data-message-id="${message.id}"
-        >
-            <i class="fa-solid fa-trash"></i>
-            Delete
-        </button>
-
-        <button
-            class="messageMenuItem editMessageBtn"
-            data-message-id="${message.id}"
-            disabled
-        >
-            <i class="fa-solid fa-pen"></i>
-            Edit
-        </button>
-    `;
-
-
-                menuBtn.addEventListener(
-                    "click",
-                    function (e) {
-
-                        e.stopPropagation();
-
-                        document
-                            .querySelectorAll(
-                                ".messageMenu.open"
-                            )
-                            .forEach(otherMenu => {
-
-                                if (otherMenu !== menu) {
-
-                                    otherMenu.classList
-                                        .remove("open");
-
-                                }
-
-                            });
-
-                        menu.classList.toggle("open");
-
-                    }
+            const element =
+                createChatMessageElement(
+                    message.message,
+                    message.isMine
+                        ? "sent"
+                        : "received",
+                    message.id,
+                    message.created_at,
+                    Number(message.is_deleted) === 1,
+                    Number(message.is_read) === 1
                 );
 
 
-                div.appendChild(menuBtn);
-                div.appendChild(menu);
-            }
-
-
-            // =========================
-            // APPEND CONTENT
-            // =========================
-
-            div.appendChild(content);
-
-            fragment.appendChild(div);
+            fragment.appendChild(element);
 
         });
 
-        // PREPEND
+
+        // PREPEND OLD MESSAGES
         body.prepend(fragment);
 
-        // RESTORE SCROLL
+        // RESTORE ANCHOR POSITION
         requestAnimationFrame(() => {
 
-            const newScrollHeight =
-                body.scrollHeight;
+            if (!anchorId) {
+                return;
+            }
 
 
-            const heightDifference =
-                newScrollHeight -
-                oldScrollHeight;
+            const sameMessage =
+                body.querySelector(
+                    `.chatMessageWrapper[data-message-id="${anchorId}"]`
+                );
 
 
-            body.scrollTop =
-                oldScrollTop +
-                heightDifference;
+            if (!sameMessage) {
+                return;
+            }
+
+
+            const newBodyRect =
+                body.getBoundingClientRect();
+
+
+            const newOffset =
+                sameMessage.getBoundingClientRect().top -
+                newBodyRect.top;
+
+
+            const difference =
+                newOffset -
+                anchorOffset;
+
+
+            body.scrollTop +=
+                difference;
 
         });
 

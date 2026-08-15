@@ -6,6 +6,7 @@
     scrollbar-color: #6d6d6d transparent !important;
 }
 
+
 @font-face {
     font-family: "CenturyGothicLocal";
     src: url("/fonts/centurygothic.ttf") format("truetype");
@@ -262,6 +263,7 @@ input:focus {
     padding: 0 15px;
     background: #2563eb;
     color: #fff;
+    border-bottom: 1px solid #6a8eff;
 }
 
 
@@ -351,7 +353,7 @@ input:focus {
     align-items: flex-end;
 
     width: fit-content;
-    max-width: 75%;
+    max-width: 55%;
 
     gap: 7px;
 }
@@ -978,7 +980,7 @@ input:focus {
 .missedCallContainer {
     /* height: calc(80% - 40px); */
     overflow-y: auto;
-    height: 50%;
+    height: 20%;
 }
 
 .missedCallContainer .title {
@@ -1053,7 +1055,9 @@ input:focus {
     color: gray;
 }
 
-
+#missedCallList .empty {
+    padding: 5px;
+}
 
 .video-grid {
     display: flex;
