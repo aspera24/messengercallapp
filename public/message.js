@@ -211,7 +211,8 @@ async function openChat(token, firstname, lastname) {
                     message.created_at,
                     false,
                     Number(message.is_deleted) === 1,
-                    Number(message.is_read) === 1
+                    Number(message.is_read) === 1,
+                    Number(message.is_edited) === 1
                 );
 
             });
@@ -353,7 +354,8 @@ function createChatMessageElement(
     id = null,
     createdAt = null,
     isDeleted = false,
-    isRead = false
+    isRead = false,
+    isEdited = false
 ) {
 
     const wrapper = document.createElement("div");
@@ -406,6 +408,7 @@ function createChatMessageElement(
     content.appendChild(bubble);
 
     // TIMESTAMP
+    // TIMESTAMP
     if (createdAt) {
 
         const timestamp =
@@ -417,7 +420,7 @@ function createChatMessageElement(
         const date =
             new Date(createdAt);
 
-        timestamp.textContent =
+        const formattedDate =
             date.toLocaleString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -425,6 +428,18 @@ function createChatMessageElement(
                 hour: "numeric",
                 minute: "2-digit"
             });
+
+        if (isEdited) {
+
+            timestamp.innerHTML =
+                `<strong>Edited</strong> | ${formattedDate}`;
+
+        } else {
+
+            timestamp.textContent =
+                formattedDate;
+
+        }
 
         content.appendChild(timestamp);
     }
@@ -568,7 +583,8 @@ function addChatMessage(
     createdAt = null,
     scroll = true,
     isDeleted = false,
-    isRead = false
+    isRead = false,
+    isEdited = false
 ) {
 
     const body =
@@ -601,9 +617,9 @@ function addChatMessage(
             id,
             createdAt,
             isDeleted,
-            isRead
+            isRead,
+            isEdited
         );
-
 
     body.appendChild(wrapper);
 
@@ -810,7 +826,8 @@ async function loadOlderMessages() {
                     message.id,
                     message.created_at,
                     Number(message.is_deleted) === 1,
-                    Number(message.is_read) === 1
+                    Number(message.is_read) === 1,
+                    Number(message.is_edited) === 1
                 );
 
 
@@ -1165,57 +1182,56 @@ socket.on("chat-message-deleted", function (data) {
 
 socket.on("chat-message-edited", function (data) {
 
-    const messageId = Number(data.messageId);
+    const messageId =
+        Number(data.messageId);
 
-    if (!messageId) {
-        return;
-    }
+    const body =
+        document.getElementById("messageBody");
 
-
-    const body = document.getElementById(
-        "messageBody"
-    );
-
-
-    const wrapper = body.querySelector(
-        `.chatMessageWrapper[data-message-id="${messageId}"]`
-    );
-
+    const wrapper =
+        body.querySelector(
+            `.chatMessageWrapper[data-message-id="${messageId}"]`
+        );
 
     if (!wrapper) {
         return;
     }
 
-
-    const bubble = wrapper.querySelector(
-        ".chatMessage"
-    );
-
+    const bubble =
+        wrapper.querySelector(".chatMessage");
 
     if (!bubble) {
         return;
     }
 
-    // Update message
-    bubble.textContent = data.message;
+    // UPDATE MESSAGE TEXT
+    bubble.textContent =
+        data.message;
 
-    // Remove deleted appearance
-    bubble.classList.remove(
-        "deleted"
-    );
+    // FIND TIMESTAMP
+    const timestamp =
+        wrapper.querySelector(".messageTimestamp");
 
-    // RESET EDIT MODE
-    if (
-        editingMessageId ===
-        messageId
-    ) {
+    if (timestamp) {
 
-        cancelEditMessage();
+        const date =
+            new Date(data.editedAt);
+
+        const formattedDate =
+            date.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit"
+            });
+
+        timestamp.innerHTML =
+            `<strong>Edited</strong> | ${formattedDate}`;
 
     }
 
-}
-);
+});
 
 function isNearBottom(body) {
 

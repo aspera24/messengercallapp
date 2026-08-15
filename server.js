@@ -2345,8 +2345,10 @@ io.on("connection", (socket) => {
                 await db.promise().query(
                     `
                 UPDATE messages
-
-                SET message = ?
+                SET
+                    message = ?,
+                    is_edited = 1,
+                    created_at = NOW()
 
                 WHERE id = ?
 
@@ -2379,11 +2381,10 @@ io.on("connection", (socket) => {
 
             // EDIT EVENT DATA
             const editData = {
-
                 messageId: id,
-
-                message: cleanMessage
-
+                message: cleanMessage,
+                isEdited: true,
+                editedAt: new Date()
             };
 
             // UPDATE SENDER
@@ -2480,10 +2481,7 @@ app.get("/messages/:token", async (req, res) => {
             : null;
 
 
-        // =========================
         // GET CURRENT USER
-        // =========================
-
         const sessionToken =
             req.cookies?.meetflow_session;
 
@@ -2530,10 +2528,7 @@ app.get("/messages/:token", async (req, res) => {
             currentRows[0];
 
 
-        // =========================
         // GET OTHER USER
-        // =========================
-
         const [otherRows] =
             await db.promise().query(
                 `
@@ -2568,10 +2563,7 @@ app.get("/messages/:token", async (req, res) => {
             otherRows[0];
 
 
-        // =========================
         // MESSAGE QUERY
-        // =========================
-
         let sql = `
             SELECT
                 id,
@@ -2581,6 +2573,7 @@ app.get("/messages/:token", async (req, res) => {
                 receiver_id,
                 message,
                 is_deleted,
+                is_edited,
                 is_read,
                 created_at
 

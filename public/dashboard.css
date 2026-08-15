@@ -364,6 +364,7 @@ input:focus {
 
 .chatMessageWrapper.received {
     align-self: flex-start;
+    max-width: 65%;
 }
 
 
@@ -702,12 +703,16 @@ input:focus {
     color: white;
     letter-spacing: 1px;
     border-radius: 12px;
-    padding: 11px 15px;
+    padding: 2px 15px;
     outline: none;
     font-family: inherit;
     font-size: 14px;
     line-height: 20px;
     box-sizing: border-box;
+}
+
+.messageTimestamp strong {
+    font-weight: 700;
 }
 
 #messageText:focus {
