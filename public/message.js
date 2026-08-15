@@ -5,6 +5,7 @@ let activeChatUser = null;
 let chatCursor = null;
 let chatHasMore = false;
 let chatLoading = false;
+let editingMessageId = null;
 
 const loadedMessageIds = new Set();
 const pendingReadMessageIds = new Set();
@@ -292,22 +293,56 @@ socket.on("chat-message-sent", function (data) {
 
 function sendChatMessage() {
 
-    const input = document.getElementById("messageText");
-
-    const message = input.value.trim();
-
-    if (!message) return;
-
-    if (!activeChatUser) return;
+    const input =
+        document.getElementById(
+            "messageText"
+        );
 
 
-    socket.emit("chat-message", {
+    const message =
+        input.value.trim();
 
-        to: activeChatUser.token,
 
-        message: message
+    if (!message) {
+        return;
+    }
 
-    });
+    // EDIT MODE
+    if (editingMessageId !== null) {
+
+        socket.emit(
+            "edit-chat-message",
+            {
+                messageId:
+                    editingMessageId,
+
+                message:
+                    message
+            }
+        );
+
+
+        return;
+    }
+
+    // NORMAL SEND
+    if (!activeChatUser) {
+        return;
+    }
+
+
+    socket.emit(
+        "chat-message",
+        {
+
+            to:
+                activeChatUser.token,
+
+            message:
+                message
+
+        }
+    );
 
 }
 
@@ -472,7 +507,6 @@ function createChatMessageElement(
             <button
                 class="messageMenuItem editMessageBtn"
                 data-message-id="${id}"
-                disabled
             >
                 <i class="fa-solid fa-pen"></i>
                 Edit
@@ -845,23 +879,56 @@ async function loadOlderMessages() {
 document.getElementById("messageBody")
     .addEventListener("click", function (e) {
 
-        const deleteBtn =
-            e.target.closest(".deleteMessageBtn");
+        // DELETE
+        const deleteBtn = e.target.closest(".deleteMessageBtn");
 
-        if (!deleteBtn) {
+
+        if (deleteBtn) {
+
+            e.stopPropagation();
+
+            const messageId = Number(
+                deleteBtn.dataset.messageId
+            );
+
+
+            if (!messageId) {
+                return;
+            }
+
+
+            deleteChatMessage(
+                messageId
+            );
+
+
             return;
         }
 
-        e.stopPropagation();
 
-        const messageId =
-            Number(deleteBtn.dataset.messageId);
+        // EDIT
+        const editBtn = e.target.closest(".editMessageBtn");
 
-        if (!messageId) {
-            return;
+
+        if (editBtn) {
+
+            e.stopPropagation();
+
+            const messageId = Number(
+                editBtn.dataset.messageId
+            );
+
+
+            if (!messageId) {
+                return;
+            }
+
+
+            startEditMessage(
+                messageId
+            );
+
         }
-
-        deleteChatMessage(messageId);
 
     });
 
@@ -884,6 +951,162 @@ function deleteChatMessage(messageId) {
         {
             messageId
         }
+    );
+
+}
+
+function startEditMessage(messageId) {
+
+    if (!messageId) {
+        return;
+    }
+
+
+    const body =
+        document.getElementById(
+            "messageBody"
+        );
+
+
+    const wrapper =
+        body.querySelector(
+            `.chatMessageWrapper[data-message-id="${messageId}"]`
+        );
+
+
+    if (!wrapper) {
+        return;
+    }
+
+
+    const bubble =
+        wrapper.querySelector(
+            ".chatMessage"
+        );
+
+
+    if (!bubble) {
+        return;
+    }
+
+
+    // Already editing another message
+    if (editingMessageId !== null) {
+
+        cancelEditMessage();
+
+    }
+
+
+    const originalMessage =
+        bubble.textContent;
+
+
+    editingMessageId =
+        messageId;
+
+
+    const input =
+        document.getElementById(
+            "messageText"
+        );
+
+
+    // Save original message
+    input.dataset.editingOriginal =
+        originalMessage;
+
+
+    input.dataset.editingId =
+        messageId;
+
+
+    // Put message into textarea
+    input.value =
+        originalMessage;
+
+
+    input.focus();
+
+
+    // Move cursor to end
+    input.setSelectionRange(
+        input.value.length,
+        input.value.length
+    );
+
+
+    // Change send button
+    const sendBtn =
+        document.getElementById(
+            "sendMessageBtn"
+        );
+
+
+    sendBtn.innerHTML =
+        `<i class="fa-solid fa-check"></i>`;
+
+
+    sendBtn.title =
+        "Save edit";
+
+
+    sendBtn.classList.add(
+        "editing"
+    );
+
+
+    // Close menu
+    document
+        .querySelectorAll(
+            ".messageMenu.open"
+        )
+        .forEach(menu => {
+
+            menu.classList.remove(
+                "open"
+            );
+
+        });
+
+}
+
+function cancelEditMessage() {
+
+    const input =
+        document.getElementById(
+            "messageText"
+        );
+
+
+    editingMessageId =
+        null;
+
+
+    delete input.dataset.editingId;
+    delete input.dataset.editingOriginal;
+
+
+    input.value = "";
+    input.style.height = "auto";
+
+
+    const sendBtn =
+        document.getElementById(
+            "sendMessageBtn"
+        );
+
+
+    sendBtn.innerHTML =
+        `<i class="fa-solid fa-paper-plane"></i>`;
+
+
+    sendBtn.title =
+        "Send message";
+
+
+    sendBtn.classList.remove(
+        "editing"
     );
 
 }
@@ -935,6 +1158,60 @@ socket.on("chat-message-deleted", function (data) {
 
     if (menu) {
         menu.remove();
+    }
+
+}
+);
+
+socket.on("chat-message-edited", function (data) {
+
+    const messageId = Number(data.messageId);
+
+    if (!messageId) {
+        return;
+    }
+
+
+    const body = document.getElementById(
+        "messageBody"
+    );
+
+
+    const wrapper = body.querySelector(
+        `.chatMessageWrapper[data-message-id="${messageId}"]`
+    );
+
+
+    if (!wrapper) {
+        return;
+    }
+
+
+    const bubble = wrapper.querySelector(
+        ".chatMessage"
+    );
+
+
+    if (!bubble) {
+        return;
+    }
+
+    // Update message
+    bubble.textContent = data.message;
+
+    // Remove deleted appearance
+    bubble.classList.remove(
+        "deleted"
+    );
+
+    // RESET EDIT MODE
+    if (
+        editingMessageId ===
+        messageId
+    ) {
+
+        cancelEditMessage();
+
     }
 
 }

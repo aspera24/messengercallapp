@@ -2206,6 +2206,258 @@ io.on("connection", (socket) => {
 
     }
     );
+
+    socket.on("edit-chat-message", async (data) => {
+
+        try {
+
+            const {
+                messageId,
+                message
+            } = data;
+
+            // VALIDATION
+            if (
+                !messageId ||
+                !Number.isInteger(Number(messageId))
+            ) {
+                return;
+            }
+
+
+            if (
+                typeof message !== "string"
+            ) {
+                return;
+            }
+
+
+            const cleanMessage =
+                message.trim();
+
+
+            if (!cleanMessage) {
+                return;
+            }
+
+
+            if (cleanMessage.length > 5000) {
+                return;
+            }
+
+            // AUTHENTICATED USER
+            const sender =
+                socket.data.user;
+
+
+            if (!sender) {
+
+                console.log(
+                    "Edit rejected: socket has no authenticated user"
+                );
+
+                return;
+            }
+
+
+            const senderId =
+                sender.id;
+
+            const senderType =
+                sender.acc_type;
+
+
+            const id =
+                Number(messageId);
+
+            // FIND MESSAGE
+            const [rows] =
+                await db.promise().query(
+                    `
+                SELECT
+                    id,
+                    sender_id,
+                    sender_type,
+                    receiver_id,
+                    receiver_type,
+                    message,
+                    is_deleted
+
+                FROM messages
+
+                WHERE id = ?
+
+                LIMIT 1
+                `,
+                    [id]
+                );
+
+
+            if (!rows.length) {
+
+                console.log(
+                    "Edit message not found:",
+                    id
+                );
+
+                return;
+            }
+
+
+            const msg =
+                rows[0];
+
+            // SECURITY
+            if (
+                Number(msg.sender_id) !==
+                Number(senderId)
+                ||
+                msg.sender_type !==
+                senderType
+            ) {
+
+                console.log(
+                    "Unauthorized message edit attempt:",
+                    {
+                        messageId: id,
+                        userId: senderId
+                    }
+                );
+
+                return;
+            }
+
+            // CANNOT EDIT DELETED MESSAGE
+            if (
+                Number(msg.is_deleted) === 1
+            ) {
+
+                console.log(
+                    "Cannot edit deleted message:",
+                    id
+                );
+
+                return;
+            }
+
+            // UPDATE MESSAGE
+            const [updateResult] =
+                await db.promise().query(
+                    `
+                UPDATE messages
+
+                SET message = ?
+
+                WHERE id = ?
+
+                AND sender_id = ?
+
+                AND sender_type = ?
+
+                AND is_deleted = 0
+                `,
+                    [
+                        cleanMessage,
+                        id,
+                        senderId,
+                        senderType
+                    ]
+                );
+
+
+            if (
+                updateResult.affectedRows === 0
+            ) {
+
+                console.log(
+                    "Message was not edited:",
+                    id
+                );
+
+                return;
+            }
+
+            // EDIT EVENT DATA
+            const editData = {
+
+                messageId: id,
+
+                message: cleanMessage
+
+            };
+
+            // UPDATE SENDER
+            socket.emit(
+                "chat-message-edited",
+                editData
+            );
+
+            // FIND RECIPIENT
+            const [receiverRows] =
+                await db.promise().query(
+                    `
+                SELECT
+                    token
+
+                FROM users
+
+                WHERE id = ?
+
+                AND acc_type = ?
+
+                LIMIT 1
+                `,
+                    [
+                        msg.receiver_id,
+                        msg.receiver_type
+                    ]
+                );
+
+            // UPDATE RECIPIENT
+            if (receiverRows.length) {
+
+                const receiverToken =
+                    receiverRows[0].token;
+
+
+                const onlineRecipient =
+                    onlineUsers[receiverToken];
+
+
+                if (onlineRecipient) {
+
+                    onlineRecipient.sockets.forEach(
+                        socketId => {
+
+                            io.to(socketId).emit(
+                                "chat-message-edited",
+                                editData
+                            );
+
+                        }
+                    );
+
+                }
+
+            }
+
+
+            console.log(
+                "CHAT MESSAGE EDITED:",
+                editData
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "edit-chat-message error:",
+                error
+            );
+
+        }
+
+    });
 });
 
 
