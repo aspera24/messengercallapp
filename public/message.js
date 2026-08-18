@@ -44,7 +44,7 @@ async function loadUsers() {
                             )"
                         >
                         <i class="fa-solid fa-user"></i>
-                            ${data.firstname}`+ " " +`${data.lastname}
+                            ${data.firstname}` + " " + `${data.lastname}
                         </div>
                     `;
                 }
@@ -143,6 +143,16 @@ async function openChat(token, firstname, lastname) {
 
     userName.textContent = firstname + " " + lastname;
     container.style.display = "flex";
+
+    requestAnimationFrame(() => {
+
+        requestAnimationFrame(() => {
+
+            container.classList.add("chat-open");
+
+        });
+
+    });
 
 
     // Loading state
@@ -247,8 +257,24 @@ async function openChat(token, firstname, lastname) {
 
 document.getElementById("closeMessageBtn")
     .addEventListener("click", function () {
-        document.getElementById("messageContainer").style.display = "none";
+
+        const container =
+            document.getElementById("messageContainer");
+
+        // Start closing animation
+        container.classList.remove("chat-open");
+        container.classList.add("chat-closing");
+
+        // Wait for animation to finish
+        setTimeout(() => {
+
+            container.style.display = "none";
+            container.classList.remove("chat-closing");
+
+        }, 650);
+
         activeChatUser = null;
+
     });
 
 document.getElementById("sendMessageBtn")
