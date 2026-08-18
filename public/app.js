@@ -139,64 +139,222 @@ async function loadCurrentUser() {
 
 }
 
-async function loadMissedCalls() {
-    try {
-        const res = await fetch("/missed-calls", { credentials: "include" });
-        const calls = await res.json();
-        const list = document.getElementById("missedCallList");
+let missedCallCursor = null;
+let missedCallHasMore = true;
+let missedCallLoading = false;
+let missedCallsInitialized = false;
 
-        const emptyMsg = list.querySelector('.empty');
+
+async function loadMissedCalls(reset = false) {
+
+    if (missedCallLoading) return;
+
+    if (!reset && !missedCallHasMore) return;
+
+    const list = document.getElementById("missedCallList");
+
+    if (!list) return;
+
+    try {
+
+        missedCallLoading = true;
+
+
+        if (reset) {
+
+            missedCallCursor = null;
+            missedCallHasMore = true;
+            missedCallsInitialized = false;
+
+            list.innerHTML = "";
+
+        }
+
+
+        const params = new URLSearchParams();
+
+        params.set("limit", "2");
+
+        if (missedCallCursor) {
+            params.set("cursor", missedCallCursor);
+        }
+
+
+        const res = await fetch(
+            `/missed-calls?${params.toString()}`,
+            {
+                credentials: "include"
+            }
+        );
+
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+
+        const data = await res.json();
+
+        const calls = data.calls || [];
+
+        missedCallHasMore = data.hasMore;
+
+        missedCallCursor = data.nextCursor || null;
+
+
+        /*
+         * FIRST LOAD
+         */
+
+        if (!calls.length && !missedCallsInitialized) {
+
+            list.innerHTML = `
+                <div class="empty">
+                    No missed calls.
+                </div>
+            `;
+
+            missedCallsInitialized = true;
+
+            return;
+        }
+
+
+        /*
+         * Remove empty message when calls exist
+         */
+
+        const emptyMsg = list.querySelector(".empty");
+
         if (emptyMsg && calls.length > 0) {
             emptyMsg.remove();
         }
 
-        if (!calls.length) {
-            list.innerHTML = `<div class="empty">No missed calls.</div>`;
-            return;
-        }
 
-        calls.reverse().forEach((call) => {
-            const callId = call.id || call.created_at;
-            const exists = list.querySelector(`[data-id="${callId}"]`);
+        /*
+         * Render calls
+         */
+
+        calls.forEach((call) => {
+
+            const callId = call.id;
+
+            if (!callId) return;
+
+
+            const exists = list.querySelector(
+                `[data-id="${callId}"]`
+            );
 
             if (exists) return;
 
+
             const wrapper = document.createElement("div");
+
             wrapper.className = "missed-item-wrapper";
-            wrapper.setAttribute("data-id", callId);
+
+            wrapper.setAttribute(
+                "data-id",
+                callId
+            );
+
 
             const innerDiv = document.createElement("div");
+
             innerDiv.className = "missed-item";
+
             innerDiv.innerHTML = `
                 <div class="left">
                     <i class="fa-solid fa-phone-volume"></i>
                 </div>
+
                 <div class="right">
+
                     <div>
-                    You missed a call from <span class="name">${call.firstname}</span>
+                        You missed a call from
+                        <span class="name">
+                            ${call.firstname} ${call.lastname}
+                        </span>
                     </div>
+
                     <div class="time">
-                    ${new Date(call.created_at).toLocaleString()}
+                        ${new Date(call.created_at).toLocaleString()}
                     </div>
+
                 </div>
             `;
 
+
             wrapper.appendChild(innerDiv);
 
-            list.insertBefore(wrapper, list.firstChild);
+            list.appendChild(wrapper);
+
+
+            /*
+             * Trigger existing CSS animation
+             */
 
             requestAnimationFrame(() => {
+
                 requestAnimationFrame(() => {
+
                     wrapper.classList.add("show");
+
                 });
+
             });
+
         });
 
+
+        missedCallsInitialized = true;
+
+
     } catch (error) {
-        console.error("Error fetching missed calls:", error);
+
+        console.error(
+            "Error fetching missed calls:",
+            error
+        );
+
+    } finally {
+
+        missedCallLoading = false;
+
     }
+
 }
 
+
+const missedCallContainer = document.querySelector(".missedCallContainer");
+
+if (missedCallContainer) {
+
+    missedCallContainer.addEventListener("scroll", () => {
+
+        const scrollTop = missedCallContainer.scrollTop;
+        const clientHeight = missedCallContainer.clientHeight;
+        const scrollHeight = missedCallContainer.scrollHeight;
+
+        // Distance from bottom
+        const distanceFromBottom =
+            scrollHeight - (scrollTop + clientHeight);
+
+
+        // Load next page when 100px near bottom
+        if (
+            distanceFromBottom <= 100 &&
+            missedCallHasMore &&
+            !missedCallLoading
+        ) {
+
+            loadMissedCalls();
+
+        }
+
+    });
+
+}
 
 
 

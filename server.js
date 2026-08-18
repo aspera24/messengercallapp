@@ -2948,8 +2948,15 @@ app.post("/add-employee", authMiddleware, (req, res) => {
 
 app.get("/missed-calls", authMiddleware, (req, res) => {
 
-    db.query(
-        `
+    const limit = Math.min(
+        parseInt(req.query.limit) || 10,
+        20
+    );
+
+    const cursor = req.query.cursor || null;
+
+
+    let query = `
         SELECT
             mr.id,
             mr.room_token,
@@ -2962,17 +2969,119 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
         WHERE
             mr.to_user_id = ?
             AND mr.status = 'expired'
-        ORDER BY mr.created_at DESC
-        LIMIT 20
-        `,
-        [req.user.id],
+    `;
+
+
+    const params = [req.user.id];
+
+
+    /*
+     * Cursor pagination
+     *
+     * Load records older than the cursor.
+     */
+
+    if (cursor) {
+
+        const [cursorCreatedAt, cursorId] =
+            cursor.split("|");
+
+
+        if (!cursorCreatedAt || !cursorId) {
+
+            return res.status(400).json({
+                error: "Invalid cursor"
+            });
+
+        }
+
+
+        query += `
+            AND (
+                mr.created_at < ?
+                OR (
+                    mr.created_at = ?
+                    AND mr.id < ?
+                )
+            )
+        `;
+
+
+        params.push(
+            cursorCreatedAt,
+            cursorCreatedAt,
+            cursorId
+        );
+
+    }
+
+
+    query += `
+        ORDER BY
+            mr.created_at DESC,
+            mr.id DESC
+        LIMIT ?
+    `;
+
+
+    params.push(limit + 1);
+
+
+    db.query(
+        query,
+        params,
         (err, result) => {
 
             if (err) {
-                return res.status(500).json(err);
+
+                console.error(
+                    "Missed calls query error:",
+                    err
+                );
+
+                return res.status(500).json({
+                    error: "Failed to load missed calls"
+                });
+
             }
 
-            res.json(result);
+
+            /*
+             * Fetch one extra record
+             *
+             * If we requested 10 and got 11,
+             * there are more records.
+             */
+
+            const hasMore = result.length > limit;
+
+
+            const calls = hasMore
+                ? result.slice(0, limit)
+                : result;
+
+
+            let nextCursor = null;
+
+
+            if (hasMore && calls.length) {
+
+                const lastCall =
+                    calls[calls.length - 1];
+
+
+                nextCursor = `${new Date(lastCall.created_at).toISOString()}|${lastCall.id}`;
+
+            }
+
+
+            res.json({
+
+                calls,
+                hasMore,
+                nextCursor
+
+            });
 
         }
     );
