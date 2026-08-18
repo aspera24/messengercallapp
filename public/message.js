@@ -43,7 +43,8 @@ async function loadUsers() {
                                 '${data.lastname}'
                             )"
                         >
-                            ${data.firstname}
+                        <i class="fa-solid fa-user"></i>
+                            ${data.firstname}`+ " " +`${data.lastname}
                         </div>
                     `;
                 }
@@ -66,7 +67,7 @@ async function loadUsers() {
 
                         ${data.joined
                             ? '<i class="fa-solid fa-circle-check"></i>'
-                            : '<i class="fa-solid fa-paper-plane"></i>'
+                            : '<i class="fa-solid fa-mobile-screen"></i>'
                         }
 
                         </button>

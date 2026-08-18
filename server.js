@@ -1265,12 +1265,23 @@ io.on("connection", (socket) => {
             return;
         }
 
+        if (!token || typeof token !== "string") {
+            socket.emit("delete-user-failed");
+            return;
+        }
+
         db.query(
             "DELETE FROM users WHERE token=?",
             [token],
-            (err) => {
+            (err, result) => {
 
                 if (err) {
+                    console.error("Delete user error:", err);
+                    socket.emit("delete-user-failed");
+                    return;
+                }
+
+                if (result.affectedRows === 0) {
                     socket.emit("delete-user-failed");
                     return;
                 }
