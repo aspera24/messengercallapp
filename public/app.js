@@ -874,67 +874,67 @@ function createPeer(userId) {
     if (peers[userId]) return peers[userId];
 
     const peer = new RTCPeerConnection({
+        iceServers: [
+
+            // // STUN
+            // {
+            //     urls: "stun:free.expressturn.com:3478"
+            // },
+
+            // // TURN UDP
+            // {
+            //     urls: "turn:free.expressturn.com:3478",
+            //     username: "000000002099628167",
+            //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
+            // },
+
+            // // TURN TCP
+            // {
+            //     urls: "turn:free.expressturn.com:3478?transport=tcp",
+            //     username: "000000002099628167",
+            //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
+            // },
+
+            {
+                urls: "stun:stun.l.google.com:19302"
+            },
+            {
+                urls: [
+                    "turn:turn.evan-brass.net",
+                    "turn:turn.evan-brass.net?transport=tcp",
+                    "turns:turn.evan-brass.net:443?transport=tcp"
+                ],
+                username: "user",
+                credential: "password"
+            }
+
+        ]
+
         // iceServers: [
-
-        //     // // STUN
-        //     // {
-        //     //     urls: "stun:free.expressturn.com:3478"
-        //     // },
-
-        //     // // TURN UDP
-        //     // {
-        //     //     urls: "turn:free.expressturn.com:3478",
-        //     //     username: "000000002099628167",
-        //     //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
-        //     // },
-
-        //     // // TURN TCP
-        //     // {
-        //     //     urls: "turn:free.expressturn.com:3478?transport=tcp",
-        //     //     username: "000000002099628167",
-        //     //     credential: "PyKbxhcNRcJDRCEouusG4nCatzg="
-        //     // },
-
         //     {
-        //         urls: "stun:stun.l.google.com:19302"
+        //         urls: "stun:stun.relay.metered.ca:80",
         //     },
         //     {
-        //         urls: [
-        //             "turn:turn.evan-brass.net",
-        //             "turn:turn.evan-brass.net?transport=tcp",
-        //             "turns:turn.evan-brass.net:443?transport=tcp"
-        //         ],
-        //         username: "user",
-        //         credential: "password"
-        //     }
-
-        // ]
-
-        iceServers: [
-            {
-                urls: "stun:stun.relay.metered.ca:80",
-            },
-            {
-                urls: "turn:standard.relay.metered.ca:80",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-            {
-                urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-            {
-                urls: "turn:standard.relay.metered.ca:443",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-            {
-                urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-                username: "5c2d25d7fdd1c3ac7562312b",
-                credential: "hLT2NB9ClBIEMeOY",
-            },
-        ],
+        //         urls: "turn:standard.relay.metered.ca:80",
+        //         username: "5c2d25d7fdd1c3ac7562312b",
+        //         credential: "hLT2NB9ClBIEMeOY",
+        //     },
+        //     {
+        //         urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+        //         username: "5c2d25d7fdd1c3ac7562312b",
+        //         credential: "hLT2NB9ClBIEMeOY",
+        //     },
+        //     {
+        //         urls: "turn:standard.relay.metered.ca:443",
+        //         username: "5c2d25d7fdd1c3ac7562312b",
+        //         credential: "hLT2NB9ClBIEMeOY",
+        //     },
+        //     {
+        //         urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+        //         username: "5c2d25d7fdd1c3ac7562312b",
+        //         credential: "hLT2NB9ClBIEMeOY",
+        //     },
+        // ],
     });
 
 

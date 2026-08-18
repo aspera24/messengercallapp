@@ -703,7 +703,7 @@ input:focus {
     color: white;
     letter-spacing: 1px;
     border-radius: 12px;
-    padding: 2px 15px;
+    padding: 10px 15px;
     outline: none;
     font-family: inherit;
     font-size: 14px;
