@@ -147,6 +147,93 @@
 
 
 /* ===========================
+   EMPLOYEE MODAL - MOBILE
+=========================== */
+@media (max-width: 600px) {
+
+    .employee-modal {
+        width: calc(100% - 30px);
+        max-width: 520px;
+        max-height: calc(100dvh - 30px);
+        padding: 20px;
+        border-radius: 14px;
+        overflow-y: auto;
+    }
+
+
+    /* HEADER */
+    .employee-header {
+        gap: 13px;
+        margin-bottom: 20px;
+    }
+
+    .employee-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .employee-header h2 {
+        font-size: 19px;
+    }
+
+    .employee-header p {
+        margin-top: 3px;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+
+    /* FORM */
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .form-group label {
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .form-group input {
+        width: 100%;
+        min-height: 44px;
+        box-sizing: border-box;
+        padding: 10px 13px;
+        font-size: 15px;
+        border-radius: 9px;
+    }
+
+
+    /* PASSWORD */
+    .password-field input {
+        padding-right: 45px;
+    }
+
+    .password-field i {
+        right: 14px;
+    }
+
+
+    /* BUTTONS */
+    .employee-actions {
+        flex-direction: column-reverse;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .employee-actions button {
+        width: 100%;
+        height: 45px;
+        justify-content: center;
+        padding: 0 18px;
+    }
+
+}
+
+/* ===========================
    MOBILE
 =========================== */
 @media (max-width:576px) {
@@ -183,4 +270,11 @@
 
     }
 
+}
+
+
+@media (max-width: 588px) {
+    .employee-modal {
+        width: 90%;
+    }
 }
