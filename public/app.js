@@ -151,9 +151,12 @@ async function loadMissedCalls(reset = false) {
 
     if (!reset && !missedCallHasMore) return;
 
-    const list = document.getElementById("missedCallList");
+
+    const list =
+        document.getElementById("missedCallList");
 
     if (!list) return;
+
 
     try {
 
@@ -173,10 +176,16 @@ async function loadMissedCalls(reset = false) {
 
         const params = new URLSearchParams();
 
-        params.set("limit", "2");
+        params.set("limit", "10");
+
 
         if (missedCallCursor) {
-            params.set("cursor", missedCallCursor);
+
+            params.set(
+                "cursor",
+                missedCallCursor
+            );
+
         }
 
 
@@ -189,24 +198,35 @@ async function loadMissedCalls(reset = false) {
 
 
         if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
+            throw new Error(
+                `HTTP ${res.status}`
+            );
         }
 
 
         const data = await res.json();
 
-        const calls = data.calls || [];
 
-        missedCallHasMore = data.hasMore;
+        const calls =
+            data.calls || [];
 
-        missedCallCursor = data.nextCursor || null;
+
+        missedCallHasMore =
+            data.hasMore;
+
+
+        missedCallCursor =
+            data.nextCursor || null;
 
 
         /*
-         * FIRST LOAD
+         * EMPTY STATE
          */
 
-        if (!calls.length && !missedCallsInitialized) {
+        if (
+            !calls.length &&
+            !missedCallsInitialized
+        ) {
 
             list.innerHTML = `
                 <div class="empty">
@@ -217,41 +237,64 @@ async function loadMissedCalls(reset = false) {
             missedCallsInitialized = true;
 
             return;
+
         }
 
 
         /*
-         * Remove empty message when calls exist
+         * REMOVE EMPTY MESSAGE
          */
 
-        const emptyMsg = list.querySelector(".empty");
+        const emptyMsg =
+            list.querySelector(".empty");
 
-        if (emptyMsg && calls.length > 0) {
+
+        if (
+            emptyMsg &&
+            calls.length
+        ) {
+
             emptyMsg.remove();
+
         }
 
 
         /*
-         * Render calls
+         * IMPORTANT
+         *
+         * Server returns:
+         *
+         * newest → oldest
+         *
+         * For initial loading we want
+         * oldest → newest before
+         * inserting at firstChild.
          */
 
-        calls.forEach((call) => {
+        calls.reverse().forEach((call) => {
 
             const callId = call.id;
+
 
             if (!callId) return;
 
 
-            const exists = list.querySelector(
-                `[data-id="${callId}"]`
-            );
+            const exists =
+                list.querySelector(
+                    `[data-id="${callId}"]`
+                );
+
 
             if (exists) return;
 
 
-            const wrapper = document.createElement("div");
+            const wrapper =
+                document.createElement("div");
 
-            wrapper.className = "missed-item-wrapper";
+
+            wrapper.className =
+                "missed-item-wrapper";
+
 
             wrapper.setAttribute(
                 "data-id",
@@ -259,9 +302,13 @@ async function loadMissedCalls(reset = false) {
             );
 
 
-            const innerDiv = document.createElement("div");
+            const innerDiv =
+                document.createElement("div");
 
-            innerDiv.className = "missed-item";
+
+            innerDiv.className =
+                "missed-item";
+
 
             innerDiv.innerHTML = `
                 <div class="left">
@@ -273,32 +320,38 @@ async function loadMissedCalls(reset = false) {
                     <div>
                         You missed a call from
                         <span class="name">
-                            ${call.firstname} ${call.lastname}
+                            ${call.firstname}
                         </span>
                     </div>
 
                     <div class="time">
-                        ${new Date(call.created_at).toLocaleString()}
+                        ${new Date(
+                call.created_at
+            ).toLocaleString()}
                     </div>
 
                 </div>
             `;
 
 
-            wrapper.appendChild(innerDiv);
+            wrapper.appendChild(
+                innerDiv
+            );
 
-            list.appendChild(wrapper);
 
+            list.insertBefore(
+                wrapper,
+                list.firstChild
+            );
 
-            /*
-             * Trigger existing CSS animation
-             */
 
             requestAnimationFrame(() => {
 
                 requestAnimationFrame(() => {
 
-                    wrapper.classList.add("show");
+                    wrapper.classList.add(
+                        "show"
+                    );
 
                 });
 
@@ -326,36 +379,179 @@ async function loadMissedCalls(reset = false) {
 }
 
 
-const missedCallContainer = document.querySelector(".missedCallContainer");
+async function addLatestMissedCall() {
 
-if (missedCallContainer) {
+    try {
 
-    missedCallContainer.addEventListener("scroll", () => {
+        const res = await fetch(
+            "/missed-calls?limit=1",
+            {
+                credentials: "include"
+            }
+        );
 
-        const scrollTop = missedCallContainer.scrollTop;
-        const clientHeight = missedCallContainer.clientHeight;
-        const scrollHeight = missedCallContainer.scrollHeight;
-
-        // Distance from bottom
-        const distanceFromBottom =
-            scrollHeight - (scrollTop + clientHeight);
-
-
-        // Load next page when 100px near bottom
-        if (
-            distanceFromBottom <= 100 &&
-            missedCallHasMore &&
-            !missedCallLoading
-        ) {
-
-            loadMissedCalls();
-
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
         }
 
-    });
+        const data = await res.json();
+
+        const calls = data.calls || [];
+
+        if (!calls.length) return;
+
+        const call = calls[0];
+
+        const list =
+            document.getElementById("missedCallList");
+
+        if (!list) return;
+
+
+        /*
+         * Check if already displayed
+         */
+
+        const exists =
+            list.querySelector(
+                `[data-id="${call.id}"]`
+            );
+
+        if (exists) return;
+
+
+        /*
+         * Remove empty message
+         */
+
+        const emptyMsg =
+            list.querySelector(".empty");
+
+        if (emptyMsg) {
+            emptyMsg.remove();
+        }
+
+
+        /*
+         * Create new missed call
+         */
+
+        const wrapper =
+            document.createElement("div");
+
+        wrapper.className =
+            "missed-item-wrapper";
+
+        wrapper.setAttribute(
+            "data-id",
+            call.id
+        );
+
+
+        const innerDiv =
+            document.createElement("div");
+
+        innerDiv.className =
+            "missed-item";
+
+        innerDiv.innerHTML = `
+            <div class="left">
+                <i class="fa-solid fa-phone-volume"></i>
+            </div>
+
+            <div class="right">
+
+                <div>
+                    You missed a call from
+                    <span class="name">
+                        ${call.firstname}
+                    </span>
+                </div>
+
+                <div class="time">
+                    ${new Date(
+            call.created_at
+        ).toLocaleString()}
+                </div>
+
+            </div>
+        `;
+
+
+        wrapper.appendChild(innerDiv);
+
+
+        /*
+         * Put NEW call at the top
+         */
+
+        list.insertBefore(
+            wrapper,
+            list.firstChild
+        );
+
+
+        /*
+         * Trigger existing animation
+         */
+
+        requestAnimationFrame(() => {
+
+            requestAnimationFrame(() => {
+
+                wrapper.classList.add("show");
+
+            });
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Error loading new missed call:",
+            error
+        );
+
+    }
 
 }
 
+
+
+
+const missedCallContainer =
+    document.querySelector(
+        ".missedCallContainer"
+    );
+
+
+if (missedCallContainer) {
+
+    missedCallContainer.addEventListener(
+        "scroll",
+        () => {
+
+            const distanceFromBottom =
+                missedCallContainer.scrollHeight -
+                missedCallContainer.scrollTop -
+                missedCallContainer.clientHeight;
+
+
+            if (
+                distanceFromBottom <= 100 &&
+                missedCallHasMore &&
+                !missedCallLoading
+            ) {
+
+                loadMissedCalls();
+
+            }
+
+        }
+    );
+
+}
 
 
 let userMediaStates = {};
@@ -1564,7 +1760,7 @@ socket.on("request-expired", async (data = {}) => {
     // EMPLOYEE
     if (!data.token) {
 
-        await loadMissedCalls();
+        addLatestMissedCall();
 
         document.getElementById("meetingRequestModal").style.display = "none";
 

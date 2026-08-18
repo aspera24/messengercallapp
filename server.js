@@ -2953,7 +2953,8 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
         20
     );
 
-    const cursor = req.query.cursor || null;
+    const cursor =
+        req.query.cursor || null;
 
 
     let query = `
@@ -2972,22 +2973,32 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
     `;
 
 
-    const params = [req.user.id];
+    const params = [
+        req.user.id
+    ];
 
 
     /*
-     * Cursor pagination
-     *
-     * Load records older than the cursor.
+     * CURSOR
      */
 
     if (cursor) {
 
-        const [cursorCreatedAt, cursorId] =
+        const parts =
             cursor.split("|");
 
 
-        if (!cursorCreatedAt || !cursorId) {
+        const cursorCreatedAt =
+            parts[0];
+
+        const cursorId =
+            parts[1];
+
+
+        if (
+            !cursorCreatedAt ||
+            !cursorId
+        ) {
 
             return res.status(400).json({
                 error: "Invalid cursor"
@@ -3020,11 +3031,19 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
         ORDER BY
             mr.created_at DESC,
             mr.id DESC
+
         LIMIT ?
     `;
 
 
-    params.push(limit + 1);
+    /*
+     * +1 para mahibaw-an nato
+     * kung naa pa bay next page.
+     */
+
+    params.push(
+        limit + 1
+    );
 
 
     db.query(
@@ -3035,42 +3054,46 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
             if (err) {
 
                 console.error(
-                    "Missed calls query error:",
+                    "Missed calls error:",
                     err
                 );
 
                 return res.status(500).json({
-                    error: "Failed to load missed calls"
+                    error:
+                        "Failed to load missed calls"
                 });
 
             }
 
 
-            /*
-             * Fetch one extra record
-             *
-             * If we requested 10 and got 11,
-             * there are more records.
-             */
-
-            const hasMore = result.length > limit;
+            const hasMore =
+                result.length > limit;
 
 
-            const calls = hasMore
-                ? result.slice(0, limit)
-                : result;
+            const calls =
+                hasMore
+                    ? result.slice(0, limit)
+                    : result;
 
 
             let nextCursor = null;
 
 
-            if (hasMore && calls.length) {
+            if (
+                hasMore &&
+                calls.length
+            ) {
 
                 const lastCall =
-                    calls[calls.length - 1];
+                    calls[
+                    calls.length - 1
+                    ];
 
 
-                nextCursor = `${new Date(lastCall.created_at).toISOString()}|${lastCall.id}`;
+                nextCursor =
+                    `${new Date(
+                        lastCall.created_at
+                    ).toISOString()}|${lastCall.id}`;
 
             }
 
@@ -3078,7 +3101,9 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
             res.json({
 
                 calls,
+
                 hasMore,
+
                 nextCursor
 
             });
@@ -3087,7 +3112,6 @@ app.get("/missed-calls", authMiddleware, (req, res) => {
     );
 
 });
-
 
 
 server.listen(port, () => {
