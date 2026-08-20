@@ -107,6 +107,25 @@ body {
     text-align: right;
 }
 
+
+.topbar .profileCont {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.topbar .profileCont i {
+    background: rgba(128, 128, 128, 0.199);
+    height: 40px;
+    width: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+
 /* BUTTONS WRAP ON MOBILE */
 .actions {
     flex: 1;
@@ -235,7 +254,7 @@ input:focus {
 }
 
 .messageContainer {
-    position: fixed;
+    position: absolute;
     z-index: 20;
     right: 40px;
     bottom: 40px;
@@ -781,7 +800,7 @@ input:focus {
     height: calc(100dvh - 65px);
     overflow: hidden;
     margin: 0 auto;
-    max-width: 2200px;
+    max-width: 2000px;
 }
 
 .leftCont {
@@ -1011,7 +1030,7 @@ input:focus {
 .missedCallContainer {
     /* height: calc(80% - 40px); */
     overflow-y: auto;
-    height: 20%;
+    /* height: 20%; */
 }
 
 .missedCallContainer .title {
@@ -1291,12 +1310,13 @@ video {
     position: relative;
     height: calc(100% - 60px);
     width: calc(100% - 60px);
-    margin: auto auto;
+    margin: 30px auto auto;
     overflow: hidden;
     padding-right: 2px;
     box-sizing: border-box;
     border-radius: 20px;
     display: flex;
+    max-height: 1000px;
     justify-content: center;
     align-items: center;
     background: #272727;

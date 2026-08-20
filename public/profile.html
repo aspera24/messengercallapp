@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="profile.css">
+    <title>Your Profile</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+
+    <main class="profilePage">
+
+        <div class="profileHeader">
+            <h1>Your Profile</h1>
+            <p>Manage your account information and security.</p>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="profileGrid">
+
+            <!-- ACCOUNT INFORMATION -->
+            <section class="profileCard">
+
+                <h2>Account Information</h2>
+
+                <div class="infoRow">
+                    <span class="infoLabel">First Name</span>
+                    <span class="infoValue" id="displayFirstName">Loading...</span>
+                </div>
+
+                <div class="infoRow">
+                    <span class="infoLabel">Last Name</span>
+                    <span class="infoValue" id="displayLastName">Loading...</span>
+                </div>
+
+                <div class="infoRow">
+                    <span class="infoLabel">Username</span>
+                    <span class="infoValue" id="displayUsername">Loading...</span>
+                </div>
+
+                <div class="infoRow">
+                    <span class="infoLabel">Account Created</span>
+                    <span class="infoValue" id="displayCreatedAt">Loading...</span>
+                </div>
+
+            </section>
+
+
+            <!-- EDIT PROFILE -->
+            <section class="profileCard">
+
+                <h2>Edit Profile</h2>
+
+                <form id="profileForm">
+
+                    <div class="formGroup">
+                        <label for="firstName">
+                            First Name
+                        </label>
+
+                        <input type="text" id="firstName" autocomplete="given-name" required>
+                    </div>
+
+                    <div class="formGroup">
+                        <label for="lastName">
+                            Last Name
+                        </label>
+
+                        <input type="text" id="lastName" autocomplete="family-name" required>
+                    </div>
+
+                    <div class="formGroup">
+                        <label for="username">
+                            Username
+                        </label>
+
+                        <input type="text" id="username" autocomplete="username" required>
+                    </div>
+
+                    <div class="buttonRow">
+
+                        <button type="submit" class="primaryBtn" id="saveProfileBtn">
+                            Save Changes
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </section>
+
+
+            <!-- CHANGE PASSWORD -->
+            <section class="profileCard full">
+
+                <h2>Change Password</h2>
+
+                <form id="passwordForm">
+
+                    <div class="profileGrid">
+
+                        <div class="formGroup">
+
+                            <label for="currentPassword">
+                                Current Password
+                            </label>
+
+                            <div class="passwordWrapper">
+
+                                <input type="password" id="currentPassword" autocomplete="current-password" required>
+
+                                <button type="button" class="togglePassword" data-target="currentPassword"
+                                    aria-label="Show password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="formGroup">
+
+                            <label for="newPassword">
+                                New Password
+                            </label>
+
+                            <div class="passwordWrapper">
+
+                                <input type="password" id="newPassword" autocomplete="new-password" required>
+
+                                <button type="button" class="togglePassword" data-target="newPassword"
+                                    aria-label="Show password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="formGroup">
+
+                        <label for="confirmPassword">
+                            Confirm New Password
+                        </label>
+
+                        <div class="passwordWrapper">
+
+                            <input type="password" id="confirmPassword" autocomplete="new-password" required>
+
+                            <button type="button" class="togglePassword" data-target="confirmPassword"
+                                aria-label="Show password">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="buttonRow">
+
+                        <button type="submit" class="primaryBtn" id="changePasswordBtn">
+                            Change Password
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </section>
+
+        </div>
+
+    </main>
+
+    <script src="/profile.js" defer></script>
+</body>
+
+</html>

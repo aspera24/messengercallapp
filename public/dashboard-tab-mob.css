@@ -17,6 +17,7 @@
 
     .rightCont {
         height: calc(100% - 30px);
+        margin: 15px auto auto;
         width: calc(100% - 30px);
     }
 
@@ -67,7 +68,6 @@
 =========================== */
 @media (max-width:768px) {
     .rightCont {
-        height: calc(100% - 20px);
         width: calc(100% - 20px);
     }
 

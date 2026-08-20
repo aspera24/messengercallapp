@@ -1,0 +1,247 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #6d6d6d transparent !important;
+}
+
+
+@font-face {
+    font-family: "CenturyGothicLocal";
+    src: url("/fonts/centurygothic.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+
+body {
+    color: #f8fafc;
+    overflow-y: auto;
+    font-family: "CenturyGothicLocal", sans-serif;
+    background: #1d1d1d;
+}
+
+.profilePage {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 20px;
+    max-width: 2200px;
+    margin: 0 auto;
+}
+
+.profileHeader {
+    margin-bottom: 25px;
+}
+
+.profileHeader h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+
+.profileHeader p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.profileGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.profileCard {
+    background: #272727;
+    border: 1px solid #303030;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.profileCard.full {
+    grid-column: 1 / -1;
+}
+
+.profileCard h2 {
+    margin: 0 0 20px;
+    font-size: 18px;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 0;
+    border-bottom: 1px solid #575757;
+    gap: 20px;
+}
+
+.infoRow:last-child {
+    border-bottom: none;
+}
+
+.infoLabel {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.infoValue {
+    font-weight: 600;
+    text-align: right;
+    color: rgb(179, 179, 179);
+}
+
+.formGroup {
+    margin-bottom: 16px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.formGroup input {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #474747;
+    border-radius: 8px;
+    outline: none;
+    background: #272727;
+    font-size: 14px;
+    color: rgb(165, 165, 165);
+    transition: border-color 0.2s;
+}
+
+.formGroup input:focus {
+    border-color: #2563eb;
+}
+
+.passwordWrapper {
+    position: relative;
+}
+
+.passwordWrapper input {
+    padding-right: 45px;
+}
+
+.togglePassword {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 30px;
+    height: 30px;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 6px;
+
+    background: transparent;
+
+    color: #6b7280;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+}
+
+.togglePassword:hover {
+    color: #2563eb;
+    background: #f3f4f6;
+}
+
+.buttonRow {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.primaryBtn {
+    background: #2563eb;
+    color: white;
+}
+
+.primaryBtn:hover {
+    background: #1d4ed8;
+}
+
+.secondaryBtn {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.dangerBtn {
+    background: #dc2626;
+    color: white;
+}
+
+.message {
+    display: none;
+    padding: 11px 13px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.message.success {
+    display: block;
+    background: #dcfce7;
+    color: #166534;
+}
+
+.message.error {
+    display: block;
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+@media (max-width: 700px) {
+
+    .profilePage {
+        margin: 20px auto;
+        padding: 15px;
+    }
+
+    .profileGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .profileCard.full {
+        grid-column: auto;
+    }
+
+    .infoRow {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .infoValue {
+        text-align: left;
+        
+    }
+}

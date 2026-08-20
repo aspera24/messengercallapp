@@ -73,6 +73,14 @@ function stopSound(audio) {
     audio.currentTime = 0;
 }
 
+// For profile
+document.getElementById("profile").addEventListener("click", function () {
+    window.location.href = "/profile-info";
+});
+
+
+
+
 socket.on("connect", async () => {
 
     console.log("Socket connected:", socket.id);

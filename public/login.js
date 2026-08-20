@@ -1,8 +1,11 @@
 async function login() {
 
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
     const loginBtn = document.getElementById("loginBtn");
+
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
 
     if (!username || !password) {
         alert("Please enter username and password.");
@@ -12,10 +15,14 @@ async function login() {
     // Save original button
     const originalHTML = loginBtn.innerHTML;
 
-    // Loading state
+    // Disable inputs + button
+    usernameInput.disabled = true;
+    passwordInput.disabled = true;
     loginBtn.disabled = true;
+
+    // Loading state
     loginBtn.innerHTML = `
-        <i class="fa-solid fa-spinner"></i>
+        <i class="fa-solid fa-spinner fa-spin"></i>
         <span>Signing in...</span>
     `;
 
@@ -50,17 +57,25 @@ async function login() {
             location.href = "/dashboard";
 
         } else {
+
             alert("Invalid username or password.");
 
+            // Enable again
+            usernameInput.disabled = false;
+            passwordInput.disabled = false;
             loginBtn.disabled = false;
             loginBtn.innerHTML = originalHTML;
         }
 
     } catch (err) {
+
         console.error("LOGIN ERROR:", err);
 
         alert(err.message);
 
+        // Enable again
+        usernameInput.disabled = false;
+        passwordInput.disabled = false;
         loginBtn.disabled = false;
         loginBtn.innerHTML = originalHTML;
     }

@@ -31,7 +31,11 @@
                 </div>
                 MeetFlow
             </h2>
-            <h3 id="uname"></h3>
+            <span class="profileCont">
+                <h3 id="uname"></h3>
+                <i id="profile" class="fa-solid fa-user" style="cursor: pointer;"></i>
+            </span>
+
         </div>
 
         <div class="centCont">
@@ -149,8 +153,11 @@
             </div>
             <div class="rightCont">
                 <div class="videos-container">
-                    <p><marquee behavior="" direction=""> View all participants' live camera feeds in real time. Active speakers and newly joined
-                        participants will appear here during the meeting.</marquee></p>
+                    <p>
+                        <marquee behavior="" direction=""> View all participants' live camera feeds in real time. Active
+                            speakers and newly joined
+                            participants will appear here during the meeting.</marquee>
+                    </p>
                     <div class="smallVideo">
                         <video id="localPreview" autoplay muted playsinline></video>
                     </div>
@@ -160,50 +167,53 @@
                         <span>00:00:00</span>
                     </div>
                 </div>
+
+                <div id="messageContainer" class="messageContainer">
+
+                    <div class="messageHeader">
+
+                        <div class="messageUser">
+                            <div class="messageAvatar">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+
+                            <div>
+                                <h4 id="messageUserName">Employee</h4>
+                                <span id="messageUserStatus">Offline</span>
+                            </div>
+                        </div>
+
+                        <button id="closeMessageBtn" title="Close">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+
+                    </div>
+
+                    <div id="messageBody" class="messageBody">
+
+                        <div class="messageEmpty">
+                            <i class="fa-regular fa-comments"></i>
+                            <span>Start a conversation</span>
+                        </div>
+
+                    </div>
+
+                    <div class="messageInput">
+
+                        <textarea type="text" id="messageText" placeholder="Type a message..."
+                            autocomplete="off"></textarea>
+
+                        <button id="sendMessageBtn" title="Send">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+
+                    </div>
+
+                </div>
             </div>
         </div>
 
-        <div id="messageContainer" class="messageContainer">
 
-            <div class="messageHeader">
-
-                <div class="messageUser">
-                    <div class="messageAvatar">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-
-                    <div>
-                        <h4 id="messageUserName">Employee</h4>
-                        <span id="messageUserStatus">Offline</span>
-                    </div>
-                </div>
-
-                <button id="closeMessageBtn" title="Close">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-
-            </div>
-
-            <div id="messageBody" class="messageBody">
-
-                <div class="messageEmpty">
-                    <i class="fa-regular fa-comments"></i>
-                    <span>Start a conversation</span>
-                </div>
-
-            </div>
-
-            <div class="messageInput">
-
-                <textarea type="text" id="messageText" placeholder="Type a message..." autocomplete="off"></textarea>
-
-                <button id="sendMessageBtn" title="Send">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-
-            </div>
-
-        </div>
     </div>
 
     <div id="meetingRequestModal" class="meeting-modal">
