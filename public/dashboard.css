@@ -103,6 +103,7 @@ body {
     font-size: 15px;
     font-weight: 500;
     width: 100%;
+    white-space: nowrap;
     margin-right: 10px;
     text-align: right;
 }
@@ -253,6 +254,8 @@ input:focus {
     border-color: #2563eb;
 }
 
+
+
 .messageContainer {
     position: absolute;
     z-index: 20;
@@ -267,35 +270,78 @@ input:focus {
     flex-direction: column;
     overflow: hidden;
 
-    /* Animation starting state */
+    transform-origin: 100% 100%;
+    backface-visibility: hidden;
+    will-change: transform, opacity, clip-path;
+
     opacity: 0;
-    transform: translateY(25px) scale(0.82);
-    transform-origin: bottom right;
-    clip-path: circle(0% at 100% 100%);
-    transition:
-        opacity 0.25s ease,
-        transform 0.6s cubic-bezier(0.16,
-            1.2,
-            0.3,
-            1),
-        clip-path 0.65s cubic-bezier(0.16,
-            1,
-            0.3,
-            1);
+    transform: perspective(800px) rotateX(-45deg) scaleX(0.01) scaleY(0.01) translateY(250px) translateX(60px) skewX(35deg);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%);
 }
 
-
 .messageContainer.chat-open {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    clip-path: circle(150% at 100% 100%);
+    display: flex;
+    animation: macTornadoIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .messageContainer.chat-closing {
-    opacity: 0;
-    transform: translateY(25px) scale(0.82);
-    clip-path: circle(0% at 100% 100%);
+    display: flex;
+    animation: macTornadoOut 0.52s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+
+@keyframes macTornadoOut {
+    0% {
+        opacity: 1;
+        transform: perspective(800px) rotateX(0deg) scale(1) translateY(0) skewX(0deg);
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+
+    30% {
+        opacity: 0.95;
+        transform: perspective(800px) rotateX(-15deg) scaleX(0.65) scaleY(1.08) translateY(30px) translateX(5px) skewX(15deg);
+        clip-path: polygon(0% 0%, 100% 0%, 85% 100%, 40% 100%);
+    }
+
+    65% {
+        opacity: 0.7;
+        transform: perspective(800px) rotateX(-30deg) scaleX(0.22) scaleY(0.7) translateY(140px) translateX(35px) skewX(28deg);
+        clip-path: polygon(0% 0%, 100% 0%, 92% 100%, 75% 100%);
+    }
+
+    100% {
+        opacity: 0;
+        transform: perspective(800px) rotateX(-45deg) scaleX(0.01) scaleY(0.01) translateY(250px) translateX(60px) skewX(35deg);
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%);
+    }
+}
+
+@keyframes macTornadoIn {
+    0% {
+        opacity: 0;
+        transform: perspective(800px) rotateX(-45deg) scaleX(0.01) scaleY(0.01) translateY(250px) translateX(60px) skewX(35deg);
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%);
+    }
+
+    45% {
+        opacity: 0.78;
+        transform: perspective(800px) rotateX(-25deg) scaleX(0.45) scaleY(1.12) translateY(45px) translateX(15px) skewX(16deg);
+        clip-path: polygon(0% 0%, 100% 0%, 88% 100%, 50% 100%);
+    }
+
+    80% {
+        opacity: 0.98;
+        transform: perspective(800px) rotateX(0deg) scaleX(1.04) scaleY(0.95) translateY(-8px) skewX(-3deg);
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: perspective(800px) rotateX(0deg) scale(1) translateY(0) skewX(0deg);
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+}
+
 
 /* =========================
    HEADER
@@ -368,7 +414,7 @@ input:focus {
     flex: 1;
     padding: 15px;
     overflow-y: auto;
-    background: #272727;
+    background: #222222;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -386,11 +432,13 @@ input:focus {
     gap: 8px;
 }
 
-
 .messageEmpty i {
     font-size: 35px;
 }
 
+.messageEmpty span {
+    font-size: 12px;
+}
 
 .chatMessageWrapper {
     position: relative;
@@ -809,6 +857,7 @@ input:focus {
     margin: 30px 0 auto 30px;
     height: calc(100% - 60px);
     background: #272727;
+    border: 1px solid #303030;
     display: flex;
     flex-direction: column;
     border-radius: 20px;
@@ -1324,6 +1373,7 @@ video {
     justify-content: center;
     align-items: center;
     background: #272727;
+    border: 1px solid #303030;
     transition: .3s ease-in-out;
 }
 
