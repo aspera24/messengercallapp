@@ -1317,7 +1317,7 @@ function createPeer(userId) {
             maxFramerate: 30
         }];
 
-        await sender.setParameters(params);
+        sender.setParameters(params);
     }
 
     // PRIORITIZE OPUS AUDIO
