@@ -1313,11 +1313,11 @@ function createPeer(userId) {
         const params = sender.getParameters();
 
         params.encodings = [{
-            maxBitrate: 1500000,
-            maxFramerate: 20
+            maxBitrate: 2000000,
+            maxFramerate: 30
         }];
 
-        sender.setParameters(params);
+        await sender.setParameters(params);
     }
 
     // PRIORITIZE OPUS AUDIO
