@@ -684,7 +684,7 @@ window.onload = async () => {
 
 
 
-let currentFacingMode = "user";
+let currentFacingMode = "environment";
 
 async function ensureMediaReady(attempt = 0) {
     const loader = document.getElementById("localLoading");
@@ -829,7 +829,7 @@ async function switchCamera() {
         localPreview.srcObject = null;
     }
 
-    const targetMode = currentFacingMode === "user" ? "environment" : "user";
+    const targetMode = currentFacingMode === "environment" ? "user" : "environment";
 
     if (targetMode === "environment") {
         try {
