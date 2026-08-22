@@ -684,6 +684,7 @@ window.onload = async () => {
 
 
 let currentFacingMode = "user";
+let cameraStream = null;
 
 async function ensureMediaReady(attempt = 0) {
     const loader = document.getElementById("localLoading");
@@ -719,7 +720,12 @@ async function ensureMediaReady(attempt = 0) {
         console.log("[MEDIA] Internet available. Requesting camera/mic...");
 
         const videoConstraints = {
-            facingMode: currentFacingMode === "environment" ? { exact: "environment" } : "user"
+            facingMode: {
+                ideal: currentFacingMode
+            },
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 30 }
         };
 
         if (currentFacingMode === "user") {
@@ -739,6 +745,8 @@ async function ensureMediaReady(attempt = 0) {
                 channelCount: 1
             }
         });
+
+        cameraStream = rawStream;
 
         if (!navigator.onLine) {
             console.log("[MEDIA] Internet disappeared during initialization.");
@@ -824,6 +832,17 @@ async function ensureMediaReady(attempt = 0) {
 }
 
 async function switchCamera() {
+    console.log("[CAMERA] Switching camera...");
+
+    // Stop actual camera + microphone
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => {
+            track.stop();
+        });
+        cameraStream = null;
+    }
+
+    // Stop filtered/canvas stream
     if (stream) {
         stream.getTracks().forEach(track => {
             track.stop();
@@ -831,21 +850,31 @@ async function switchCamera() {
         stream = null;
     }
 
+    // Clear video elements
     if (localVideo) {
+        localVideo.pause();
         localVideo.srcObject = null;
-        localVideo.load();
     }
 
     const localPreview = document.getElementById("localPreview");
+
     if (localPreview) {
+        localPreview.pause();
         localPreview.srcObject = null;
-        localPreview.load();
     }
 
-    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    // Switch front <-> rear
+    currentFacingMode =
+        currentFacingMode === "user"
+            ? "environment"
+            : "user";
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    console.log("[CAMERA] New facing mode:", currentFacingMode);
 
+    // Small delay to allow camera to fully release
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Start new camera
     await ensureMediaReady();
 }
 
