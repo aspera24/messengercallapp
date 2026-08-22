@@ -849,21 +849,47 @@ async function switchCamera() {
     console.log("[CAMERA] New facing mode:", currentFacingMode);
 
     try {
-        const newFilteredStream =
-            await createFilteredStream(newCameraStream);
+        const newCameraStream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: {
+                        ideal: currentFacingMode
+                    },
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    frameRate: { ideal: 30 }
+                }
+            });
 
         const newVideoTrack =
-            newFilteredStream.getVideoTracks()[0];
+            newCameraStream.getVideoTracks()[0];
 
+        console.log(
+            "[CAMERA] New camera:",
+            newVideoTrack.getSettings()
+        );
+
+        // Replace video track in every WebRTC peer
         for (const peerId in peers) {
             const pc = peers[peerId];
 
-            const sender = pc.getSenders().find(
-                s => s.track?.kind === "video"
-            );
+            if (!pc) continue;
+
+            const sender = pc
+                .getSenders()
+                .find(
+                    sender =>
+                        sender.track &&
+                        sender.track.kind === "video"
+                );
 
             if (sender) {
                 await sender.replaceTrack(newVideoTrack);
+
+                console.log(
+                    "[CAMERA] Replaced video track for peer:",
+                    peerId
+                );
             }
         }
 
