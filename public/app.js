@@ -833,19 +833,22 @@ async function switchCamera() {
 
     if (localVideo) {
         localVideo.srcObject = null;
+        localVideo.load();
     }
 
     const localPreview = document.getElementById("localPreview");
     if (localPreview) {
         localPreview.srcObject = null;
+        localPreview.load();
     }
 
     currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     await ensureMediaReady();
 }
+
 
 
 

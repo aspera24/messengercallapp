@@ -6,14 +6,40 @@ let texture;
 let canvas;
 let currentFilter = "none";
 let shaderMaterial = null;
+let workerTimer = null;
 
 async function createFilteredStream(stream) {
+    if (workerTimer) {
+        workerTimer.postMessage('stop');
+        workerTimer.terminate();
+        workerTimer = null;
+    }
+    if (renderer) {
+        renderer.dispose();
+        renderer = null;
+    }
+    if (texture) {
+        texture.dispose();
+        texture = null;
+    }
+    if (shaderMaterial) {
+        shaderMaterial.dispose();
+        shaderMaterial = null;
+    }
+    if (scene) {
+        scene.clear();
+        scene = null;
+    }
+    if (canvas) {
+        canvas.remove();
+        canvas = null;
+    }
+
     const video = document.createElement("video");
     video.srcObject = stream;
     video.muted = true;
     video.playsInline = true;
     video.setAttribute("autoplay", "true");
-
 
     let playAttempts = 0;
 
@@ -40,14 +66,10 @@ async function createFilteredStream(stream) {
 
     await safePlay();
 
-    
-
-    
-
     canvas = document.createElement("canvas");
 
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
 
     canvas.width = vw;
     canvas.height = vh;
@@ -57,7 +79,7 @@ async function createFilteredStream(stream) {
         antialias: false,
         alpha: false,
         depth: false,
-        stencil: false, 
+        stencil: false,
         powerPreference: "high-performance",
         preserveDrawingBuffer: true
     });
@@ -141,7 +163,6 @@ async function createFilteredStream(stream) {
     plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), shaderMaterial);
     scene.add(plane);
 
-    let workerTimer = null;
     const workerCode = `
         let timer = null;
         self.onmessage = function(e) {
@@ -182,6 +203,7 @@ async function createFilteredStream(stream) {
         }, 100);
     });
 }
+
 
 
 async function changeCameraFilter(name) {
