@@ -8,11 +8,6 @@ let audioContext;
 let analyser;
 let dataArray;
 
-let availableCameras = [];
-let currentCameraIndex = 0;
-let currentCameraDeviceId = null;
-let currentCameraFacing = "user";
-
 let peers = {};
 let peerNames = {};
 
@@ -687,115 +682,15 @@ window.onload = async () => {
 
 };
 
-async function detectAvailableCameras() {
 
-    if (!navigator.mediaDevices?.enumerateDevices) {
-        console.warn(
-            "[CAMERA] enumerateDevices() is not supported."
-        );
 
-        return [];
-    }
-
-    try {
-
-        const devices =
-            await navigator.mediaDevices.enumerateDevices();
-
-        const cameras =
-            devices.filter(
-                device => device.kind === "videoinput"
-            );
-
-        availableCameras = cameras;
-
-        console.log(
-            "[CAMERA] Available cameras:",
-            cameras
-        );
-
-        updateCameraSwitchButton();
-
-        return cameras;
-
-    } catch (error) {
-
-        console.error(
-            "[CAMERA] Failed to enumerate cameras:",
-            error
-        );
-
-        availableCameras = [];
-
-        return [];
-
-    }
-}
-
-function isMobileDevice() {
-
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(
-        navigator.userAgent
-    );
-
-}
-
-function getCameraConstraints(deviceId = null, facing = null) {
-
-    const base = {
-        width: {
-            ideal: 640,
-            max: 1280
-        },
-
-        height: {
-            ideal: 480,
-            max: 720
-        },
-
-        frameRate: {
-            ideal: 30,
-            max: 30
-        }
-    };
-
-    // Desktop / explicitly selected camera
-    if (deviceId) {
-
-        return {
-            ...base,
-
-            deviceId: {
-                exact: deviceId
-            }
-        };
-    }
-
-    // Mobile
-    if (isMobileDevice()) {
-
-        return {
-            ...base,
-
-            facingMode: {
-                ideal: facing || "user"
-            }
-        };
-    }
-
-    // Laptop / webcam
-    return base;
-}
+let currentFacingMode = "user";
 
 async function ensureMediaReady(attempt = 0) {
-
     const loader = document.getElementById("localLoading");
 
-    // DO NOT ACCESS CAMERA/MIC WHEN OFFLINE
     if (!navigator.onLine) {
-
         console.log("[MEDIA] Offline. Camera and microphone blocked.");
-
         if (loader) {
             loader.style.display = "flex";
             loader.innerHTML = `
@@ -803,20 +698,15 @@ async function ensureMediaReady(attempt = 0) {
                 <span>Waiting for internet connection...</span>
             `;
         }
-
         return false;
     }
 
-    // ALREADY INITIALIZED
     if (stream) {
-
         if (loader) {
             loader.style.display = "none";
         }
-
         return true;
     }
-
 
     if (loader) {
         loader.style.display = "flex";
@@ -826,64 +716,29 @@ async function ensureMediaReady(attempt = 0) {
         `;
     }
 
-
     try {
+        console.log("[MEDIA] Internet available. Requesting camera/mic...");
 
-        const cameraConstraints =
-            getCameraConstraints(
-                currentCameraDeviceId,
-                currentCameraFacing
-            );
-
-        // REQUEST CAMERA + MICROPHONE
-        const rawStream =
-            await navigator.mediaDevices.getUserMedia({
-
-                video: cameraConstraints,
-
-                audio: {
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: true,
-                    voiceIsolation: false,
-                    sampleRate: 48000,
-                    channelCount: 1
-                }
-
-            });
-
-        const activeVideoTrack =
-            rawStream.getVideoTracks()[0];
-
-        if (activeVideoTrack) {
-
-            const settings =
-                activeVideoTrack.getSettings();
-
-            currentCameraDeviceId =
-                settings.deviceId || null;
-
-            currentCameraFacing =
-                settings.facingMode || "unknown";
-
-            console.log(
-                "[CAMERA] Active camera:",
-                settings
-            );
-        }
-
-        await detectAvailableCameras();
+        const rawStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640, max: 1280 },
+                height: { ideal: 480, max: 720 },
+                frameRate: { ideal: 30, max: 30 },
+                facingMode: currentFacingMode
+            },
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: true,
+                voiceIsolation: false,
+                sampleRate: 48000,
+                channelCount: 1
+            }
+        });
 
         if (!navigator.onLine) {
-
-            console.log(
-                "[MEDIA] Internet disappeared during initialization."
-            );
-
-            rawStream
-                .getTracks()
-                .forEach(track => track.stop());
-
+            console.log("[MEDIA] Internet disappeared during initialization.");
+            rawStream.getTracks().forEach(track => track.stop());
             if (loader) {
                 loader.style.display = "flex";
                 loader.innerHTML = `
@@ -891,84 +746,45 @@ async function ensureMediaReady(attempt = 0) {
                     <span>Waiting for internet connection...</span>
                 `;
             }
-
             return false;
         }
 
-        // APPLY CAMERA FILTER
-        const filteredVideo =
-            await createFilteredStream(rawStream);
+        const filteredVideo = await createFilteredStream(rawStream);
+        const finalStream = new MediaStream();
 
+        filteredVideo.getVideoTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
 
-        const finalStream =
-            new MediaStream();
+        rawStream.getAudioTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
 
-
-        filteredVideo
-            .getVideoTracks()
-            .forEach(track => {
-                finalStream.addTrack(track);
-            });
-
-
-        rawStream
-            .getAudioTracks()
-            .forEach(track => {
-                finalStream.addTrack(track);
-            });
-
-        // SAVE STREAM
         stream = finalStream;
-
-
         localVideo.srcObject = stream;
 
-
-        const localPreview =
-            document.getElementById("localPreview");
-
+        const localPreview = document.getElementById("localPreview");
         if (localPreview) {
             localPreview.srcObject = stream;
         }
 
+        videoTrack = stream.getVideoTracks()[0];
+        audioTrack = stream.getAudioTracks()[0];
 
-        videoTrack =
-            stream.getVideoTracks()[0];
-
-        audioTrack =
-            stream.getAudioTracks()[0];
-
-        // SETUP MIC LEVEL
         setupMicLevel();
 
-        // SUCCESS
         if (loader) {
             loader.style.display = "none";
         }
 
-
-        console.log(
-            "[MEDIA] Camera and microphone initialized."
-        );
-
-
+        console.log("[MEDIA] Camera and microphone initialized.");
         return true;
 
-
     } catch (err) {
+        console.error("[MEDIA ERROR]", err);
 
-        console.error(
-            "[MEDIA ERROR]",
-            err
-        );
-
-        // IF OFFLINE, DO NOT RETRY
         if (!navigator.onLine) {
-
-            console.log(
-                "[MEDIA] Offline. Waiting for connection..."
-            );
-
+            console.log("[MEDIA] Offline. Waiting for connection...");
             if (loader) {
                 loader.style.display = "flex";
                 loader.innerHTML = `
@@ -976,654 +792,36 @@ async function ensureMediaReady(attempt = 0) {
                     <span>Waiting for internet connection...</span>
                 `;
             }
-
             return false;
         }
 
-        // RETRY ONLY WHILE ONLINE
         if (attempt < 10) {
-
-            console.log(
-                `[MEDIA] Retry ${attempt + 1}/10`
-            );
-
+            console.log(`[MEDIA] Retry ${attempt + 1}/10`);
             setTimeout(() => {
                 ensureMediaReady(attempt + 1);
             }, 1000);
-
         } else {
-
             if (loader) {
                 loader.innerHTML = `
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span>Camera Permission Denied</span>
                 `;
             }
-
         }
-
-
         return false;
     }
 }
 
-function updateCameraSwitchButton() {
-
-    const button =
-        document.getElementById("switchCameraBtn");
-
-    if (!button) return;
-
-    if (isMobileDevice()) {
-
-        button.style.display =
-            availableCameras.length >= 2
-                ? "inline-flex"
-                : "none";
-
-        return;
-    }
-
-    button.style.display =
-        availableCameras.length > 1
-            ? "inline-flex"
-            : "none";
-}
-
 async function switchCamera() {
+    if (!stream) return;
 
-    if (!navigator.onLine) {
-        console.warn("[CAMERA] Offline.");
-        return;
-    }
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    if (window.switchingCamera) return;
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
 
-    if (!stream || !videoTrack) {
-        console.warn("[CAMERA] No active camera.");
-        return;
-    }
-
-    window.switchingCamera = true;
-
-    try {
-
-        /*
-         * ==========================================
-         * MOBILE
-         * ==========================================
-         */
-
-        if (isMobileDevice()) {
-
-            const nextFacing =
-                currentCameraFacing === "environment"
-                    ? "user"
-                    : "environment";
-
-            console.log(
-                `[CAMERA] Switching ${currentCameraFacing} → ${nextFacing}`
-            );
-
-            let newRawStream;
-
-            try {
-
-                newRawStream =
-                    await navigator.mediaDevices.getUserMedia({
-
-                        video: {
-                            width: {
-                                ideal: 640,
-                                max: 1280
-                            },
-
-                            height: {
-                                ideal: 480,
-                                max: 720
-                            },
-
-                            frameRate: {
-                                ideal: 30,
-                                max: 30
-                            },
-
-                            facingMode: {
-                                exact: nextFacing
-                            }
-                        },
-
-                        audio: false
-                    });
-
-            } catch (error) {
-
-                console.error(
-                    "[CAMERA] Failed to open:",
-                    nextFacing,
-                    error
-                );
-
-                return;
-            }
-
-
-            const newRawVideoTrack =
-                newRawStream.getVideoTracks()[0];
-
-            if (!newRawVideoTrack) {
-
-                newRawStream
-                    .getTracks()
-                    .forEach(track => track.stop());
-
-                return;
-            }
-
-
-            /*
-             * APPLY EXISTING FILTER
-             */
-
-            const filteredVideo =
-                await createFilteredStream(
-                    newRawStream
-                );
-
-            const newVideoTrack =
-                filteredVideo.getVideoTracks()[0];
-
-            if (!newVideoTrack) {
-
-                newRawStream
-                    .getTracks()
-                    .forEach(track => track.stop());
-
-                return;
-            }
-
-
-            /*
-             * SAVE OLD TRACK
-             */
-
-            const oldVideoTrack =
-                videoTrack;
-
-
-            /*
-             * CREATE NEW STREAM
-             */
-
-            const newStream =
-                new MediaStream();
-
-            newStream.addTrack(
-                newVideoTrack
-            );
-
-            if (audioTrack) {
-                newStream.addTrack(
-                    audioTrack
-                );
-            }
-
-
-            /*
-             * UPDATE GLOBAL STREAM
-             */
-
-            stream = newStream;
-            videoTrack = newVideoTrack;
-
-
-            /*
-             * UPDATE LOCAL VIDEO
-             */
-
-            if (localVideo) {
-                localVideo.srcObject = stream;
-            }
-
-            const localPreview =
-                document.getElementById("localPreview");
-
-            if (localPreview) {
-                localPreview.srcObject = stream;
-            }
-
-
-            /*
-             * UPDATE WEBRTC PEERS
-             */
-
-            for (const userId in peers) {
-
-                const peer =
-                    peers[userId];
-
-                if (!peer) continue;
-
-                const sender =
-                    peer
-                        .getSenders()
-                        .find(
-                            sender =>
-                                sender.track &&
-                                sender.track.kind === "video"
-                        );
-
-                if (!sender) continue;
-
-                try {
-
-                    await sender.replaceTrack(
-                        newVideoTrack
-                    );
-
-                    console.log(
-                        `[WEBRTC] Camera replaced for ${userId}`
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        `[WEBRTC] replaceTrack failed for ${userId}`,
-                        error
-                    );
-                }
-            }
-
-
-            /*
-             * GET ACTUAL CAMERA SETTINGS
-             */
-
-            const settings =
-                newRawVideoTrack.getSettings();
-
-            currentCameraFacing =
-                settings.facingMode ||
-                nextFacing;
-
-            currentCameraDeviceId =
-                settings.deviceId ||
-                null;
-
-
-            console.log(
-                "[CAMERA] New settings:",
-                settings
-            );
-
-
-            /*
-             * STOP OLD FILTERED TRACK
-             */
-
-            if (
-                oldVideoTrack &&
-                oldVideoTrack !== newVideoTrack
-            ) {
-
-                oldVideoTrack.stop();
-
-            }
-
-
-            /*
-             * STOP RAW TRACK
-             */
-
-            newRawStream
-                .getTracks()
-                .forEach(track => {
-
-                    try {
-                        track.stop();
-                    } catch (e) { }
-
-                });
-
-
-            updateMediaStatus();
-
-            console.log(
-                "[CAMERA] Mobile camera switched successfully:",
-                currentCameraFacing
-            );
-
-            return;
-        }
-
-
-        /*
-         * ==========================================
-         * DESKTOP
-         * ==========================================
-         */
-
-        await detectAvailableCameras();
-
-        if (availableCameras.length < 2) {
-
-            console.warn(
-                "[CAMERA] Only one camera available."
-            );
-
-            return;
-        }
-
-
-        let currentIndex =
-            availableCameras.findIndex(
-                camera =>
-                    camera.deviceId ===
-                    currentCameraDeviceId
-            );
-
-
-        if (currentIndex < 0) {
-            currentIndex = 0;
-        }
-
-
-        const nextIndex =
-            (currentIndex + 1) %
-            availableCameras.length;
-
-
-        const nextCamera =
-            availableCameras[nextIndex];
-
-
-        if (!nextCamera) return;
-
-
-        console.log(
-            "[CAMERA] Desktop switching to:",
-            nextCamera.label
-        );
-
-
-        const newRawStream =
-            await navigator.mediaDevices.getUserMedia({
-
-                video:
-                    getCameraConstraints(
-                        nextCamera.deviceId
-                    ),
-
-                audio: false
-            });
-
-
-        const newRawVideoTrack =
-            newRawStream.getVideoTracks()[0];
-
-        if (!newRawVideoTrack) {
-
-            newRawStream
-                .getTracks()
-                .forEach(track => track.stop());
-
-            return;
-        }
-
-
-        const filteredVideo =
-            await createFilteredStream(
-                newRawStream
-            );
-
-
-        const newVideoTrack =
-            filteredVideo.getVideoTracks()[0];
-
-        if (!newVideoTrack) {
-
-            newRawStream
-                .getTracks()
-                .forEach(track => track.stop());
-
-            return;
-        }
-
-
-        const oldVideoTrack =
-            videoTrack;
-
-
-        const newStream =
-            new MediaStream();
-
-        newStream.addTrack(
-            newVideoTrack
-        );
-
-        if (audioTrack) {
-            newStream.addTrack(
-                audioTrack
-            );
-        }
-
-
-        stream = newStream;
-        videoTrack = newVideoTrack;
-
-
-        if (localVideo) {
-            localVideo.srcObject = stream;
-        }
-
-
-        for (const userId in peers) {
-
-            const peer = peers[userId];
-
-            if (!peer) continue;
-
-            const sender =
-                peer
-                    .getSenders()
-                    .find(
-                        sender =>
-                            sender.track?.kind === "video"
-                    );
-
-            if (sender) {
-
-                await sender.replaceTrack(
-                    newVideoTrack
-                );
-            }
-        }
-
-
-        const settings =
-            newRawVideoTrack.getSettings();
-
-        currentCameraDeviceId =
-            settings.deviceId ||
-            nextCamera.deviceId;
-
-
-        currentCameraIndex =
-            nextIndex;
-
-
-        if (
-            oldVideoTrack &&
-            oldVideoTrack !== newVideoTrack
-        ) {
-            oldVideoTrack.stop();
-        }
-
-
-        newRawStream
-            .getTracks()
-            .forEach(track => track.stop());
-
-
-        updateMediaStatus();
-
-    } catch (error) {
-
-        console.error(
-            "[CAMERA] Switch failed:",
-            error
-        );
-
-    } finally {
-
-        window.switchingCamera = false;
-
-    }
+    await ensureMediaReady();
 }
-
-async function switchCameraByDeviceId() {
-
-    if (availableCameras.length < 2) {
-        return;
-    }
-
-    let currentIndex =
-        availableCameras.findIndex(
-            camera =>
-                camera.deviceId ===
-                currentCameraDeviceId
-        );
-
-    if (currentIndex < 0) {
-        currentIndex = 0;
-    }
-
-    const nextIndex =
-        (currentIndex + 1) %
-        availableCameras.length;
-
-    const nextCamera =
-        availableCameras[nextIndex];
-
-    if (!nextCamera) return;
-
-    const newRawStream =
-        await navigator.mediaDevices.getUserMedia({
-
-            video: {
-                deviceId: {
-                    exact: nextCamera.deviceId
-                },
-
-                width: {
-                    ideal: 640
-                },
-
-                height: {
-                    ideal: 480
-                },
-
-                frameRate: {
-                    ideal: 30,
-                    max: 30
-                }
-            },
-
-            audio: false
-
-        });
-
-    const newVideoTrack =
-        newRawStream.getVideoTracks()[0];
-
-    if (!newVideoTrack) {
-        newRawStream.getTracks()
-            .forEach(track => track.stop());
-
-        return;
-    }
-
-    const filtered =
-        await createFilteredStream(
-            newRawStream
-        );
-
-    const filteredTrack =
-        filtered.getVideoTracks()[0];
-
-    if (!filteredTrack) {
-        newRawStream.getTracks()
-            .forEach(track => track.stop());
-
-        return;
-    }
-
-    const oldVideoTrack =
-        videoTrack;
-
-    const newStream =
-        new MediaStream();
-
-    newStream.addTrack(filteredTrack);
-
-    if (audioTrack) {
-        newStream.addTrack(audioTrack);
-    }
-
-    stream = newStream;
-    videoTrack = filteredTrack;
-
-    localVideo.srcObject = stream;
-
-    for (const userId in peers) {
-
-        const peer = peers[userId];
-
-        if (!peer) continue;
-
-        const sender =
-            peer.getSenders().find(
-                s =>
-                    s.track &&
-                    s.track.kind === "video"
-            );
-
-        if (sender) {
-            await sender.replaceTrack(
-                filteredTrack
-            );
-        }
-    }
-
-    const settings =
-        newVideoTrack.getSettings();
-
-    currentCameraDeviceId =
-        settings.deviceId ||
-        nextCamera.deviceId;
-
-    currentCameraFacing =
-        settings.facingMode ||
-        "unknown";
-
-    currentCameraIndex =
-        nextIndex;
-
-    if (oldVideoTrack) {
-        oldVideoTrack.stop();
-    }
-
-    newRawStream.getTracks()
-        .forEach(track => track.stop());
-
-    updateMediaStatus();
-
-    console.log(
-        "[CAMERA] DeviceId fallback successful.",
-        settings
-    );
-}
-
 
 
 
