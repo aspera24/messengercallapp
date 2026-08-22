@@ -683,8 +683,7 @@ window.onload = async () => {
 };
 
 
-
-let currentFacingMode = "environment";
+let currentFacingMode = "user";
 
 async function ensureMediaReady(attempt = 0) {
     const loader = document.getElementById("localLoading");
@@ -719,13 +718,18 @@ async function ensureMediaReady(attempt = 0) {
     try {
         console.log("[MEDIA] Internet available. Requesting camera/mic...");
 
+        const videoConstraints = {
+            facingMode: currentFacingMode === "environment" ? { exact: "environment" } : "user"
+        };
+
+        if (currentFacingMode === "user") {
+            videoConstraints.width = { ideal: 640 };
+            videoConstraints.height = { ideal: 480 };
+            videoConstraints.frameRate = { ideal: 30 };
+        }
+
         const rawStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                frameRate: { ideal: 30 },
-                facingMode: { ideal: currentFacingMode }
-            },
+            video: videoConstraints,
             audio: {
                 echoCancellation: false,
                 noiseSuppression: false,
@@ -749,7 +753,14 @@ async function ensureMediaReady(attempt = 0) {
             return false;
         }
 
-        const filteredVideo = await createFilteredStream(rawStream);
+        let filteredVideo;
+        try {
+            filteredVideo = await createFilteredStream(rawStream);
+        } catch (filterErr) {
+            console.warn("[MEDIA] Filter failed, using raw stream:", filterErr);
+            filteredVideo = rawStream;
+        }
+
         const finalStream = new MediaStream();
 
         filteredVideo.getVideoTracks().forEach(track => {
@@ -829,29 +840,9 @@ async function switchCamera() {
         localPreview.srcObject = null;
     }
 
-    const targetMode = currentFacingMode === "environment" ? "user" : "environment";
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    if (targetMode === "environment") {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasRearCamera = devices.some(device =>
-                device.kind === "videoinput" &&
-                (device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("environment"))
-            );
-
-            if (!hasRearCamera && devices.filter(d => d.kind === "videoinput").length <= 1) {
-                console.log("[MEDIA] No rear camera detected. Aborting switch.");
-                await ensureMediaReady();
-                return;
-            }
-        } catch (e) {
-            console.error("[MEDIA] Device check failed", e);
-        }
-    }
-
-    currentFacingMode = targetMode;
-
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     await ensureMediaReady();
 }
