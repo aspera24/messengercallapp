@@ -686,81 +686,425 @@ async function ensureMediaReady(attempt = 0) {
 
     const loader = document.getElementById("localLoading");
 
+    // DO NOT ACCESS CAMERA/MIC WHEN OFFLINE
+    if (!navigator.onLine) {
+
+        console.log("[MEDIA] Offline. Camera and microphone blocked.");
+
+        if (loader) {
+            loader.style.display = "flex";
+            loader.innerHTML = `
+                <i class="fa-solid fa-wifi"></i>
+                <span>Waiting for internet connection...</span>
+            `;
+        }
+
+        return false;
+    }
+
+    // ALREADY INITIALIZED
     if (stream) {
-        loader.style.display = "none";
+
+        if (loader) {
+            loader.style.display = "none";
+        }
+
         return true;
     }
 
-    loader.style.display = "flex";
+
+    if (loader) {
+        loader.style.display = "flex";
+        loader.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Starting camera...</span>
+        `;
+    }
+
 
     try {
-        const rawStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640, max: 1280 },
-                height: { ideal: 480, max: 720 },
-                frameRate: { ideal: 30, max: 30 },
-                facingMode: "user"
-            },
-            audio: {
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: true,
-                voiceIsolation: false,
-                sampleRate: 48000,
-                channelCount: 1
+
+        console.log("[MEDIA] Internet available. Requesting camera/mic...");
+
+        // REQUEST CAMERA + MICROPHONE
+        const rawStream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+                    width: {
+                        ideal: 640,
+                        max: 1280
+                    },
+                    height: {
+                        ideal: 480,
+                        max: 720
+                    },
+                    frameRate: {
+                        ideal: 30,
+                        max: 30
+                    },
+                    facingMode: "user"
+                },
+
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: true,
+                    voiceIsolation: false,
+                    sampleRate: 48000,
+                    channelCount: 1
+                }
+
+            });
+
+        // INTERNET MAY HAVE DISAPPEARED WHILE
+        // getUserMedia WAS INITIALIZING
+        if (!navigator.onLine) {
+
+            console.log(
+                "[MEDIA] Internet disappeared during initialization."
+            );
+
+            rawStream
+                .getTracks()
+                .forEach(track => track.stop());
+
+            if (loader) {
+                loader.style.display = "flex";
+                loader.innerHTML = `
+                    <i class="fa-solid fa-wifi"></i>
+                    <span>Waiting for internet connection...</span>
+                `;
             }
-        });
 
-        const filteredVideo = await createFilteredStream(rawStream);
-        const finalStream = new MediaStream();
+            return false;
+        }
 
-        filteredVideo.getVideoTracks().forEach(track => {
-            finalStream.addTrack(track);
-        });
+        // APPLY CAMERA FILTER
+        const filteredVideo =
+            await createFilteredStream(rawStream);
 
-        rawStream.getAudioTracks().forEach(track => {
-            finalStream.addTrack(track);
-        });
 
-        // const finalStream =
-        //     new MediaStream();
+        const finalStream =
+            new MediaStream();
 
-        // rawStream.getVideoTracks().forEach(track => {
-        //     finalStream.addTrack(track);
-        // });
 
-        // rawStream.getAudioTracks().forEach(track => {
-        //     finalStream.addTrack(track);
-        // });
+        filteredVideo
+            .getVideoTracks()
+            .forEach(track => {
+                finalStream.addTrack(track);
+            });
 
+
+        rawStream
+            .getAudioTracks()
+            .forEach(track => {
+                finalStream.addTrack(track);
+            });
+
+        // SAVE STREAM
         stream = finalStream;
+
+
         localVideo.srcObject = stream;
 
-        const localPreview = document.getElementById("localPreview");
-        localPreview.srcObject = stream;
 
-        videoTrack = stream.getVideoTracks()[0];
-        audioTrack = stream.getAudioTracks()[0];
+        const localPreview =
+            document.getElementById("localPreview");
 
+        if (localPreview) {
+            localPreview.srcObject = stream;
+        }
+
+
+        videoTrack =
+            stream.getVideoTracks()[0];
+
+        audioTrack =
+            stream.getAudioTracks()[0];
+
+        // SETUP MIC LEVEL
         setupMicLevel();
 
-        loader.style.display = "none";
+        // SUCCESS
+        if (loader) {
+            loader.style.display = "none";
+        }
+
+
+        console.log(
+            "[MEDIA] Camera and microphone initialized."
+        );
+
+
         return true;
 
-    } catch (err) {
-        console.error("[MEDIA ERROR]", err);
 
-        if (attempt < 10) {
-            setTimeout(() => ensureMediaReady(attempt + 1), 1000);
-        } else {
-            loader.innerHTML = `
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span>Camera Permission Denied</span>
-            `;
+    } catch (err) {
+
+        console.error(
+            "[MEDIA ERROR]",
+            err
+        );
+
+        // IF OFFLINE, DO NOT RETRY
+        if (!navigator.onLine) {
+
+            console.log(
+                "[MEDIA] Offline. Waiting for connection..."
+            );
+
+            if (loader) {
+                loader.style.display = "flex";
+                loader.innerHTML = `
+                    <i class="fa-solid fa-wifi"></i>
+                    <span>Waiting for internet connection...</span>
+                `;
+            }
+
+            return false;
         }
+
+        // RETRY ONLY WHILE ONLINE
+        if (attempt < 10) {
+
+            console.log(
+                `[MEDIA] Retry ${attempt + 1}/10`
+            );
+
+            setTimeout(() => {
+                ensureMediaReady(attempt + 1);
+            }, 1000);
+
+        } else {
+
+            if (loader) {
+                loader.innerHTML = `
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Camera Permission Denied</span>
+                `;
+            }
+
+        }
+
+
         return false;
     }
 }
+
+
+
+// INTERNET / MEDIA CONNECTION CONTROL
+let mediaStoppedBecauseOffline = false;
+let restoringMedia = false;
+
+// STOP CAMERA + MICROPHONE
+function stopLocalMediaBecauseOffline() {
+
+    console.log(
+        "[MEDIA] Internet disconnected. Stopping camera and microphone."
+    );
+
+
+    mediaStoppedBecauseOffline = true;
+
+
+    // Stop all tracks
+    if (stream) {
+
+        stream
+            .getTracks()
+            .forEach(track => {
+
+                try {
+                    track.stop();
+                } catch (e) {
+                    console.warn(
+                        "[MEDIA] Failed to stop track:",
+                        e
+                    );
+                }
+
+            });
+
+    }
+
+
+    // Clear video track
+    videoTrack = null;
+    audioTrack = null;
+
+
+    // Clear stream
+    stream = null;
+
+
+    // Clear local video
+    if (localVideo) {
+        localVideo.srcObject = null;
+    }
+
+
+    const localPreview =
+        document.getElementById("localPreview");
+
+    if (localPreview) {
+        localPreview.srcObject = null;
+    }
+
+
+    // Update UI
+    const loader =
+        document.getElementById("localLoading");
+
+    if (loader) {
+
+        loader.style.display = "flex";
+
+        loader.innerHTML = `
+            <i class="fa-solid fa-wifi"></i>
+            <span>No internet connection</span>
+        `;
+
+    }
+
+
+    // Update media buttons if available
+    const camIcon =
+        document.querySelector("#camBtn i");
+
+    const micIcon =
+        document.querySelector("#micBtn i");
+
+
+    if (camIcon) {
+        camIcon.className =
+            "fa-solid fa-video-slash";
+    }
+
+
+    if (micIcon) {
+        micIcon.className =
+            "fa-solid fa-microphone-slash";
+    }
+
+
+    // Tell other users that our media is OFF
+    if (socket.connected) {
+
+        socket.emit("media-status", {
+            camera: false,
+            mic: false
+        });
+
+    }
+
+}
+
+// INTERNET RESTORED
+async function restoreLocalMediaAfterOnline() {
+
+    if (!navigator.onLine) return;
+
+    if (!mediaStoppedBecauseOffline) return;
+
+    if (restoringMedia) return;
+
+
+    restoringMedia = true;
+
+
+    console.log(
+        "[MEDIA] Internet restored. Reinitializing camera/microphone..."
+    );
+
+
+    try {
+
+        const ready =
+            await ensureMediaReady();
+
+
+        if (!ready) {
+
+            console.log(
+                "[MEDIA] Media restoration failed."
+            );
+
+            return;
+        }
+
+
+        // Enable tracks
+        if (videoTrack) {
+            videoTrack.enabled = true;
+        }
+
+        if (audioTrack) {
+            audioTrack.enabled = true;
+        }
+
+
+        mediaStoppedBecauseOffline = false;
+
+
+        updateMediaStatus();
+
+
+        // Notify server
+        if (socket.connected) {
+
+            socket.emit("media-status", {
+                camera: videoTrack?.enabled ?? false,
+                mic: audioTrack?.enabled ?? false
+            });
+
+        }
+
+
+        console.log(
+            "[MEDIA] Camera and microphone restored."
+        );
+
+
+    } catch (err) {
+
+        console.error(
+            "[MEDIA] Failed to restore media:",
+            err
+        );
+
+    } finally {
+
+        restoringMedia = false;
+
+    }
+
+}
+
+// INTERNET LOST
+window.addEventListener("offline", () => {
+
+    console.warn(
+        "[NETWORK] Internet connection lost."
+    );
+
+    stopLocalMediaBecauseOffline();
+
+});
+
+// INTERNET RESTORED
+window.addEventListener("online", () => {
+
+    console.log(
+        "[NETWORK] Internet connection restored."
+    );
+
+    restoreLocalMediaAfterOnline();
+
+});
+
+
 
 document.getElementById("cameraFilter").addEventListener("change", async e => {
     await changeCameraFilter(e.target.value);
