@@ -61,13 +61,20 @@
                             <span class="tag">You</span>
 
                             <div class="controls">
-                                <button id="camBtn" onclick="toggleCamera()">
+
+                                <button id="camBtn" onclick="toggleCamera()" title="Camera">
                                     <i class="fa-solid fa-video"></i>
                                 </button>
 
-                                <button id="micBtn" onclick="toggleMic()">
+                                <button id="micBtn" onclick="toggleMic()" title="Microphone">
                                     <i class="fa-solid fa-microphone"></i>
                                 </button>
+
+                                <button id="switchCameraBtn" onclick="switchCamera()" title="Switch Camera"
+                                    style="display: none;">
+                                    <i class="fa-solid fa-camera-rotate"></i>
+                                </button>
+
                             </div>
 
                             <div class="mic-level">
@@ -77,7 +84,9 @@
                                 <div class="bar"></div>
                                 <div class="bar"></div>
                             </div>
+
                         </div>
+
                     </div>
 
                     <div class="filter-box">
@@ -154,8 +163,8 @@
             <div class="rightCont">
                 <div class="videos-container">
                     <p>View all participants' live camera feeds in real time. Active
-                       speakers and newly joined
-                       participants will appear here during the meeting.
+                        speakers and newly joined
+                        participants will appear here during the meeting.
                     </p>
                     <div class="smallVideo">
                         <video id="localPreview" autoplay muted playsinline></video>

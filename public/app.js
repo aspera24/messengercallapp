@@ -8,6 +8,11 @@ let audioContext;
 let analyser;
 let dataArray;
 
+let availableCameras = [];
+let currentCameraIndex = 0;
+let currentCameraDeviceId = null;
+let currentCameraFacing = "user";
+
 let peers = {};
 let peerNames = {};
 
@@ -682,6 +687,110 @@ window.onload = async () => {
 
 };
 
+async function detectAvailableCameras() {
+
+    if (!navigator.mediaDevices?.enumerateDevices) {
+        console.warn(
+            "[CAMERA] enumerateDevices() is not supported."
+        );
+
+        return [];
+    }
+
+    try {
+
+        const devices =
+            await navigator.mediaDevices.enumerateDevices();
+
+        const cameras =
+            devices.filter(
+                device => device.kind === "videoinput"
+            );
+
+        availableCameras = cameras;
+
+        console.log(
+            "[CAMERA] Available cameras:",
+            cameras
+        );
+
+        updateCameraSwitchButton();
+
+        return cameras;
+
+    } catch (error) {
+
+        console.error(
+            "[CAMERA] Failed to enumerate cameras:",
+            error
+        );
+
+        availableCameras = [];
+
+        return [];
+
+    }
+}
+
+function isMobileDevice() {
+
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(
+        navigator.userAgent
+    );
+
+}
+
+function getCameraConstraints(deviceId = null) {
+
+    const base = {
+
+        width: {
+            ideal: 640,
+            max: 1280
+        },
+
+        height: {
+            ideal: 480,
+            max: 720
+        },
+
+        frameRate: {
+            ideal: 30,
+            max: 30
+        }
+
+    };
+
+    if (deviceId) {
+
+        return {
+            ...base,
+
+            deviceId: {
+                exact: deviceId
+            }
+
+        };
+
+    }
+
+    if (isMobileDevice()) {
+
+        return {
+
+            ...base,
+
+            facingMode: {
+                ideal: "user"
+            }
+
+        };
+
+    }
+
+    return base;
+}
+
 async function ensureMediaReady(attempt = 0) {
 
     const loader = document.getElementById("localLoading");
@@ -724,27 +833,16 @@ async function ensureMediaReady(attempt = 0) {
 
     try {
 
-        console.log("[MEDIA] Internet available. Requesting camera/mic...");
+        const cameraConstraints =
+            getCameraConstraints(
+                currentCameraDeviceId
+            );
 
         // REQUEST CAMERA + MICROPHONE
         const rawStream =
             await navigator.mediaDevices.getUserMedia({
 
-                video: {
-                    width: {
-                        ideal: 640,
-                        max: 1280
-                    },
-                    height: {
-                        ideal: 480,
-                        max: 720
-                    },
-                    frameRate: {
-                        ideal: 30,
-                        max: 30
-                    },
-                    facingMode: "user"
-                },
+                video: cameraConstraints,
 
                 audio: {
                     echoCancellation: false,
@@ -757,8 +855,28 @@ async function ensureMediaReady(attempt = 0) {
 
             });
 
-        // INTERNET MAY HAVE DISAPPEARED WHILE
-        // getUserMedia WAS INITIALIZING
+        const activeVideoTrack =
+            rawStream.getVideoTracks()[0];
+
+        if (activeVideoTrack) {
+
+            const settings =
+                activeVideoTrack.getSettings();
+
+            currentCameraDeviceId =
+                settings.deviceId || null;
+
+            currentCameraFacing =
+                settings.facingMode || "unknown";
+
+            console.log(
+                "[CAMERA] Active camera:",
+                settings
+            );
+        }
+
+        await detectAvailableCameras();
+
         if (!navigator.onLine) {
 
             console.log(
@@ -892,7 +1010,368 @@ async function ensureMediaReady(attempt = 0) {
     }
 }
 
+function updateCameraSwitchButton() {
 
+    const button =
+        document.getElementById("switchCameraBtn");
+
+    if (!button) return;
+
+    if (availableCameras.length > 1) {
+
+        button.style.display = "inline-flex";
+
+    } else {
+
+        button.style.display = "none";
+    }
+}
+
+async function switchCamera() {
+
+    if (!navigator.onLine) {
+
+        console.warn(
+            "[CAMERA] Cannot switch camera while offline."
+        );
+
+        return;
+    }
+
+    if (availableCameras.length < 2) {
+
+        console.warn(
+            "[CAMERA] No other camera available."
+        );
+
+        return;
+    }
+
+    /*
+     * Prevent multiple camera-switch requests
+     * from happening at the same time.
+     */
+    if (window.switchingCamera) {
+        return;
+    }
+
+    window.switchingCamera = true;
+
+    try {
+
+        console.log(
+            "[CAMERA] Current camera:",
+            currentCameraDeviceId
+        );
+
+        /*
+         * Find the currently active camera.
+         */
+        let currentIndex =
+            availableCameras.findIndex(
+                camera =>
+                    camera.deviceId ===
+                    currentCameraDeviceId
+            );
+
+        /*
+         * If browser did not provide a matching
+         * deviceId, use the stored index.
+         */
+        if (currentIndex < 0) {
+
+            currentIndex =
+                currentCameraIndex >= 0 &&
+                    currentCameraIndex <
+                    availableCameras.length
+                    ? currentCameraIndex
+                    : 0;
+        }
+
+        /*
+         * Move to the next available camera.
+         */
+        const nextIndex =
+            (currentIndex + 1) %
+            availableCameras.length;
+
+        const nextCamera =
+            availableCameras[nextIndex];
+
+        if (!nextCamera) {
+
+            console.warn(
+                "[CAMERA] Next camera not found."
+            );
+
+            return;
+        }
+
+        console.log(
+            "[CAMERA] Switching to:",
+            nextCamera.label ||
+            `Camera ${nextIndex + 1}`
+        );
+
+        /*
+         * Request the new camera.
+         *
+         * Audio is disabled here because we already
+         * have the existing microphone track.
+         */
+        const newRawStream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: getCameraConstraints(
+                    nextCamera.deviceId
+                ),
+
+                audio: false
+
+            });
+
+        /*
+         * Make sure internet is still available.
+         */
+        if (!navigator.onLine) {
+
+            newRawStream
+                .getTracks()
+                .forEach(track => track.stop());
+
+            console.warn(
+                "[CAMERA] Internet disappeared while switching camera."
+            );
+
+            return;
+        }
+
+        const newRawVideoTrack =
+            newRawStream.getVideoTracks()[0];
+
+        if (!newRawVideoTrack) {
+
+            newRawStream
+                .getTracks()
+                .forEach(track => track.stop());
+
+            console.error(
+                "[CAMERA] New camera did not provide a video track."
+            );
+
+            return;
+        }
+
+        /*
+         * ==========================================
+         * APPLY YOUR EXISTING CAMERA FILTER
+         * ==========================================
+         *
+         * This is important in your MeetFlow because
+         * your normal camera goes through
+         * createFilteredStream().
+         */
+        const filteredVideo =
+            await createFilteredStream(
+                newRawStream
+            );
+
+        const newFilteredVideoTrack =
+            filteredVideo.getVideoTracks()[0];
+
+        if (!newFilteredVideoTrack) {
+
+            newRawStream
+                .getTracks()
+                .forEach(track => track.stop());
+
+            filteredVideo
+                .getTracks()
+                .forEach(track => track.stop());
+
+            console.error(
+                "[CAMERA] Filter did not produce a video track."
+            );
+
+            return;
+        }
+
+        /*
+         * Save old tracks before replacing them.
+         */
+        const oldStream = stream;
+        const oldVideoTrack = videoTrack;
+
+        //Create a completely new final stream. Keep the existing microphone.
+        const newFinalStream =
+            new MediaStream();
+
+        newFinalStream.addTrack(
+            newFilteredVideoTrack
+        );
+
+        if (audioTrack) {
+
+            newFinalStream.addTrack(
+                audioTrack
+            );
+
+        }
+
+        //Replace our global stream.
+        stream = newFinalStream;
+
+        videoTrack =
+            newFilteredVideoTrack;
+
+        //Update local video.
+
+        if (localVideo) {
+
+            localVideo.srcObject =
+                stream;
+
+        }
+
+        const localPreview =
+            document.getElementById(
+                "localPreview"
+            );
+
+        if (localPreview) {
+
+            localPreview.srcObject =
+                stream;
+
+        }
+
+        //UPDATE ALL EXISTING WEBRTC PEERS
+        for (const userId in peers) {
+
+            const peer =
+                peers[userId];
+
+            if (!peer) continue;
+
+            const videoSender =
+                peer
+                    .getSenders()
+                    .find(
+                        sender =>
+                            sender.track &&
+                            sender.track.kind === "video"
+                    );
+
+            if (!videoSender) {
+
+                console.warn(
+                    `[WEBRTC] No video sender for peer ${userId}`
+                );
+
+                continue;
+            }
+
+            try {
+
+                await videoSender.replaceTrack(
+                    newFilteredVideoTrack
+                );
+
+                console.log(
+                    `[WEBRTC] Camera track replaced for peer ${userId}`
+                );
+
+            } catch (error) {
+
+                console.error(
+                    `[WEBRTC] Failed replacing camera for peer ${userId}:`,
+                    error
+                );
+
+            }
+        }
+
+        // UPDATE CAMERA STATE
+        currentCameraIndex =
+            nextIndex;
+
+        currentCameraDeviceId =
+            newRawVideoTrack
+                .getSettings()
+                .deviceId ||
+            nextCamera.deviceId;
+
+        currentCameraFacing =
+            newRawVideoTrack
+                .getSettings()
+                .facingMode ||
+            "unknown";
+
+        console.log(
+            "[CAMERA] New camera settings:",
+            newRawVideoTrack.getSettings()
+        );
+
+        if (
+            oldVideoTrack &&
+            oldVideoTrack !== newFilteredVideoTrack
+        ) {
+
+            try {
+                oldVideoTrack.stop();
+            } catch (error) {
+                console.warn(error);
+            }
+
+        }
+
+        newRawStream
+            .getTracks()
+            .forEach(track => {
+
+                try {
+                    track.stop();
+                } catch (error) {
+                    console.warn(error);
+                }
+
+            });
+
+        updateMediaStatus();
+
+        if (socket.connected) {
+
+            socket.emit("media-status", {
+
+                camera:
+                    videoTrack?.enabled ??
+                    false,
+
+                mic:
+                    audioTrack?.enabled ??
+                    false
+
+            });
+
+        }
+
+        console.log(
+            "[CAMERA] Camera switched successfully."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[CAMERA] Failed to switch camera:",
+            error
+        );
+
+    } finally {
+
+        window.switchingCamera = false;
+
+    }
+}
 
 // INTERNET / MEDIA CONNECTION CONTROL
 let mediaStoppedBecauseOffline = false;
