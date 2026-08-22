@@ -832,38 +832,15 @@ async function ensureMediaReady(attempt = 0) {
 }
 
 async function switchCamera() {
+    if (!navigator.onLine) {
+        console.log("[CAMERA] Offline. Cannot switch camera.");
+        return;
+    }
+
     console.log("[CAMERA] Switching camera...");
 
-    // Stop actual camera + microphone
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => {
-            track.stop();
-        });
-        cameraStream = null;
-    }
+    const oldCameraTrack = cameraStream?.getVideoTracks()[0];
 
-    // Stop filtered/canvas stream
-    if (stream) {
-        stream.getTracks().forEach(track => {
-            track.stop();
-        });
-        stream = null;
-    }
-
-    // Clear video elements
-    if (localVideo) {
-        localVideo.pause();
-        localVideo.srcObject = null;
-    }
-
-    const localPreview = document.getElementById("localPreview");
-
-    if (localPreview) {
-        localPreview.pause();
-        localPreview.srcObject = null;
-    }
-
-    // Switch front <-> rear
     currentFacingMode =
         currentFacingMode === "user"
             ? "environment"
@@ -871,11 +848,48 @@ async function switchCamera() {
 
     console.log("[CAMERA] New facing mode:", currentFacingMode);
 
-    // Small delay to allow camera to fully release
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+        const newFilteredStream =
+            await createFilteredStream(newCameraStream);
 
-    // Start new camera
-    await ensureMediaReady();
+        const newVideoTrack =
+            newFilteredStream.getVideoTracks()[0];
+
+        for (const peerId in peers) {
+            const pc = peers[peerId];
+
+            const sender = pc.getSenders().find(
+                s => s.track?.kind === "video"
+            );
+
+            if (sender) {
+                await sender.replaceTrack(newVideoTrack);
+            }
+        }
+
+        // Update local camera stream
+        if (cameraStream) {
+            cameraStream
+                .getVideoTracks()
+                .forEach(track => track.stop());
+        }
+
+        cameraStream = newCameraStream;
+
+        console.log("[CAMERA] Camera switched successfully.");
+
+        // Rebuild filtered stream if needed
+        await updateLocalFilteredCamera(newCameraStream);
+
+    } catch (err) {
+        console.error("[CAMERA] Switch failed:", err);
+
+        // Revert facing mode
+        currentFacingMode =
+            currentFacingMode === "user"
+                ? "environment"
+                : "user";
+    }
 }
 
 
