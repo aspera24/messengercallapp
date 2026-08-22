@@ -768,8 +768,8 @@ async function ensureMediaReady(attempt = 0) {
             localPreview.srcObject = stream;
         }
 
-        videoTrack = stream.getVideoTracks()[0];
-        audioTrack = stream.getAudioTracks()[0];
+        videoTrack = stream.getVideoTracks();
+        audioTrack = stream.getAudioTracks();
 
         setupMicLevel();
 
@@ -829,12 +829,33 @@ async function switchCamera() {
         localPreview.srcObject = null;
     }
 
-    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    const targetMode = currentFacingMode === "user" ? "environment" : "user";
+
+    if (targetMode === "environment") {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasRearCamera = devices.some(device =>
+                device.kind === "videoinput" &&
+                (device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("environment"))
+            );
+
+            if (!hasRearCamera && devices.filter(d => d.kind === "videoinput").length <= 1) {
+                console.log("[MEDIA] No rear camera detected. Aborting switch.");
+                await ensureMediaReady();
+                return;
+            }
+        } catch (e) {
+            console.error("[MEDIA] Device check failed", e);
+        }
+    }
+
+    currentFacingMode = targetMode;
 
     await new Promise(resolve => setTimeout(resolve, 300));
 
     await ensureMediaReady();
 }
+
 
 
 
