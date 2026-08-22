@@ -783,12 +783,16 @@ async function ensureMediaReady(attempt = 0) {
         localVideo.srcObject = stream;
 
         const localPreview = document.getElementById("localPreview");
+
         if (localPreview) {
             localPreview.srcObject = stream;
         }
 
-        videoTrack = stream.getVideoTracks();
-        audioTrack = stream.getAudioTracks();
+        // videoTrack = stream.getVideoTracks();
+        // audioTrack = stream.getAudioTracks();
+
+        videoTrack = stream.getVideoTracks()[0];
+        audioTrack = stream.getAudioTracks()[0];
 
         setupMicLevel();
 
@@ -839,38 +843,91 @@ async function switchCamera() {
 
     console.log("[CAMERA] Switching camera...");
 
-    const oldCameraTrack = cameraStream?.getVideoTracks()[0];
+    const oldCameraStream = cameraStream;
+    const oldFilteredStream = stream;
 
-    currentFacingMode =
+    const oldVideoTrack = stream?.getVideoTracks()?.[0];
+
+    // Switch front <-> rear
+    const newFacingMode =
         currentFacingMode === "user"
             ? "environment"
             : "user";
 
-    console.log("[CAMERA] New facing mode:", currentFacingMode);
+    console.log("[CAMERA] Switching to:", newFacingMode);
+
+    let newCameraStream = null;
+    let newFilteredStream = null;
 
     try {
-        const newCameraStream =
-            await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: {
-                        ideal: currentFacingMode
-                    },
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    frameRate: { ideal: 30 }
-                }
-            });
 
-        const newVideoTrack =
+        // =====================================================
+        // 1. GET NEW CAMERA
+        // =====================================================
+
+        newCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: {
+                    ideal: newFacingMode
+                },
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 30 }
+            }
+        });
+
+        const newRawVideoTrack =
             newCameraStream.getVideoTracks()[0];
 
+        if (!newRawVideoTrack) {
+            throw new Error("No video track received.");
+        }
+
         console.log(
-            "[CAMERA] New camera:",
-            newVideoTrack.getSettings()
+            "[CAMERA] New camera obtained:",
+            newRawVideoTrack.getSettings()
         );
 
-        // Replace video track in every WebRTC peer
+
+        // =====================================================
+        // 2. CREATE NEW FILTERED/CANVAS STREAM
+        // =====================================================
+
+        try {
+            newFilteredStream =
+                await createFilteredStream(newCameraStream);
+
+        } catch (filterErr) {
+
+            console.warn(
+                "[CAMERA] Filter failed, using raw camera:",
+                filterErr
+            );
+
+            newFilteredStream = new MediaStream();
+
+            newFilteredStream.addTrack(
+                newRawVideoTrack
+            );
+        }
+
+
+        const newVideoTrack =
+            newFilteredStream.getVideoTracks()[0];
+
+        if (!newVideoTrack) {
+            throw new Error(
+                "New filtered stream has no video track."
+            );
+        }
+
+
+        // =====================================================
+        // 3. REPLACE VIDEO TRACK IN ALL ACTIVE CALLS
+        // =====================================================
+
         for (const peerId in peers) {
+
             const pc = peers[peerId];
 
             if (!pc) continue;
@@ -884,37 +941,145 @@ async function switchCamera() {
                 );
 
             if (sender) {
-                await sender.replaceTrack(newVideoTrack);
 
                 console.log(
-                    "[CAMERA] Replaced video track for peer:",
+                    "[CAMERA] Replacing video track for peer:",
+                    peerId
+                );
+
+                await sender.replaceTrack(
+                    newVideoTrack
+                );
+
+                console.log(
+                    "[CAMERA] Video track replaced:",
                     peerId
                 );
             }
         }
 
-        // Update local camera stream
-        if (cameraStream) {
-            cameraStream
-                .getVideoTracks()
-                .forEach(track => track.stop());
-        }
+
+        // =====================================================
+        // 4. UPDATE CURRENT CAMERA STATE
+        // =====================================================
+
+        currentFacingMode = newFacingMode;
 
         cameraStream = newCameraStream;
 
-        console.log("[CAMERA] Camera switched successfully.");
 
-        // Rebuild filtered stream if needed
-        await updateLocalFilteredCamera(newCameraStream);
+        // =====================================================
+        // 5. KEEP EXISTING AUDIO
+        // =====================================================
+
+        const currentAudioTrack =
+            stream?.getAudioTracks()?.[0];
+
+        const finalStream = new MediaStream();
+
+        finalStream.addTrack(newVideoTrack);
+
+        if (currentAudioTrack) {
+            finalStream.addTrack(currentAudioTrack);
+        }
+
+
+        // =====================================================
+        // 6. UPDATE LOCAL STREAM
+        // =====================================================
+
+        stream = finalStream;
+
+        videoTrack =
+            stream.getVideoTracks()[0];
+
+        audioTrack =
+            stream.getAudioTracks()[0];
+
+
+        // =====================================================
+        // 7. UPDATE LOCAL VIDEO
+        // =====================================================
+
+        if (localVideo) {
+            localVideo.srcObject = stream;
+            localVideo.play().catch(() => { });
+        }
+
+        const localPreview =
+            document.getElementById("localPreview");
+
+        if (localPreview) {
+            localPreview.srcObject = stream;
+            localPreview.play().catch(() => { });
+        }
+
+
+        // =====================================================
+        // 8. STOP OLD CAMERA AFTER REPLACEMENT
+        // =====================================================
+
+        if (oldCameraStream) {
+            cameraStream
+                .getTracks()
+                .forEach(track => {
+                    track.stop();
+                });
+        }
+
+
+        // =====================================================
+        // 9. STOP OLD CANVAS VIDEO TRACK
+        // =====================================================
+
+        if (
+            oldVideoTrack &&
+            oldVideoTrack !== newVideoTrack
+        ) {
+            oldVideoTrack.stop();
+        }
+
+
+        console.log(
+            "[CAMERA] Successfully switched to:",
+            currentFacingMode
+        );
+
+        return true;
 
     } catch (err) {
-        console.error("[CAMERA] Switch failed:", err);
+
+        console.error(
+            "[CAMERA] Camera switch failed:",
+            err
+        );
+
+
+        // =====================================================
+        // CLEAN UP NEW CAMERA IF SWITCH FAILED
+        // =====================================================
+
+        if (newCameraStream) {
+            newCameraStream
+                .getTracks()
+                .forEach(track => {
+                    track.stop();
+                });
+        }
+
 
         // Revert facing mode
         currentFacingMode =
             currentFacingMode === "user"
                 ? "environment"
                 : "user";
+
+        console.log(
+            "[CAMERA] Reverted to:",
+            currentFacingMode
+        );
+
+        return false;
     }
 }
 
