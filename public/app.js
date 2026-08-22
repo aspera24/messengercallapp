@@ -721,10 +721,10 @@ async function ensureMediaReady(attempt = 0) {
 
         const rawStream = await navigator.mediaDevices.getUserMedia({
             video: {
-                width: { ideal: 640, max: 1280 },
-                height: { ideal: 480, max: 720 },
-                frameRate: { ideal: 30, max: 30 },
-                facingMode: currentFacingMode
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 30 },
+                facingMode: { ideal: currentFacingMode }
             },
             audio: {
                 echoCancellation: false,
@@ -813,15 +813,29 @@ async function ensureMediaReady(attempt = 0) {
 }
 
 async function switchCamera() {
-    if (!stream) return;
+    if (stream) {
+        stream.getTracks().forEach(track => {
+            track.stop();
+        });
+        stream = null;
+    }
+
+    if (localVideo) {
+        localVideo.srcObject = null;
+    }
+
+    const localPreview = document.getElementById("localPreview");
+    if (localPreview) {
+        localPreview.srcObject = null;
+    }
 
     currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    stream.getTracks().forEach(track => track.stop());
-    stream = null;
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     await ensureMediaReady();
 }
+
 
 
 
