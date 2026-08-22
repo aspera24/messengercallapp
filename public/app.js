@@ -1102,7 +1102,7 @@ async function switchCamera() {
             localVideo.srcObject =
                 stream;
 
-            localVideo.play().catch(() => { });
+            localVideo.play().catch(() => {});
 
         }
 
@@ -1118,7 +1118,7 @@ async function switchCamera() {
             localPreview.srcObject =
                 stream;
 
-            localPreview.play().catch(() => { });
+            localPreview.play().catch(() => {});
 
         }
 
@@ -1227,15 +1227,15 @@ async function switchCamera() {
         // CLEAN UP NEW CAMERA
         // =====================================================
 
-        if (newCameraStream) {
+        if (oldCameraStream) {
 
-            newCameraStream
+            oldCameraStream
                 .getTracks()
                 .forEach(track => {
 
                     try {
                         track.stop();
-                    } catch (e) { }
+                    } catch (e) {}
 
                 });
 
