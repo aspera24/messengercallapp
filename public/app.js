@@ -836,6 +836,9 @@ async function ensureMediaReady(attempt = 0) {
 }
 
 
+
+
+
 let switchingCamera = false;
 
 async function switchCamera() {
@@ -949,104 +952,104 @@ async function switchCamera() {
             newRawVideoTrack.getSettings()
         );
 
-        await new Promise((resolve, reject) => {
+        // await new Promise((resolve, reject) => {
 
-            const testVideo =
-                document.createElement("video");
+        //     const testVideo =
+        //         document.createElement("video");
 
-            testVideo.srcObject =
-                new MediaStream([
-                    newRawVideoTrack
-                ]);
+        //     testVideo.srcObject =
+        //         new MediaStream([
+        //             newRawVideoTrack
+        //         ]);
 
-            testVideo.muted = true;
-            testVideo.playsInline = true;
-            testVideo.autoplay = true;
+        //     testVideo.muted = true;
+        //     testVideo.playsInline = true;
+        //     testVideo.autoplay = true;
 
-            let finished = false;
+        //     let finished = false;
 
-            const cleanup = () => {
+        //     const cleanup = () => {
 
-                testVideo.onloadeddata = null;
-                testVideo.onplaying = null;
-                testVideo.onerror = null;
+        //         testVideo.onloadeddata = null;
+        //         testVideo.onplaying = null;
+        //         testVideo.onerror = null;
 
-                testVideo.srcObject = null;
+        //         testVideo.srcObject = null;
 
-            };
+        //     };
 
-            const success = () => {
+        //     const success = () => {
 
-                if (finished) return;
+        //         if (finished) return;
 
-                finished = true;
+        //         finished = true;
 
-                cleanup();
+        //         cleanup();
 
-                console.log(
-                    "[CAMERA] New raw camera produced a frame."
-                );
+        //         console.log(
+        //             "[CAMERA] New raw camera produced a frame."
+        //         );
 
-                resolve();
+        //         resolve();
 
-            };
+        //     };
 
-            const failure = (err) => {
+        //     const failure = (err) => {
 
-                if (finished) return;
+        //         if (finished) return;
 
-                finished = true;
+        //         finished = true;
 
-                cleanup();
+        //         cleanup();
 
-                reject(
-                    err ||
-                    new Error(
-                        "New camera failed to produce video."
-                    )
-                );
+        //         reject(
+        //             err ||
+        //             new Error(
+        //                 "New camera failed to produce video."
+        //             )
+        //         );
 
-            };
+        //     };
 
-            testVideo.onplaying = success;
-            testVideo.onloadeddata = success;
+        //     testVideo.onplaying = success;
+        //     testVideo.onloadeddata = success;
 
-            testVideo.onerror = () => {
-                failure(
-                    new Error(
-                        "New camera video element error."
-                    )
-                );
-            };
+        //     testVideo.onerror = () => {
+        //         failure(
+        //             new Error(
+        //                 "New camera video element error."
+        //             )
+        //         );
+        //     };
 
-            testVideo.play().catch(() => { });
+        //     testVideo.play().catch(() => { });
 
 
-            // Safety timeout
-            setTimeout(() => {
+        //     // Safety timeout
+        //     setTimeout(() => {
 
-                if (!finished) {
+        //         if (!finished) {
 
-                    // If the track itself is live,
-                    // allow the switch to continue.
-                    if (
-                        newRawVideoTrack.readyState ===
-                        "live"
-                    ) {
-                        success();
-                    } else {
-                        failure(
-                            new Error(
-                                "New camera track is not live."
-                            )
-                        );
-                    }
+        //             // If the track itself is live,
+        //             // allow the switch to continue.
+        //             if (
+        //                 newRawVideoTrack.readyState ===
+        //                 "live"
+        //             ) {
+        //                 success();
+        //             } else {
+        //                 failure(
+        //                     new Error(
+        //                         "New camera track is not live."
+        //                     )
+        //                 );
+        //             }
 
-                }
+        //         }
 
-            }, 2000);
+        //     }, 2000);
 
-        });
+        // });
 
         try {
 
@@ -1089,13 +1092,13 @@ async function switchCamera() {
         );
 
 
-        if (newVideoTrack.readyState !== "live") {
+        // if (newVideoTrack.readyState !== "live") {
 
-            throw new Error(
-                "New filtered video track is not live."
-            );
+        //     throw new Error(
+        //         "New filtered video track is not live."
+        //     );
 
-        }
+        // }
 
         for (const peerId in peers) {
 
