@@ -1369,7 +1369,9 @@ video {
     transform: scaleX(-1); 
 }
 
-
+#localPreview {
+    transform: scaleX(1); 
+}
 
 
 .rightCont {

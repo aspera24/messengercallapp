@@ -1129,6 +1129,14 @@ async function switchCamera() {
             localVideo.srcObject = null; // Flush ang memory sa element
             localVideo.srcObject = stream;
 
+            // Dynamic Class Assignment depende sa facingMode
+            if (currentFacingMode === "user") {
+                localVideo.classList.add("camera-user");
+                localVideo.classList.remove("camera-environment");
+            } else {
+                localVideo.classList.add("camera-environment");
+                localVideo.classList.remove("camera-user");
+            }
 
             setTimeout(() => {
                 localVideo.play().catch((e) => console.warn("[CAMERA] localVideo play catch:", e));
