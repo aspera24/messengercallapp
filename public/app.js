@@ -835,7 +835,15 @@ async function ensureMediaReady(attempt = 0) {
     }
 }
 
+
+let switchingCamera = false;
+
 async function switchCamera() {
+
+    if (switchingCamera) {
+        console.log("[CAMERA] Switch already in progress.");
+        return false;
+    }
 
     if (!navigator.onLine) {
         console.log("[CAMERA] Offline. Cannot switch camera.");
@@ -847,6 +855,8 @@ async function switchCamera() {
         return false;
     }
 
+    switchingCamera = true;
+
     console.log("[CAMERA] =============================");
     console.log("[CAMERA] SWITCHING CAMERA");
     console.log("[CAMERA] Current:", currentFacingMode);
@@ -855,10 +865,10 @@ async function switchCamera() {
     const oldFilteredStream = stream;
 
     const oldVideoTrack =
-        stream?.getVideoTracks()?.[0];
+        stream?.getVideoTracks()?.[0] || null;
 
     const oldAudioTrack =
-        stream?.getAudioTracks()?.[0];
+        stream?.getAudioTracks()?.[0] || null;
 
     const newFacingMode =
         currentFacingMode === "user"
@@ -874,10 +884,6 @@ async function switchCamera() {
     let newFilteredStream = null;
 
     try {
-
-        // =====================================================
-        // 1. GET THE OTHER CAMERA
-        // =====================================================
 
         try {
 
@@ -929,10 +935,8 @@ async function switchCamera() {
                 });
         }
 
-
         const newRawVideoTrack =
             newCameraStream.getVideoTracks()[0];
-
 
         if (!newRawVideoTrack) {
             throw new Error(
@@ -940,16 +944,109 @@ async function switchCamera() {
             );
         }
 
-
         console.log(
             "[CAMERA] New camera settings:",
             newRawVideoTrack.getSettings()
         );
 
+        await new Promise((resolve, reject) => {
 
-        // =====================================================
-        // 2. CREATE NEW FILTERED STREAM
-        // =====================================================
+            const testVideo =
+                document.createElement("video");
+
+            testVideo.srcObject =
+                new MediaStream([
+                    newRawVideoTrack
+                ]);
+
+            testVideo.muted = true;
+            testVideo.playsInline = true;
+            testVideo.autoplay = true;
+
+            let finished = false;
+
+            const cleanup = () => {
+
+                testVideo.onloadeddata = null;
+                testVideo.onplaying = null;
+                testVideo.onerror = null;
+
+                testVideo.srcObject = null;
+
+            };
+
+            const success = () => {
+
+                if (finished) return;
+
+                finished = true;
+
+                cleanup();
+
+                console.log(
+                    "[CAMERA] New raw camera produced a frame."
+                );
+
+                resolve();
+
+            };
+
+            const failure = (err) => {
+
+                if (finished) return;
+
+                finished = true;
+
+                cleanup();
+
+                reject(
+                    err ||
+                    new Error(
+                        "New camera failed to produce video."
+                    )
+                );
+
+            };
+
+            testVideo.onplaying = success;
+            testVideo.onloadeddata = success;
+
+            testVideo.onerror = () => {
+                failure(
+                    new Error(
+                        "New camera video element error."
+                    )
+                );
+            };
+
+            testVideo.play().catch(() => { });
+
+
+            // Safety timeout
+            setTimeout(() => {
+
+                if (!finished) {
+
+                    // If the track itself is live,
+                    // allow the switch to continue.
+                    if (
+                        newRawVideoTrack.readyState ===
+                        "live"
+                    ) {
+                        success();
+                    } else {
+                        failure(
+                            new Error(
+                                "New camera track is not live."
+                            )
+                        );
+                    }
+
+                }
+
+            }, 2000);
+
+        });
 
         try {
 
@@ -977,10 +1074,8 @@ async function switchCamera() {
             );
         }
 
-
         const newVideoTrack =
             newFilteredStream.getVideoTracks()[0];
-
 
         if (!newVideoTrack) {
             throw new Error(
@@ -988,16 +1083,19 @@ async function switchCamera() {
             );
         }
 
-
         console.log(
             "[CAMERA] New filtered video track:",
             newVideoTrack
         );
 
 
-        // =====================================================
-        // 3. REPLACE VIDEO TRACK IN EVERY ACTIVE PEER
-        // =====================================================
+        if (newVideoTrack.readyState !== "live") {
+
+            throw new Error(
+                "New filtered video track is not live."
+            );
+
+        }
 
         for (const peerId in peers) {
 
@@ -1007,7 +1105,6 @@ async function switchCamera() {
                 continue;
             }
 
-
             const sender =
                 peer
                     .getSenders()
@@ -1016,7 +1113,6 @@ async function switchCamera() {
                             sender.track &&
                             sender.track.kind === "video"
                     );
-
 
             if (!sender) {
 
@@ -1028,17 +1124,14 @@ async function switchCamera() {
                 continue;
             }
 
-
             console.log(
                 "[CAMERA] Replacing video track for:",
                 peerId
             );
 
-
             await sender.replaceTrack(
                 newVideoTrack
             );
-
 
             console.log(
                 "[CAMERA] Video replaced successfully for:",
@@ -1046,14 +1139,8 @@ async function switchCamera() {
             );
         }
 
-
-        // =====================================================
-        // 4. CREATE NEW LOCAL STREAM
-        // =====================================================
-
         const newLocalStream =
             new MediaStream();
-
 
         newLocalStream.addTrack(
             newVideoTrack
@@ -1061,8 +1148,7 @@ async function switchCamera() {
 
 
         // IMPORTANT:
-        // Keep the EXISTING audio track.
-        // We are NOT requesting a new microphone.
+        // Keep the existing microphone.
         if (oldAudioTrack) {
 
             newLocalStream.addTrack(
@@ -1070,11 +1156,6 @@ async function switchCamera() {
             );
 
         }
-
-
-        // =====================================================
-        // 5. UPDATE GLOBAL STATE
-        // =====================================================
 
         currentFacingMode =
             newFacingMode;
@@ -1085,7 +1166,6 @@ async function switchCamera() {
         stream =
             newLocalStream;
 
-
         videoTrack =
             newVideoTrack;
 
@@ -1093,16 +1173,21 @@ async function switchCamera() {
             oldAudioTrack;
 
 
-        // =====================================================
-        // 6. UPDATE LOCAL VIDEO
-        // =====================================================
-
         if (localVideo) {
 
             localVideo.srcObject =
-                stream;
+                newLocalStream;
 
-            localVideo.play().catch(() => {});
+            try {
+                await localVideo.play();
+            } catch (playError) {
+
+                console.warn(
+                    "[CAMERA] Local video play warning:",
+                    playError
+                );
+
+            }
 
         }
 
@@ -1112,23 +1197,24 @@ async function switchCamera() {
                 "localPreview"
             );
 
-
         if (localPreview) {
 
             localPreview.srcObject =
-                stream;
+                newLocalStream;
 
-            localPreview.play().catch(() => {});
+            try {
+                await localPreview.play();
+            } catch (playError) {
+
+                console.warn(
+                    "[CAMERA] Local preview play warning:",
+                    playError
+                );
+
+            }
 
         }
 
-
-        // =====================================================
-        // 7. STOP OLD CAMERA
-        // =====================================================
-
-        // IMPORTANT:
-        // STOP OLD CAMERA, NOT NEW CAMERA.
         if (oldCameraStream) {
 
             oldCameraStream
@@ -1136,22 +1222,26 @@ async function switchCamera() {
                 .forEach(track => {
 
                     try {
-                        track.stop();
+
+                        if (
+                            track !==
+                            newRawVideoTrack
+                        ) {
+                            track.stop();
+                        }
+
                     } catch (e) {
+
                         console.warn(
-                            "[CAMERA] Failed to stop old track:",
+                            "[CAMERA] Failed to stop old camera track:",
                             e
                         );
+
                     }
 
                 });
 
         }
-
-
-        // =====================================================
-        // 8. STOP OLD FILTERED/CANVAS VIDEO
-        // =====================================================
 
         if (
             oldVideoTrack &&
@@ -1159,20 +1249,19 @@ async function switchCamera() {
         ) {
 
             try {
+
                 oldVideoTrack.stop();
+
             } catch (e) {
+
                 console.warn(
                     "[CAMERA] Failed to stop old filtered track:",
                     e
                 );
+
             }
 
         }
-
-
-        // =====================================================
-        // 9. UPDATE SERVER MEDIA STATUS
-        // =====================================================
 
         if (socket.connected) {
 
@@ -1222,28 +1311,58 @@ async function switchCamera() {
             "[CAMERA] ============================="
         );
 
+        if (newFilteredStream) {
 
-        // =====================================================
-        // CLEAN UP NEW CAMERA
-        // =====================================================
-
-        if (oldCameraStream) {
-
-            oldCameraStream
+            newFilteredStream
                 .getTracks()
                 .forEach(track => {
 
                     try {
                         track.stop();
-                    } catch (e) {}
+                    } catch (e) { }
+
+                });
+
+        }
+
+        if (newCameraStream) {
+
+            newCameraStream
+                .getTracks()
+                .forEach(track => {
+
+                    try {
+                        track.stop();
+                    } catch (e) { }
 
                 });
 
         }
 
 
+        // Keep the old camera alive.
+        cameraStream =
+            oldCameraStream;
+
+        stream =
+            oldFilteredStream;
+
+        videoTrack =
+            oldVideoTrack;
+
+        audioTrack =
+            oldAudioTrack;
+
+
         return false;
+
+
+    } finally {
+
+        switchingCamera = false;
+
     }
+
 }
 
 
