@@ -1355,6 +1355,7 @@ video {
     background: #000;
     transform: translateZ(0);
     backface-visibility: hidden;
+    transform: scaleX(-1);
 }
 
 .camera-user {
