@@ -1358,11 +1358,11 @@ video {
 }
 
 .camera-user {
-    transform: scaleX(1) !important;
+    transform: scaleX(-1) !important;
 }
 
 .camera-environment {
-    transform: scaleX(-1) !important;
+    transform: scaleX(1) !important;
 }
 
 .video-box video {
