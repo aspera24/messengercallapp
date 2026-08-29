@@ -1366,7 +1366,7 @@ video {
 }
 
 .localPreview-camera-environment {
-    transform: scaleX(-1) !important;
+    transform: scaleX(1) !important;
 }
 
 .video-box video {
