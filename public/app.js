@@ -788,9 +788,9 @@ async function ensureMediaReady(attempt = 0) {
 
             if (currentFacingMode === "user") {
                 localPreview.classList.add("camera-user");
-                localPreview.classList.remove("camera-environment");
+                localPreview.classList.remove("localPreview-camera-environment");
             } else {
-                localPreview.classList.add("camera-environment");
+                localPreview.classList.add("localPreview-camera-environment");
                 localPreview.classList.remove("camera-user");
             }
         }
