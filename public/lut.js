@@ -195,10 +195,19 @@ async function createFilteredStream(stream) {
 
     return new Promise((resolve) => {
         const checkCanvasInterval = setInterval(() => {
-            if (video.readyState >= video.HAVE_CURRENT_DATA) {
+            if (
+                video.readyState >= video.HAVE_CURRENT_DATA &&
+                canvas &&
+                renderer
+            ) {
+                // Force one actual WebGL render before
+                // exposing the canvas as a MediaStream.
+                texture.needsUpdate = true;
+                renderer.render(scene, camera);
                 clearInterval(checkCanvasInterval);
-                console.log("Canvas is ready for streaming!");
-                resolve(canvas.captureStream(30));
+                const filteredStream = canvas.captureStream(30);
+
+                resolve(filteredStream);
             }
         }, 100);
     });
