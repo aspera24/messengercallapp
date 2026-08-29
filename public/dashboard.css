@@ -1346,7 +1346,7 @@ input:focus {
     border-radius: 15px;
 }
 
-/* VIDEO */
+
 video {
     display: block;
     width: 100%;
@@ -1355,16 +1355,20 @@ video {
     background: #000;
     transform: translateZ(0);
     backface-visibility: hidden;
-    transform: scaleX(-1);
 }
 
 .camera-user {
-    transform: scaleX(-1);
+    transform: scaleX(-1) !important;
 }
 
 .camera-environment {
-    transform: scaleX(1);
+    transform: scaleX(1) !important;
 }
+
+.video-box video {
+    transform: scaleX(1); 
+}
+
 
 
 

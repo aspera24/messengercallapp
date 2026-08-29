@@ -782,10 +782,25 @@ async function ensureMediaReady(attempt = 0) {
         stream = finalStream;
         localVideo.srcObject = stream;
 
-        const localPreview = document.getElementById("localPreview");
+        if (currentFacingMode === "user") {
+            localVideo.classList.add("camera-user");
+            localVideo.classList.remove("camera-environment");
+        } else {
+            localVideo.classList.add("camera-environment");
+            localVideo.classList.remove("camera-user");
+        }
 
+        const localPreview = document.getElementById("localPreview");
         if (localPreview) {
             localPreview.srcObject = stream;
+
+            if (currentFacingMode === "user") {
+                localPreview.classList.add("camera-user");
+                localPreview.classList.remove("camera-environment");
+            } else {
+                localPreview.classList.add("camera-environment");
+                localPreview.classList.remove("camera-user");
+            }
         }
 
         // videoTrack = stream.getVideoTracks();
