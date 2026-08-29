@@ -1365,6 +1365,10 @@ video {
     transform: scaleX(1) !important;
 }
 
+.localPreview-camera-environment {
+    transform: scaleX(-1) !important;
+}
+
 .video-box video {
     transform: scaleX(-1); 
 }
