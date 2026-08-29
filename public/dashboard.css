@@ -1353,11 +1353,19 @@ video {
     height: 100%;
     object-fit: cover;
     background: #000;
-
     transform: translateZ(0);
     backface-visibility: hidden;
+}
+
+.camera-user {
     transform: scaleX(-1);
 }
+
+.camera-environment {
+    transform: scaleX(1);
+}
+
+
 
 .rightCont {
     position: relative;

@@ -1115,14 +1115,22 @@ async function switchCamera() {
 
 
         // =====================================================
-        // FIX 2: CLEAR REFERENCES AND ADD DELAY FOR LOCAL VIDEO
+        // FIX 2: CLEAR REFERENCES, ADD DELAY, AND UPDATE CLASSNAMES
         // =====================================================
 
         if (localVideo) {
             localVideo.srcObject = null; // Flush ang memory sa element
             localVideo.srcObject = stream;
 
-            // Butangan ug gamay nga 100ms delay para maka-render ang hardware una i-play
+            // Dynamic Class Assignment depende sa facingMode
+            if (currentFacingMode === "user") {
+                localVideo.classList.add("camera-user");
+                localVideo.classList.remove("camera-environment");
+            } else {
+                localVideo.classList.add("camera-environment");
+                localVideo.classList.remove("camera-user");
+            }
+
             setTimeout(() => {
                 localVideo.play().catch((e) => console.warn("[CAMERA] localVideo play catch:", e));
             }, 100);
@@ -1139,10 +1147,20 @@ async function switchCamera() {
             localPreview.srcObject = null; // Flush ang memory sa element
             localPreview.srcObject = stream;
 
+            // Dynamic Class Assignment para sa preview
+            if (currentFacingMode === "user") {
+                localPreview.classList.add("camera-user");
+                localPreview.classList.remove("camera-environment");
+            } else {
+                localPreview.classList.add("camera-environment");
+                localPreview.classList.remove("camera-user");
+            }
+
             setTimeout(() => {
                 localPreview.play().catch((e) => console.warn("[CAMERA] localPreview play catch:", e));
             }, 100);
         }
+
 
 
         // =====================================================
