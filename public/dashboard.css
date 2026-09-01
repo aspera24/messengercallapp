@@ -1357,21 +1357,19 @@ video {
     backface-visibility: hidden;
 }
 
-.camera-user {
-    transform: scaleX(-1) !important;
+/* Front camera */
+video.camera-user {
+    transform: translateZ(0) scaleX(-1) !important;
 }
 
-.camera-environment {
-    transform: scaleX(1) !important;
+/* Rear camera */
+video.camera-environment {
+    transform: translateZ(0) scaleX(1) !important;
 }
 
-.localPreview-camera-environment {
-    transform: scaleX(1) !important;
-}
-
-.video-box video {
+/* .video-box video {
     transform: scaleX(-1); 
-}
+} */
 
 
 

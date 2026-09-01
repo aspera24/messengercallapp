@@ -762,6 +762,7 @@ async function ensureMediaReady(attempt = 0) {
         }
 
         let filteredVideo;
+
         try {
             filteredVideo = await createFilteredStream(rawStream);
         } catch (filterErr) {
@@ -782,18 +783,15 @@ async function ensureMediaReady(attempt = 0) {
         stream = finalStream;
         localVideo.srcObject = stream;
 
+        updateCameraMirror();
+
         const localPreview = document.getElementById("localPreview");
+
         if (localPreview) {
             localPreview.srcObject = stream;
-
-            if (currentFacingMode === "user") {
-                localPreview.classList.add("camera-user");
-                localPreview.classList.remove("localPreview-camera-environment");
-            } else {
-                localPreview.classList.add("localPreview-camera-environment");
-                localPreview.classList.remove("camera-user");
-            }
         }
+
+        updateCameraMirror();
 
         // videoTrack = stream.getVideoTracks();
         // audioTrack = stream.getAudioTracks();
@@ -1104,69 +1102,41 @@ async function switchCamera() {
         // 5. UPDATE GLOBAL STATE
         // =====================================================
 
-        currentFacingMode =
-            newFacingMode;
+        currentFacingMode = newFacingMode;
+        cameraStream = newCameraStream;
+        stream = newLocalStream;
 
-        cameraStream =
-            newCameraStream;
+        videoTrack = newVideoTrack;
+        audioTrack = oldAudioTrack;
 
-        stream =
-            newLocalStream;
+        updateCameraMirror();
 
-
-        videoTrack =
-            newVideoTrack;
-
-        audioTrack =
-            oldAudioTrack;
-
-
-        // =====================================================
-        // FIX 2: CLEAR REFERENCES, ADD DELAY, AND UPDATE CLASSNAMES
-        // =====================================================
 
         if (localVideo) {
-            localVideo.srcObject = null; // Flush ang memory sa element
+            localVideo.srcObject = null;
             localVideo.srcObject = stream;
 
-            // Dynamic Class Assignment depende sa facingMode
-            if (currentFacingMode === "user") {
-                localVideo.classList.add("camera-user");
-                localVideo.classList.remove("camera-environment");
-            } else {
-                localVideo.classList.add("camera-environment");
-                localVideo.classList.remove("camera-user");
-            }
-
             setTimeout(() => {
-                localVideo.play().catch((e) => console.warn("[CAMERA] localVideo play catch:", e));
+                localVideo.play().catch((e) =>
+                    console.warn("[CAMERA] localVideo play catch:", e)
+                );
             }, 100);
         }
 
-
-        const localPreview =
-            document.getElementById(
-                "localPreview"
-            );
-
+        const localPreview = document.getElementById("localPreview");
 
         if (localPreview) {
-            localPreview.srcObject = null; // Flush ang memory sa element
+            localPreview.srcObject = null;
             localPreview.srcObject = stream;
 
-            // Dynamic Class Assignment para sa preview
-            if (currentFacingMode === "user") {
-                localPreview.classList.add("camera-user");
-                localPreview.classList.remove("localPreview-camera-environment");
-            } else {
-                localPreview.classList.add("localPreview-camera-environment");
-                localPreview.classList.remove("camera-user");
-            }
-
             setTimeout(() => {
-                localPreview.play().catch((e) => console.warn("[CAMERA] localPreview play catch:", e));
+                localPreview.play().catch((e) =>
+                    console.warn("[CAMERA] localPreview play catch:", e)
+                );
             }, 100);
         }
+
+        updateCameraMirror();
 
 
 
@@ -1237,7 +1207,38 @@ async function switchCamera() {
 }
 
 
+function updateCameraMirror() {
 
+    const isFrontCamera = currentFacingMode === "user";
+
+    const videos = [
+        localVideo,
+        document.getElementById("localPreview")
+    ];
+
+    videos.forEach(video => {
+
+        if (!video) return;
+
+        // Remove both states first
+        video.classList.remove(
+            "camera-user",
+            "camera-environment"
+        );
+
+        // Apply correct state
+        if (isFrontCamera) {
+            video.classList.add("camera-user");
+        } else {
+            video.classList.add("camera-environment");
+        }
+    });
+
+    console.log(
+        "[CAMERA] Mirror:",
+        isFrontCamera ? "ON (FRONT)" : "OFF (REAR)"
+    );
+}
 
 
 
