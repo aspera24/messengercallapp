@@ -56,32 +56,32 @@ async function loadUsers() {
                 render: function (data) {
 
                     return `
+                        <div class="actionCont">
+                            <button
+                                title="Request a call"
+                                class="reqBtn"
+                                id="req-${data.token}"
+                                onclick="requestUser('${data.token}')"
+                                ${data.joined ? "disabled" : ""}
+                            >
 
-                        <button
-                            title="Request a call"
-                            class="reqBtn"
-                            id="req-${data.token}"
-                            onclick="requestUser('${data.token}')"
-                            ${data.joined ? "disabled" : ""}
-                        >
+                            ${data.joined
+                                ? '<i class="fa-solid fa-circle-check"></i>'
+                                : '<i class="fa-solid fa-video"></i>'
+                            }
 
-                        ${data.joined
-                            ? '<i class="fa-solid fa-circle-check"></i>'
-                            : '<i class="fa-solid fa-mobile-screen"></i>'
-                        }
+                            </button>
 
-                        </button>
-
-                        <button
-                            title="Remove user"
-                            class="deleteBtn"
-                            id="delete-${data.token}"
-                            onclick="deleteUser('${data.token}')"
-                            ${data.joined ? "disabled" : ""}
-                        >
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-
+                            <button
+                                title="Delete user"
+                                class="deleteBtn"
+                                id="delete-${data.token}"
+                                onclick="deleteUser('${data.token}')"
+                                ${data.joined ? "disabled" : ""}
+                            >
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
                     `;
                 }
             }

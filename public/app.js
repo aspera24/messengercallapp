@@ -1760,7 +1760,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
         if (reqBtn) {
             reqBtn.disabled = false;
             reqBtn.innerHTML = `
-                <i class="fa-solid fa-mobile-screen"></i>
+                <i class="fa-solid fa-video"></i>
             `;
         }
 
@@ -1794,7 +1794,7 @@ socket.on("user-disconnected", (userId) => {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = `
-                <i class="fa-solid fa-mobile-screen"></i>
+                <i class="fa-solid fa-video"></i>
             `;
         }
 
@@ -2429,7 +2429,7 @@ socket.on("request-accepted", ({ token }) => {
     if (reqBtn) {
         reqBtn.disabled = false;
         reqBtn.innerHTML = `
-        <i class="fa-solid fa-mobile-screen"></i>
+        <i class="fa-solid fa-video"></i>
     `;
     }
 
@@ -2446,7 +2446,7 @@ socket.on("request-declined", ({ token }) => {
     if (reqBtn) {
         reqBtn.disabled = false;
         reqBtn.innerHTML = `
-            <i class="fa-solid fa-mobile-screen"></i>
+            <i class="fa-solid fa-video"></i>
         `;
     }
 
@@ -2492,7 +2492,7 @@ socket.on("request-expired", async (data = {}) => {
     if (reqBtn) {
         reqBtn.disabled = false;
         reqBtn.innerHTML = `
-            <i class="fa-solid fa-mobile-screen"></i>
+            <i class="fa-solid fa-video"></i>
         `;
     }
 
@@ -3143,6 +3143,6 @@ socket.on("request-error", ({ token, message }) => {
     if (deleteBtn) deleteBtn.disabled = false;
 
     reqBtn.innerHTML = `
-        <i class="fa-solid fa-mobile-screen"></i>
+        <i class="fa-solid fa-video"></i>
     `;
 });
