@@ -1372,12 +1372,12 @@ video {
 
 /* Front camera */
 video.camera-user {
-    transform: translateZ(0) scaleX(1) !important;
+    transform: translateZ(0) scaleX(-1) !important;
 }
 
 /* Rear camera */
 video.camera-environment {
-    transform: translateZ(0) scaleX(-1) !important;
+    transform: translateZ(0) scaleX(1) !important;
 }
 
 /* .video-box video {
