@@ -199,7 +199,7 @@ button:hover:disabled {
     width: 100%;
     margin-top: 12px;
     background: rgb(30 30 30);
-    color: white;
+    color: #e54747;
     border-radius: 8px;
     padding: 12px;
     transform: none;
