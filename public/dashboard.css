@@ -1412,7 +1412,7 @@ video.camera-environment {
     font-size: 14px;
     color: rgb(156, 156, 156);
     padding: 0 20px 10px;
-    text-align: center;
+    text-align: left;
 }
 
 .rightCont .videos-container {
