@@ -642,25 +642,50 @@ function initUser(data) {
 
 }
 
+
 function setupUI() {
 
     const callAllBtn = document.getElementById("callAllBtn");
+    const addEmpBtn = document.getElementById("addEmp");
+    const actionsHeader = document.querySelector("#userTable thead th:nth-child(2)");
 
     if (currentUser.acc_type !== "admin") {
 
-        // document.querySelector(".userListCont").style.display = "none";
+        // EMPLOYEE
         callAllBtn?.remove();
+
+        // Hide Add Employee icon
+        if (addEmpBtn) {
+            addEmpBtn.style.display = "none";
+        }
+
+        // Hide Actions column header
+        if (actionsHeader) {
+            actionsHeader.style.display = "none";
+        }
+
         loadUsers();
 
     } else {
 
-        loadUsers();
-        document.getElementById("missedCallContainer").style.display = "none";
+        // ADMIN
+        if (addEmpBtn) {
+            addEmpBtn.style.display = "";
+        }
 
+        // Show Actions column header
+        if (actionsHeader) {
+            actionsHeader.style.display = "";
+        }
+
+        loadUsers();
+
+        document.getElementById("missedCallContainer").style.display = "none";
     }
 
     updateMeetingButtons(false);
 }
+
 
 window.onload = async () => {
 

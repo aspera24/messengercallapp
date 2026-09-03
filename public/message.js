@@ -19,6 +19,15 @@ async function loadUsers() {
 
     const users = await res.json();
 
+    console.log("CURRENT USER:", currentUser);
+    console.log("USERS FROM /users:", users);
+
+    const isAdmin = currentUser?.acc_type === "admin";
+
+    console.log("IS ADMIN:", isAdmin);
+    console.log("USERS COUNT:", users.length);
+    console.log("FIRST USER:", users[0]);
+
     if (table) {
         table.destroy();
         $("#userTable tbody").empty();
@@ -30,9 +39,13 @@ async function loadUsers() {
 
         columns: [
 
+            // NAME
             {
                 data: null,
+
                 render: function (data) {
+
+                    console.log("RENDER USER:", data);
 
                     return `
                         <div
@@ -43,20 +56,29 @@ async function loadUsers() {
                                 '${data.lastname}'
                             )"
                         >
-                        <i class="fa-solid fa-user"></i>
-                            ${data.firstname}` + " " + `${data.lastname}
+                            <i class="fa-solid fa-user"></i>
+                            ${data.firstname} ${data.lastname}
                         </div>
                     `;
                 }
             },
 
+            // ACTIONS
             {
                 data: null,
                 orderable: false,
+
+                visible: isAdmin,
+
                 render: function (data) {
+
+                    if (!isAdmin) {
+                        return "";
+                    }
 
                     return `
                         <div class="actionCont">
+
                             <button
                                 title="Request a call"
                                 class="reqBtn"
@@ -64,12 +86,10 @@ async function loadUsers() {
                                 onclick="requestUser('${data.token}')"
                                 ${data.joined ? "disabled" : ""}
                             >
-
-                            ${data.joined
-                                ? '<i class="fa-solid fa-circle-check"></i>'
-                                : '<i class="fa-solid fa-video"></i>'
-                            }
-
+                                ${data.joined
+                            ? '<i class="fa-solid fa-circle-check"></i>'
+                            : '<i class="fa-solid fa-video"></i>'
+                        }
                             </button>
 
                             <button
@@ -81,6 +101,7 @@ async function loadUsers() {
                             >
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
+
                         </div>
                     `;
                 }
@@ -89,26 +110,37 @@ async function loadUsers() {
         ],
 
         pageLength: 10,
+
         lengthMenu: [
             [10, 15, 25, 50, -1],
             [10, 15, 25, 50, "All"]
         ],
+
         responsive: true,
         searching: true,
         ordering: true,
         info: true,
         lengthChange: true,
         pagingType: "simple",
-        columnDefs: [
-            {
-                targets: 0,
-                width: "250px"
-            },
-            {
-                targets: 1,
-                width: "10px"
-            }
-        ],
+
+        columnDefs: isAdmin
+            ? [
+                {
+                    targets: 0,
+                    width: "100%"
+                },
+                {
+                    targets: 1,
+                    width: "10px"
+                }
+            ]
+            : [
+                {
+                    targets: 0,
+                    width: "100%"
+                }
+            ],
+
         language: {
             paginate: {
                 previous: "Prev",

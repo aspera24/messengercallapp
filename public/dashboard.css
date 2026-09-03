@@ -269,7 +269,7 @@ input:focus {
     display: none;
     flex-direction: column;
     overflow: hidden;
-
+    border: 1px solid #303030;
     transform-origin: 100% 100%;
     backface-visibility: hidden;
     will-change: transform, opacity, clip-path;
@@ -1002,6 +1002,10 @@ input:focus {
 #userTable thead th:last-child {
     width: 10px;
     cursor: default;
+}
+
+.dt-layout-cell {
+    width: 100%;
 }
 
 #userTable tbody td {
