@@ -428,113 +428,212 @@ async function ensureMediaReady(attempt = 0) {
 
 
 async function switchCamera() {
-    if (!navigator.onLine) {
-        console.warn("[CAMERA] No internet connection.");
-        return false;
-    }
-
-    if (!stream || !videoTrack) {
-        console.warn("[CAMERA] Camera stream not ready.");
-        return false;
-    }
-
     if (!navigator.mediaDevices?.getUserMedia) {
-        console.error("[CAMERA] getUserMedia is not supported.");
+        console.error("[CAMERA] Camera API not supported");
+        return false;
+    }
+
+    if (!navigator.onLine) {
+        console.warn("[CAMERA] Device is offline");
         return false;
     }
 
     const oldCameraStream = cameraStream;
-    const oldVideoTrack = videoTrack;
-    const oldAudioTrack = audioTrack;
+    const oldVideoTrack = stream?.getVideoTracks?.()[0] || videoTrack;
+    const oldAudioTrack = stream?.getAudioTracks?.()[0] || audioTrack;
 
     const newFacingMode =
-        currentFacingMode === "user"
-            ? "environment"
-            : "user";
+        currentFacingMode === "user" ? "environment" : "user";
+
+    console.log("[CAMERA] Switching to:", newFacingMode);
 
     let newCameraStream = null;
     let newVideoTrack = null;
 
     try {
-        console.log("[CAMERA] Switching to:", newFacingMode);
+        /*
+         * IMPORTANT:
+         * Ayaw sa i-stop ang old camera.
+         * Pangitaon una nato ang new camera.
+         */
 
-        // 1. Open the new camera FIRST.
-        newCameraStream = await navigator.mediaDevices.getUserMedia({
+        const cameraConstraints = {
             video: {
-                facingMode: { exact: newFacingMode },
-                width: { ideal: 480, max: 640 },
-                height: { ideal: 360, max: 480 },
-                frameRate: { ideal: 24, max: 30 }
+                facingMode: {
+                    ideal: newFacingMode
+                },
+                width: {
+                    ideal: 480,
+                    max: 640
+                },
+                height: {
+                    ideal: 360,
+                    max: 480
+                },
+                frameRate: {
+                    ideal: 20,
+                    max: 24
+                }
             },
             audio: false
-        });
+        };
+
+        try {
+            // First attempt: low-resolution camera
+            newCameraStream = await navigator.mediaDevices.getUserMedia(
+                cameraConstraints
+            );
+        } catch (firstError) {
+            console.warn(
+                "[CAMERA] First attempt failed:",
+                firstError.name
+            );
+
+            /*
+             * Fallback:
+             * Remove resolution and FPS restrictions.
+             * Some phones do not support those combinations.
+             */
+            newCameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: {
+                        ideal: newFacingMode
+                    }
+                },
+                audio: false
+            });
+        }
 
         newVideoTrack = newCameraStream.getVideoTracks()[0];
 
         if (!newVideoTrack) {
-            throw new Error("No new video track.");
+            throw new Error("No new video track found");
         }
 
-        // 2. Apply filter if available.
-        let newFilteredStream;
+        /*
+         * Apply filter only if available.
+         * If filtering fails, use the raw camera track.
+         */
+        let finalVideoTrack = newVideoTrack;
 
         try {
-            newFilteredStream = await createFilteredStream(newCameraStream);
+            if (typeof createFilteredStream === "function") {
+                const filteredStream =
+                    await createFilteredStream(newCameraStream);
+
+                const filteredTrack =
+                    filteredStream?.getVideoTracks?.()[0];
+
+                if (filteredTrack) {
+                    finalVideoTrack = filteredTrack;
+                }
+            }
         } catch (filterError) {
             console.warn(
-                "[CAMERA] Filter failed, using raw camera.",
+                "[CAMERA] Filter failed. Using raw camera:",
                 filterError
             );
 
-            newFilteredStream = new MediaStream([
-                newVideoTrack
-            ]);
+            finalVideoTrack = newVideoTrack;
         }
 
-        const filteredVideoTrack =
-            newFilteredStream.getVideoTracks()[0];
-
-        if (!filteredVideoTrack) {
-            throw new Error("No filtered video track.");
-        }
-
-        // 3. Replace video track in all P2P connections.
+        /*
+         * Replace video track sa tanan P2P connections.
+         */
         for (const peerId in peers) {
             const peer = peers[peerId];
 
             if (!peer) continue;
 
-            const sender = peer.getSenders().find(
-                sender => sender.track?.kind === "video"
-            );
+            const sender = peer
+                .getSenders()
+                .find(sender =>
+                    sender.track &&
+                    sender.track.kind === "video"
+                );
 
             if (sender) {
-                await sender.replaceTrack(filteredVideoTrack);
+                try {
+                    await sender.replaceTrack(finalVideoTrack);
+                    console.log(
+                        "[CAMERA] Replaced video track for:",
+                        peerId
+                    );
+                } catch (replaceError) {
+                    console.warn(
+                        "[CAMERA] Failed replacing track:",
+                        replaceError
+                    );
+                }
             }
         }
 
-        // 4. Build the new local stream.
+        /*
+         * Build new local stream.
+         * Preserve existing microphone track.
+         */
         const newLocalStream = new MediaStream();
 
-        newLocalStream.addTrack(filteredVideoTrack);
+        newLocalStream.addTrack(finalVideoTrack);
 
         if (oldAudioTrack) {
             newLocalStream.addTrack(oldAudioTrack);
         }
 
-        // 5. Update all camera variables.
-        currentFacingMode = newFacingMode;
+        /*
+         * Stop old camera only after successful new camera.
+         */
+        if (oldCameraStream) {
+            oldCameraStream
+                .getVideoTracks()
+                .forEach(track => {
+                    try {
+                        track.stop();
+                    } catch (stopError) {
+                        console.warn(
+                            "[CAMERA] Failed stopping old track:",
+                            stopError
+                        );
+                    }
+                });
+        }
 
+        if (oldVideoTrack && oldVideoTrack !== finalVideoTrack) {
+            try {
+                oldVideoTrack.stop();
+            } catch (stopError) {
+                console.warn(
+                    "[CAMERA] Failed stopping old video track:",
+                    stopError
+                );
+            }
+        }
+
+        /*
+         * Update global variables.
+         */
+        currentFacingMode = newFacingMode;
         cameraStream = newCameraStream;
         stream = newLocalStream;
-
-        videoTrack = filteredVideoTrack;
+        videoTrack = finalVideoTrack;
         audioTrack = oldAudioTrack;
 
-        // 6. Update local video elements.
+        /*
+         * Update local video elements.
+         */
         if (localVideo) {
             localVideo.srcObject = stream;
-            localVideo.play().catch(() => { });
+            localVideo.muted = true;
+            localVideo.playsInline = true;
+
+            try {
+                await localVideo.play();
+            } catch (playError) {
+                console.warn(
+                    "[CAMERA] Local video play failed:",
+                    playError
+                );
+            }
         }
 
         const localPreview =
@@ -542,63 +641,60 @@ async function switchCamera() {
 
         if (localPreview) {
             localPreview.srcObject = stream;
-            localPreview.play().catch(() => { });
-        }
+            localPreview.muted = true;
+            localPreview.playsInline = true;
 
-        updateCameraMirror();
-
-        // 7. Stop old camera only after successful switch.
-        if (oldVideoTrack && oldVideoTrack !== videoTrack) {
             try {
-                oldVideoTrack.stop();
-            } catch (e) { }
+                await localPreview.play();
+            } catch (playError) {
+                console.warn(
+                    "[CAMERA] Preview play failed:",
+                    playError
+                );
+            }
         }
 
-        if (oldCameraStream && oldCameraStream !== newCameraStream) {
-            oldCameraStream.getVideoTracks().forEach(track => {
-                if (track !== newVideoTrack) {
-                    try {
-                        track.stop();
-                    } catch (e) { }
-                }
-            });
+        if (typeof updateCameraMirror === "function") {
+            updateCameraMirror();
         }
 
-        // 8. Notify server.
-        if (socket.connected) {
+        if (socket?.connected) {
             socket.emit("media-status", {
-                camera: videoTrack.enabled,
-                mic: audioTrack?.enabled ?? false
+                camera: !!videoTrack?.enabled,
+                mic: !!audioTrack?.enabled
             });
         }
 
-        console.log("[CAMERA] Switched successfully:", newFacingMode);
+        console.log(
+            "[CAMERA] Successfully switched to:",
+            currentFacingMode
+        );
 
         return true;
 
-    } catch (err) {
-        console.error("[CAMERA] Switch failed:", err);
+    } catch (error) {
+        console.error(
+            "[CAMERA] Switch failed:",
+            error.name,
+            error.message
+        );
 
-        // Cleanup only the newly opened stream.
+        /*
+         * Cleanup only the newly opened camera.
+         */
         if (newCameraStream) {
-            newCameraStream.getTracks().forEach(track => {
-                try {
-                    track.stop();
-                } catch (e) { }
-            });
-        }
-
-        // Restore old camera if it still exists.
-        if (oldVideoTrack?.readyState === "live") {
-            stream = stream;
-            videoTrack = oldVideoTrack;
-            cameraStream = oldCameraStream;
-
-            if (localVideo) {
-                localVideo.srcObject = stream;
-            }
-
-            updateCameraMirror();
+            newCameraStream
+                .getTracks()
+                .forEach(track => {
+                    try {
+                        track.stop();
+                    } catch (stopError) {
+                        console.warn(
+                            "[CAMERA] Cleanup failed:",
+                            stopError
+                        );
+                    }
+                });
         }
 
         return false;
