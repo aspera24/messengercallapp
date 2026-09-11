@@ -426,76 +426,181 @@ async function ensureMediaReady(attempt = 0) {
     }
 }
 
+
 async function switchCamera() {
-    if (!navigator.onLine || !cameraStream) return false;
+    if (!navigator.onLine) {
+        console.warn("[CAMERA] No internet connection.");
+        return false;
+    }
+
+    if (!stream || !videoTrack) {
+        console.warn("[CAMERA] Camera stream not ready.");
+        return false;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+        console.error("[CAMERA] getUserMedia is not supported.");
+        return false;
+    }
 
     const oldCameraStream = cameraStream;
-    const oldVideoTrack = stream?.getVideoTracks()?.[0];
+    const oldVideoTrack = videoTrack;
     const oldAudioTrack = audioTrack;
 
-    const newFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    const newFacingMode =
+        currentFacingMode === "user"
+            ? "environment"
+            : "user";
 
     let newCameraStream = null;
-    let newFilteredStream = null;
+    let newVideoTrack = null;
 
     try {
-        if (oldVideoTrack) oldVideoTrack.stop();
-        if (oldCameraStream) {
-            oldCameraStream.getVideoTracks().forEach(track => { try { track.stop(); } catch (e) {} });
-        }
+        console.log("[CAMERA] Switching to:", newFacingMode);
 
+        // 1. Open the new camera FIRST.
         newCameraStream = await navigator.mediaDevices.getUserMedia({
             video: {
-                facingMode: { ideal: newFacingMode },
-                width: { ideal: 480 },
-                height: { ideal: 360 },
-                frameRate: { ideal: 30 }
-            }
+                facingMode: { exact: newFacingMode },
+                width: { ideal: 480, max: 640 },
+                height: { ideal: 360, max: 480 },
+                frameRate: { ideal: 24, max: 30 }
+            },
+            audio: false
         });
 
-        const newRawVideoTrack = newCameraStream.getVideoTracks()[0];
-        if (!newRawVideoTrack) throw new Error("No video track.");
+        newVideoTrack = newCameraStream.getVideoTracks()[0];
+
+        if (!newVideoTrack) {
+            throw new Error("No new video track.");
+        }
+
+        // 2. Apply filter if available.
+        let newFilteredStream;
 
         try {
             newFilteredStream = await createFilteredStream(newCameraStream);
         } catch (filterError) {
-            newFilteredStream = new MediaStream();
-            newFilteredStream.addTrack(newRawVideoTrack);
+            console.warn(
+                "[CAMERA] Filter failed, using raw camera.",
+                filterError
+            );
+
+            newFilteredStream = new MediaStream([
+                newVideoTrack
+            ]);
         }
 
-        const newVideoTrack = newFilteredStream.getVideoTracks()[0];
+        const filteredVideoTrack =
+            newFilteredStream.getVideoTracks()[0];
 
+        if (!filteredVideoTrack) {
+            throw new Error("No filtered video track.");
+        }
+
+        // 3. Replace video track in all P2P connections.
         for (const peerId in peers) {
             const peer = peers[peerId];
+
             if (!peer) continue;
-            const sender = peer.getSenders().find(s => s.track && s.track.kind === "video");
+
+            const sender = peer.getSenders().find(
+                sender => sender.track?.kind === "video"
+            );
+
             if (sender) {
-                await sender.replaceTrack(newVideoTrack);
+                await sender.replaceTrack(filteredVideoTrack);
             }
         }
 
+        // 4. Build the new local stream.
         const newLocalStream = new MediaStream();
-        newLocalStream.addTrack(newVideoTrack);
-        if (oldAudioTrack) newLocalStream.addTrack(oldAudioTrack);
 
+        newLocalStream.addTrack(filteredVideoTrack);
+
+        if (oldAudioTrack) {
+            newLocalStream.addTrack(oldAudioTrack);
+        }
+
+        // 5. Update all camera variables.
         currentFacingMode = newFacingMode;
+
         cameraStream = newCameraStream;
         stream = newLocalStream;
-        videoTrack = newVideoTrack;
+
+        videoTrack = filteredVideoTrack;
         audioTrack = oldAudioTrack;
+
+        // 6. Update local video elements.
+        if (localVideo) {
+            localVideo.srcObject = stream;
+            localVideo.play().catch(() => { });
+        }
+
+        const localPreview =
+            document.getElementById("localPreview");
+
+        if (localPreview) {
+            localPreview.srcObject = stream;
+            localPreview.play().catch(() => { });
+        }
 
         updateCameraMirror();
 
-        if (localVideo) localVideo.srcObject = stream;
-        const localPreview = document.getElementById("localPreview");
-        if (localPreview) localPreview.srcObject = stream;
-
-        if (socket.connected) {
-            socket.emit("media-status", { camera: videoTrack.enabled, mic: audioTrack.enabled });
+        // 7. Stop old camera only after successful switch.
+        if (oldVideoTrack && oldVideoTrack !== videoTrack) {
+            try {
+                oldVideoTrack.stop();
+            } catch (e) { }
         }
+
+        if (oldCameraStream && oldCameraStream !== newCameraStream) {
+            oldCameraStream.getVideoTracks().forEach(track => {
+                if (track !== newVideoTrack) {
+                    try {
+                        track.stop();
+                    } catch (e) { }
+                }
+            });
+        }
+
+        // 8. Notify server.
+        if (socket.connected) {
+            socket.emit("media-status", {
+                camera: videoTrack.enabled,
+                mic: audioTrack?.enabled ?? false
+            });
+        }
+
+        console.log("[CAMERA] Switched successfully:", newFacingMode);
+
         return true;
+
     } catch (err) {
-        if (newCameraStream) newCameraStream.getTracks().forEach(t => t.stop());
+        console.error("[CAMERA] Switch failed:", err);
+
+        // Cleanup only the newly opened stream.
+        if (newCameraStream) {
+            newCameraStream.getTracks().forEach(track => {
+                try {
+                    track.stop();
+                } catch (e) { }
+            });
+        }
+
+        // Restore old camera if it still exists.
+        if (oldVideoTrack?.readyState === "live") {
+            stream = stream;
+            videoTrack = oldVideoTrack;
+            cameraStream = oldCameraStream;
+
+            if (localVideo) {
+                localVideo.srcObject = stream;
+            }
+
+            updateCameraMirror();
+        }
+
         return false;
     }
 }
@@ -516,7 +621,7 @@ let restoringMedia = false;
 function stopLocalMediaBecauseOffline() {
     mediaStoppedBecauseOffline = true;
     if (stream) {
-        stream.getTracks().forEach(track => { try { track.stop(); } catch (e) {} });
+        stream.getTracks().forEach(track => { try { track.stop(); } catch (e) { } });
     }
     videoTrack = null;
     audioTrack = null;
@@ -692,7 +797,7 @@ socket.on("meeting-started", async (data) => {
         }
     }
 
-    for (const id in peers) { try { peers[id].close(); } catch(e){} }
+    for (const id in peers) { try { peers[id].close(); } catch (e) { } }
     peers = {};
     peerNames = {};
 
@@ -721,7 +826,7 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
 
     if (currentUser.acc_type === "admin") updateMeetingButtons(false);
 
-    for (let id in peers) { try { peers[id].close(); } catch(e){} }
+    for (let id in peers) { try { peers[id].close(); } catch (e) { } }
 
     Object.values(remoteAudioNodes).forEach(node => {
         try { node.source.disconnect(); node.analyser.disconnect(); } catch (e) { }
@@ -792,7 +897,7 @@ socket.on("user-disconnected", (userId) => {
     delete remoteLastUpdates[userId];
 
     if (peers[userId]) {
-        try { peers[userId].close(); } catch(e){}
+        try { peers[userId].close(); } catch (e) { }
         delete peers[userId];
     }
 
@@ -897,7 +1002,7 @@ function createPeer(userId) {
                 maxFramerate: 30
             }];
             sender.setParameters(params);
-        } catch(e) {
+        } catch (e) {
             console.error("Error setting video parameters:", e);
         }
     }
@@ -928,14 +1033,14 @@ function createPeer(userId) {
 
     peer.onconnectionstatechange = () => {
         if (peer.connectionState === "failed" || peer.connectionState === "closed") {
-            try { peer.close(); } catch(e){}
+            try { peer.close(); } catch (e) { }
             delete peers[userId];
         }
     };
 
     peer.oniceconnectionstatechange = () => {
         if (peer.iceConnectionState === "failed") {
-            try { peer.restartIce(); } catch(e){}
+            try { peer.restartIce(); } catch (e) { }
         }
     };
 
@@ -1176,7 +1281,7 @@ socket.on("removed-from-meeting", () => {
     roomId = null;
 
     for (let id in peers) {
-        try { peers[id].close(); } catch(e){}
+        try { peers[id].close(); } catch (e) { }
         const wrapper = document.getElementById("wrap-" + id);
         if (wrapper) wrapper.remove();
     }
