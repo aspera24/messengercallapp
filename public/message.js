@@ -1,7 +1,7 @@
 // const socket = io();
 let table;
 let activeChatUser = null;
-
+let unreadCounts = {};
 let chatCursor = null;
 let chatHasMore = false;
 let chatLoading = false;
@@ -9,6 +9,7 @@ let editingMessageId = null;
 
 const loadedMessageIds = new Set();
 const pendingReadMessageIds = new Set();
+
 
 
 async function loadUsers() {
@@ -28,14 +29,67 @@ async function loadUsers() {
     console.log("USERS COUNT:", users.length);
     console.log("FIRST USER:", users[0]);
 
+    // GET UNREAD COUNT FOR EACH USER
+    const usersWithUnread = await Promise.all(
+
+        users.map(async (user) => {
+
+            try {
+
+                const unreadRes = await fetch(
+                    `/unread-count/${encodeURIComponent(user.token)}`,
+                    {
+                        credentials: "include"
+                    }
+                );
+
+                const unreadData = await unreadRes.json();
+
+                const count = Number(unreadData.count) || 0;
+                unreadCounts[user.token] = count;
+
+                return {
+                    ...user,
+                    unreadCount: count
+                };
+
+            } catch (error) {
+
+                console.error(
+                    "UNREAD COUNT FETCH ERROR:",
+                    user.token,
+                    error
+                );
+
+                const previousCount = Number(unreadCounts[user.token]) || 0;
+
+                return {
+                    ...user,
+                    unreadCount: previousCount
+                };
+
+            }
+
+        })
+
+    );
+
+    console.log(
+        "USERS WITH UNREAD COUNT:",
+        usersWithUnread
+    );
+
     if (table) {
+
         table.destroy();
+
         $("#userTable tbody").empty();
+
     }
 
     table = new DataTable("#userTable", {
 
-        data: users,
+        data: usersWithUnread,
 
         columns: [
 
@@ -45,22 +99,45 @@ async function loadUsers() {
 
                 render: function (data) {
 
-                    console.log("RENDER USER:", data);
+                    const unreadCount =
+                        Number(data.unreadCount) || 0;
+
+                    const unreadBadge =
+                        unreadCount > 0
+                            ? `
+                        <span
+                            class="unreadBadge"
+                            title="${unreadCount} unread message${unreadCount > 1 ? "s" : ""}"
+                        >
+                            ${unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                    `
+                            : "";
 
                     return `
                         <div
                             class="employeeName"
+                            data-token="${data.token}"
                             onclick="openChat(
                                 '${data.token}',
                                 '${data.firstname}',
                                 '${data.lastname}'
                             )"
                         >
+
                             <i class="fa-solid fa-user"></i>
-                            ${data.firstname} ${data.lastname}
+
+                            <span>
+                                ${data.firstname} ${data.lastname}
+                            </span>
+
+                            ${unreadBadge}
+
                         </div>
                     `;
+
                 }
+
             },
 
             // ACTIONS
@@ -104,7 +181,9 @@ async function loadUsers() {
 
                         </div>
                     `;
+
                 }
+
             }
 
         ],
@@ -151,6 +230,37 @@ async function loadUsers() {
     });
 
 }
+
+
+function updateUnreadBadge(userToken, count) {
+
+    if (!table) {
+        return;
+    }
+
+    const rowData =
+        table.rows().data().toArray().find(
+            user => user.token === userToken
+        );
+
+    if (!rowData) {
+
+        console.log(
+            "[CHAT] User not found in DataTable:",
+            userToken
+        );
+
+        return;
+    }
+
+    // UPDATE STORED COUNT
+    rowData.unreadCount = count;
+
+    // REDRAW TABLE
+    table.rows().invalidate().draw(false);
+
+}
+
 
 async function openChat(token, firstname, lastname) {
 
@@ -217,11 +327,15 @@ async function openChat(token, firstname, lastname) {
 
         const data = await response.json();
 
+        // Mark all messages from this user as read
         socket.emit("mark-chat-read", {
             from: token
         });
 
-        // Make sure this is still the selected user
+        // Immediately remove unread badge
+        unreadCounts[token] = 0;
+        updateUnreadBadge(token, 0);
+
         if (
             !activeChatUser ||
             activeChatUser.token !== token
@@ -255,7 +369,8 @@ async function openChat(token, firstname, lastname) {
                     false,
                     Number(message.is_deleted) === 1,
                     Number(message.is_read) === 1,
-                    Number(message.is_edited) === 1
+                    Number(message.is_edited) === 1,
+                    Number(message.canEdit) === 1
                 );
 
             });
@@ -331,25 +446,26 @@ socket.on("chat-message-sent", function (data) {
         return;
     }
 
-
     addChatMessage(
         data.message,
         "sent",
         data.id,
         data.createdAt,
         true,
-        false,
-        false
+        false, // isDeleted
+        false, // isRead
+        false, // isEdited
+        true   // canEdit: newly sent message
     );
 
+    const input =
+        document.getElementById("messageText");
 
-    const input = document.getElementById("messageText");
     input.value = "";
     input.style.height = "auto";
     input.focus();
 
-}
-);
+});
 
 function sendChatMessage() {
 
@@ -414,7 +530,8 @@ function createChatMessageElement(
     createdAt = null,
     isDeleted = false,
     isRead = false,
-    isEdited = false
+    isEdited = false,
+    canEdit = false
 ) {
 
     const wrapper = document.createElement("div");
@@ -570,6 +687,7 @@ function createChatMessageElement(
             "messageMenu";
 
         menu.innerHTML = `
+
             <button
                 class="messageMenuItem deleteMessageBtn"
                 data-message-id="${id}"
@@ -578,13 +696,19 @@ function createChatMessageElement(
                 Delete
             </button>
 
-            <button
-                class="messageMenuItem editMessageBtn"
-                data-message-id="${id}"
-            >
-                <i class="fa-solid fa-pen"></i>
-                Edit
-            </button>
+            ${canEdit
+                ? `
+                    <button
+                        class="messageMenuItem editMessageBtn"
+                        data-message-id="${id}"
+                    >
+                        <i class="fa-solid fa-pen"></i>
+                        Edit
+                    </button>
+                    `
+                : ""
+            }
+
         `;
 
 
@@ -643,7 +767,8 @@ function addChatMessage(
     scroll = true,
     isDeleted = false,
     isRead = false,
-    isEdited = false
+    isEdited = false,
+    canEdit = false
 ) {
 
     const body =
@@ -677,7 +802,8 @@ function addChatMessage(
             createdAt,
             isDeleted,
             isRead,
-            isEdited
+            isEdited,
+            canEdit
         );
 
     body.appendChild(wrapper);
@@ -886,7 +1012,8 @@ async function loadOlderMessages() {
                     message.created_at,
                     Number(message.is_deleted) === 1,
                     Number(message.is_read) === 1,
-                    Number(message.is_edited) === 1
+                    Number(message.is_edited) === 1,
+                    Number(message.canEdit) === 1
                 );
 
 
@@ -1302,14 +1429,58 @@ function isNearBottom(body) {
 
 }
 
+
+
 socket.on("chat-message", function (data) {
 
-    if (
-        !activeChatUser ||
-        activeChatUser.token !== data.from
-    ) {
+    console.log("[CHAT] Incoming message:", data);
+
+    const senderToken = data.from;
+
+    const isChatOpen =
+        activeChatUser &&
+        activeChatUser.token === senderToken;
+
+    // =================================
+    // UNREAD BADGE
+    // =================================
+
+    if (!isChatOpen) {
+
+        const currentUnread =
+            unreadCounts[senderToken] || 0;
+
+        const newUnread =
+            currentUnread + 1;
+
+        unreadCounts[senderToken] =
+            newUnread;
+
+        console.log(
+            "[CHAT] Unread count:",
+            senderToken,
+            newUnread
+        );
+
+        updateUnreadBadge(
+            senderToken,
+            newUnread
+        );
+
+    }
+
+    // =================================
+    // IF CHAT IS NOT OPEN
+    // DO NOT RENDER MESSAGE
+    // =================================
+
+    if (!isChatOpen) {
         return;
     }
+
+    // =================================
+    // RENDER MESSAGE IN OPEN CHAT
+    // =================================
 
     const body =
         document.getElementById("messageBody");
@@ -1323,11 +1494,16 @@ socket.on("chat-message", function (data) {
         data.id,
         data.createdAt,
         nearBottom,
-        false,
-        true
+        false, // isDeleted
+        true,  // isRead
+        false, // isEdited
+        false  // canEdit
     );
 
-    // Tell sender that this message was seen
+    // =================================
+    // MARK AS READ
+    // =================================
+
     socket.emit("mark-chat-read", {
         from: data.from
     });

@@ -833,9 +833,32 @@ input:focus {
 }
 
 .employeeName {
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 500;
     padding: 10px;
+    cursor: pointer;
+}
+
+.unreadBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+
+    border-radius: 50px;
+
+    background: #dc2626;
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    line-height: 1;
 }
 
 .employeeName:hover {
@@ -1039,7 +1062,7 @@ input:focus {
     /* width: 100%; */
     background: transparent;
     padding: 0px;
-} 
+}
 
 .reqBtn {
     color: rgb(0, 110, 255);
@@ -1406,7 +1429,33 @@ video.camera-environment {
     background: #272727;
     border: 1px solid #303030;
     transition: .3s ease-in-out;
+    z-index: 1;
 }
+
+.rightCont::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background: linear-gradient(rgba(0, 0, 0, 0.774), rgba(0, 0, 0, 0.774)),
+        url("https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWx3dXR0eThyYW1tYW1tM21rcjYybzBmZHJ5N2lvbjB0dDRlNGxoMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/FUdn4Q3QcJG9A30D0N/giphy.gif");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+
+    filter: grayscale(100%) brightness(0.7);
+
+    z-index: 0;
+}
+
+/* .rightCont>* {
+    position: relative;
+    z-index: 1;
+} */
+
 
 .rightCont p {
     font-size: 14px;
@@ -1420,6 +1469,11 @@ video.camera-environment {
     height: 95%;
     overflow-y: auto;
     margin: auto;
+    /* position: relative; */
+}
+
+.videos-container p {
+    position: absolute;
 }
 
 

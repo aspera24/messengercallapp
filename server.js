@@ -2298,8 +2298,8 @@ io.on("connection", (socket) => {
                     receiver_id,
                     receiver_type,
                     message,
-                    is_deleted
-
+                    is_deleted,
+                    created_at
                 FROM messages
 
                 WHERE id = ?
@@ -2357,6 +2357,54 @@ io.on("connection", (socket) => {
                 return;
             }
 
+            // =========================
+            // SERVER-SIDE 5-MINUTE LIMIT
+            // =========================
+
+            const [timeRows] =
+                await db.promise().query(
+                    `
+                    SELECT
+                        id
+
+                    FROM messages
+
+                    WHERE id = ?
+
+                    AND created_at > DATE_SUB(
+                        NOW(),
+                        INTERVAL 5 MINUTE
+                    )
+
+                    LIMIT 1
+                    `,
+                    [id]
+                );
+
+
+            // MESSAGE TOO OLD
+            if (!timeRows.length) {
+
+                console.log(
+                    "Edit rejected: 5-minute limit exceeded",
+                    {
+                        messageId: id
+                    }
+                );
+
+                socket.emit(
+                    "chat-edit-rejected",
+                    {
+                        messageId: id,
+                        reason: "EDIT_TIME_EXPIRED"
+                    }
+                );
+
+                return;
+
+            }
+
+
             // UPDATE MESSAGE
             const [updateResult] =
                 await db.promise().query(
@@ -2364,8 +2412,7 @@ io.on("connection", (socket) => {
                 UPDATE messages
                 SET
                     message = ?,
-                    is_edited = 1,
-                    created_at = NOW()
+                    is_edited = 1
 
                 WHERE id = ?
 

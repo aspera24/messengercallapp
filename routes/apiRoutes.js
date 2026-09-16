@@ -109,16 +109,22 @@ module.exports = (io, joinedUsersInMeeting) => {
             // MESSAGE QUERY
             let sql = `
             SELECT
-                id,
-                sender_type,
-                sender_id,
-                receiver_type,
-                receiver_id,
-                message,
-                is_deleted,
-                is_edited,
-                is_read,
-                created_at
+            id,
+            sender_type,
+            sender_id,
+            receiver_type,
+            receiver_id,
+            message,
+            is_deleted,
+            is_edited,
+            is_read,
+            created_at,
+
+            CASE
+                WHEN created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+                THEN 1
+                ELSE 0
+            END AS canEdit
 
             FROM messages
 
@@ -323,6 +329,54 @@ module.exports = (io, joinedUsersInMeeting) => {
 
         }
 
+    });
+
+    router.get("/unread-count/:token", authMiddleware, async (req, res) => {
+        try {
+            const currentUserId = Number(req.user.id);
+            const senderToken = String(req.params.token || "").trim();
+
+            if (!currentUserId || !senderToken) {
+                return res.status(400).json({
+                    success: false,
+                    count: 0,
+                    message: "Invalid user or sender token"
+                });
+            }
+
+            const [rows] = await db.promise().query(
+                `
+                SELECT COUNT(*) AS count
+                FROM messages AS m
+                INNER JOIN users AS sender
+                    ON sender.id = m.sender_id
+                WHERE m.receiver_id = ?
+                AND sender.token = ?
+                AND m.is_read = 0
+                AND m.is_deleted = 0
+                `,
+                [
+                    currentUserId,
+                    senderToken
+                ]
+            );
+
+            const unreadCount = Number(rows[0]?.count) || 0;
+
+            return res.status(200).json({
+                success: true,
+                count: unreadCount
+            });
+
+        } catch (error) {
+            console.error("[UNREAD COUNT ERROR]", error);
+
+            return res.status(500).json({
+                success: false,
+                count: 0,
+                message: "Failed to get unread message count"
+            });
+        }
     });
 
     router.get("/users", authMiddleware, (req, res) => {
