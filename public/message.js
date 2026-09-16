@@ -105,13 +105,13 @@ async function loadUsers() {
                     const unreadBadge =
                         unreadCount > 0
                             ? `
-                        <span
-                            class="unreadBadge"
-                            title="${unreadCount} unread message${unreadCount > 1 ? "s" : ""}"
-                        >
-                            ${unreadCount > 99 ? "99+" : unreadCount}
-                        </span>
-                    `
+                            <span
+                                class="unreadBadge"
+                                title="${unreadCount} unread message${unreadCount > 1 ? "s" : ""}"
+                            >
+                                ${unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                        `
                             : "";
 
                     return `
@@ -125,13 +125,11 @@ async function loadUsers() {
                             )"
                         >
 
+                            ${unreadBadge}
                             <i class="fa-solid fa-user"></i>
-
                             <span>
                                 ${data.firstname} ${data.lastname}
                             </span>
-
-                            ${unreadBadge}
 
                         </div>
                     `;
