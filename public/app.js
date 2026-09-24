@@ -367,7 +367,7 @@ async function ensureMediaReady(attempt = 0) {
             facingMode: { ideal: currentFacingMode },
             width: { ideal: 480, max: 640 },
             height: { ideal: 360, max: 480 },
-            frameRate: { ideal: 24, max: 30 }
+            frameRate: { ideal: 24, max: 24 }
         };
 
         const rawStream = await navigator.mediaDevices.getUserMedia({
@@ -396,8 +396,15 @@ async function ensureMediaReady(attempt = 0) {
         }
 
         const finalStream = new MediaStream();
-        filteredVideo.getVideoTracks().forEach(track => finalStream.addTrack(track));
-        rawStream.getAudioTracks().forEach(track => finalStream.addTrack(track));
+
+        rawStream.getVideoTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
+
+        rawStream.getAudioTracks().forEach(track => {
+            finalStream.addTrack(track);
+        });
+
 
         stream = finalStream;
         localVideo.srcObject = stream;
@@ -1236,7 +1243,7 @@ function createPeer(userId) {
 
     const peer = new RTCPeerConnection({
         iceServers: [
-            { urls: "stun:google.com" },
+            { urls: "stun:stun.l.google.com:19302" },
             {
                 urls: [
                     "turn:turn.evan-brass.net",
@@ -1256,8 +1263,8 @@ function createPeer(userId) {
         try {
             const params = sender.getParameters();
             params.encodings = [{
-                maxBitrate: 250000,
-                maxFramerate: 30
+                maxBitrate: 500000,
+                maxFramerate: 24
             }];
             sender.setParameters(params);
         } catch (e) {
