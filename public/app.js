@@ -1263,7 +1263,7 @@ function createPeer(userId) {
         try {
             const params = sender.getParameters();
             params.encodings = [{
-                maxBitrate: 500000,
+                maxBitrate: 800000,
                 maxFramerate: 24
             }];
             sender.setParameters(params);
