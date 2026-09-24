@@ -168,7 +168,7 @@ async function createFilteredStream(stream) {
         self.onmessage = function(e) {
             if (e.data === 'start') {
                 if (timer) clearInterval(timer);
-                timer = setInterval(() => { self.postMessage('tick'); }, 1000 / 30);
+                timer = setInterval(() => { self.postMessage('tick'); }, 1000 / 24);
             } else if (e.data === 'stop') {
                 clearInterval(timer);
                 timer = null;
@@ -205,7 +205,7 @@ async function createFilteredStream(stream) {
                 texture.needsUpdate = true;
                 renderer.render(scene, camera);
                 clearInterval(checkCanvasInterval);
-                const filteredStream = canvas.captureStream(30);
+                const filteredStream = canvas.captureStream(24);
 
                 resolve(filteredStream);
             }
