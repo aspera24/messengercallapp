@@ -1,9 +1,10 @@
-module.exports = (io, joinedUsersInMeeting) => {
+module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
     const express = require("express");
     const router = express.Router();
     const db = require("../config/db.config");
     const authMiddleware = require("../middleware/authMiddleware");
     const crypto = require("crypto");
+
 
     router.get("/messages/:token", async (req, res) => {
 
@@ -438,12 +439,9 @@ module.exports = (io, joinedUsersInMeeting) => {
 
 
                 const users = result.map(user => ({
-
                     ...user,
-
-                    joined:
-                        !!joinedUsersInMeeting[user.token]
-
+                    joined: !!joinedUsersInMeeting[user.token],
+                    online: Boolean(onlineUsers[user.token])
                 }));
 
 

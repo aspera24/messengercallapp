@@ -125,8 +125,16 @@ async function loadUsers() {
                             )"
                         >
 
-                            ${unreadBadge}
-                            <i class="fa-solid fa-user"></i>
+                            <div class="onlineStatus">
+                                ${data.online
+                                    ? '<span class="onlineDot"></span>'
+                                    : ""
+                                }
+                            </div>
+                            <div class="prof">
+                                <i class="fa-solid fa-user"></i>
+                                ${unreadBadge}
+                            </div>
                             <span>
                                 ${data.firstname} ${data.lastname}
                             </span>
@@ -228,6 +236,48 @@ async function loadUsers() {
     });
 
 }
+
+socket.on("user-online", ({ token }) => {
+
+    if (!table) return;
+
+    const user =
+        table.rows()
+            .data()
+            .toArray()
+            .find(user => user.token === token);
+
+    if (!user) return;
+
+    user.online = true;
+
+    table
+        .rows()
+        .invalidate()
+        .draw(false);
+
+});
+
+socket.on("user-offline", ({ token }) => {
+
+    if (!table) return;
+
+    const user =
+        table.rows()
+            .data()
+            .toArray()
+            .find(user => user.token === token);
+
+    if (!user) return;
+
+    user.online = false;
+
+    table
+        .rows()
+        .invalidate()
+        .draw(false);
+
+});
 
 
 function updateUnreadBadge(userToken, count) {

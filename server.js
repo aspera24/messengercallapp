@@ -69,7 +69,7 @@ const reconnectTimers = {};
 const peerSocketMap = {};
 const callAllProgress = {};
 const authRoutes = require("./routes/authRoutes");
-const apiRoutes = require("./routes/apiRoutes")(io, joinedUsersInMeeting);
+const apiRoutes = require("./routes/apiRoutes")(io, onlineUsers, joinedUsersInMeeting);
 const pageRoutes = require("./routes/pageRoutes");
 
 app.use(cookieParser());
@@ -311,6 +311,10 @@ io.on("connection", (socket) => {
 
         onlineUsers[user.token].sockets.add(socket.id);
         socket.join(user.token);
+
+        io.emit("user-online", {
+            token: user.token
+        });
 
         db.query(
             `
@@ -1603,7 +1607,13 @@ io.on("connection", (socket) => {
             online.sockets.delete(socket.id);
 
             if (online.sockets.size === 0) {
+
                 delete onlineUsers[user.token];
+
+                io.emit("user-offline", {
+                    token: user.token
+                });
+
             }
 
         }
