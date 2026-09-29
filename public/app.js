@@ -367,7 +367,7 @@ async function ensureMediaReady(attempt = 0) {
             facingMode: { ideal: currentFacingMode },
             width: { ideal: 480, max: 640 },
             height: { ideal: 360, max: 480 },
-            frameRate: { ideal: 20, max: 24 }
+            frameRate: { ideal: 24, max: 30 }
         };
 
         const rawStream = await navigator.mediaDevices.getUserMedia({
@@ -580,8 +580,8 @@ async function switchCamera() {
                                 max: 480
                             },
                             frameRate: {
-                                ideal: 20,
-                                max: 24
+                                ideal: 24,
+                                max: 30
                             }
                         },
                         audio: false
@@ -615,8 +615,8 @@ async function switchCamera() {
                                 max: 480
                             },
                             frameRate: {
-                                ideal: 20,
-                                max: 24
+                                ideal: 24,
+                                max: 30
                             }
                         },
                         audio: false
@@ -1271,8 +1271,8 @@ function createPeer(userId) {
         try {
             const params = sender.getParameters();
             params.encodings = [{
-                maxBitrate: 350000,
-                maxFramerate: 20,
+                maxBitrate: 800000,
+                maxFramerate: 24,
                 scaleResolutionDownBy: 1
             }];
             sender.setParameters(params);
