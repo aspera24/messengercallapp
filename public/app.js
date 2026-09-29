@@ -343,7 +343,8 @@ let switchingCamera = false;
 
 async function buildFilteredCameraStream(rawCameraStream) {
     try {
-        const result = await createFilteredStream(rawCameraStream);
+        const result =
+            await createFilteredStream(rawCameraStream);
 
         if (!result) {
             throw new Error("Filter returned no stream");
@@ -353,13 +354,46 @@ async function buildFilteredCameraStream(rawCameraStream) {
             result.getVideoTracks()[0];
 
         if (!processedVideoTrack) {
-            throw new Error("Filter returned no video track");
+            throw new Error(
+                "Filter returned no video track"
+            );
         }
 
-        filteredStream = result;
+        /*
+         * IMPORTANT:
+         * canvas.captureStream() only contains VIDEO.
+         * Add the original microphone track back.
+         */
+        const finalStream =
+            new MediaStream();
+
+        // Filtered video
+        finalStream.addTrack(
+            processedVideoTrack
+        );
+
+        // Original microphone
+        const originalAudioTrack =
+            rawCameraStream.getAudioTracks()[0];
+
+        if (originalAudioTrack) {
+            finalStream.addTrack(
+                originalAudioTrack
+            );
+        }
+
+        filteredStream = finalStream;
         filteredVideoTrack = processedVideoTrack;
 
-        return result;
+        console.log(
+            "[FILTER] Final stream:",
+            {
+                videoTracks: finalStream.getVideoTracks().length,
+                audioTracks: finalStream.getAudioTracks().length
+            }
+        );
+
+        return finalStream;
 
     } catch (error) {
         console.warn(
@@ -370,13 +404,26 @@ async function buildFilteredCameraStream(rawCameraStream) {
         filteredStream = null;
         filteredVideoTrack = null;
 
-        const fallback = new MediaStream();
+        /*
+         * Fallback:
+         * Return the original VIDEO + AUDIO.
+         */
+        const fallback =
+            new MediaStream();
 
-        const video = rawCameraStream.getVideoTracks()[0];
-        const audio = rawCameraStream.getAudioTracks()[0];
+        const video =
+            rawCameraStream.getVideoTracks()[0];
 
-        if (video) fallback.addTrack(video);
-        if (audio) fallback.addTrack(audio);
+        const audio =
+            rawCameraStream.getAudioTracks()[0];
+
+        if (video) {
+            fallback.addTrack(video);
+        }
+
+        if (audio) {
+            fallback.addTrack(audio);
+        }
 
         return fallback;
     }
@@ -815,7 +862,7 @@ async function switchCamera() {
             error.message
         );
 
-        
+
         try {
             const restoredStream =
                 await navigator.mediaDevices.getUserMedia({
