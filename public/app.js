@@ -815,15 +815,25 @@ async function switchCamera() {
             error.message
         );
 
-        /*
-         * If new camera failed, restore old camera.
-         */
+        
         try {
             const restoredStream =
                 await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: {
                             ideal: previousFacingMode
+                        },
+                        width: {
+                            ideal: 480,
+                            max: 640
+                        },
+                        height: {
+                            ideal: 360,
+                            max: 480
+                        },
+                        frameRate: {
+                            ideal: 24,
+                            max: 30
                         }
                     },
                     audio: false
@@ -832,67 +842,182 @@ async function switchCamera() {
             const restoredVideoTrack =
                 restoredStream.getVideoTracks()[0];
 
-            if (restoredVideoTrack) {
-                const restoredLocalStream =
-                    new MediaStream();
-
-                restoredLocalStream.addTrack(
-                    restoredVideoTrack
-                );
-
-                if (oldAudioTrack) {
-                    restoredLocalStream.addTrack(oldAudioTrack);
-                }
-
-                for (const peerId in peers) {
-                    const peer = peers[peerId];
-
-                    if (!peer) continue;
-
-                    const sender = peer
-                        .getSenders()
-                        .find(sender =>
-                            sender.track &&
-                            sender.track.kind === "video"
-                        );
-
-                    if (sender) {
-                        try {
-                            await sender.replaceTrack(
-                                restoredVideoTrack
-                            );
-                        } catch (restoreError) {
-                            console.warn(
-                                "[CAMERA] Restore failed:",
-                                restoreError
-                            );
-                        }
-                    }
-                }
-
-                currentFacingMode = previousFacingMode;
-                cameraStream = restoredStream;
-                stream = restoredLocalStream;
-                videoTrack = restoredVideoTrack;
-                audioTrack = oldAudioTrack || null;
-
-                if (localVideo) {
-                    localVideo.srcObject = restoredLocalStream;
-                }
-
-                const localPreview =
-                    document.getElementById("localPreview");
-
-                if (localPreview) {
-                    localPreview.srcObject = restoredLocalStream;
-                }
-
-                updateCameraMirror();
-
-                console.warn(
-                    "[CAMERA] Previous camera restored"
+            if (!restoredVideoTrack) {
+                throw new Error(
+                    "No restored video track"
                 );
             }
+
+            /*
+             * IMPORTANT:
+             * Rebuild the filter/LUT pipeline after restoring.
+             * Do NOT send the raw restoredVideoTrack directly.
+             */
+            let restoredFilteredStream;
+
+            try {
+                restoredFilteredStream =
+                    await buildFilteredCameraStream(
+                        restoredStream
+                    );
+            } catch (filterError) {
+                console.warn(
+                    "[CAMERA] Filter restore failed, using raw camera:",
+                    filterError
+                );
+
+                restoredFilteredStream =
+                    new MediaStream();
+
+                restoredFilteredStream.addTrack(
+                    restoredVideoTrack
+                );
+            }
+
+            const restoredFilteredVideoTrack =
+                restoredFilteredStream.getVideoTracks()[0];
+
+            if (!restoredFilteredVideoTrack) {
+                throw new Error(
+                    "No restored filtered video track"
+                );
+            }
+
+            /*
+             * Rebuild local stream while preserving microphone.
+             */
+            const restoredLocalStream =
+                new MediaStream();
+
+            restoredLocalStream.addTrack(
+                restoredFilteredVideoTrack
+            );
+
+            if (oldAudioTrack) {
+                restoredLocalStream.addTrack(
+                    oldAudioTrack
+                );
+            }
+
+            /*
+             * Replace video track on all peers.
+             */
+            for (const peerId in peers) {
+                const peer = peers[peerId];
+
+                if (!peer) continue;
+
+                const sender = peer
+                    .getSenders()
+                    .find(sender =>
+                        sender.track &&
+                        sender.track.kind === "video"
+                    );
+
+                if (sender) {
+                    try {
+                        await sender.replaceTrack(
+                            restoredFilteredVideoTrack
+                        );
+
+                        console.log(
+                            "[CAMERA] Restored track replaced for:",
+                            peerId
+                        );
+
+                    } catch (restoreError) {
+                        console.warn(
+                            "[CAMERA] Restore replaceTrack failed:",
+                            peerId,
+                            restoreError
+                        );
+                    }
+                }
+            }
+
+            /*
+             * Restore camera/filter state.
+             */
+            currentFacingMode = previousFacingMode;
+
+            cameraStream = restoredStream;
+
+            filteredStream =
+                restoredFilteredStream;
+
+            filteredVideoTrack =
+                restoredFilteredVideoTrack;
+
+            stream =
+                restoredLocalStream;
+
+            videoTrack =
+                restoredFilteredVideoTrack;
+
+            audioTrack =
+                oldAudioTrack || null;
+
+            /*
+             * Update local video.
+             */
+            if (localVideo) {
+                localVideo.srcObject =
+                    restoredLocalStream;
+
+                localVideo.muted = true;
+                localVideo.autoplay = true;
+                localVideo.playsInline = true;
+
+                try {
+                    await localVideo.play();
+                } catch (playError) {
+                    console.warn(
+                        "[CAMERA] Restored localVideo.play failed:",
+                        playError
+                    );
+                }
+            }
+
+            /*
+             * Update local preview.
+             */
+            const localPreview =
+                document.getElementById("localPreview");
+
+            if (localPreview) {
+                localPreview.srcObject =
+                    restoredLocalStream;
+
+                localPreview.muted = true;
+                localPreview.autoplay = true;
+                localPreview.playsInline = true;
+
+                try {
+                    await localPreview.play();
+                } catch (playError) {
+                    console.warn(
+                        "[CAMERA] Restored localPreview.play failed:",
+                        playError
+                    );
+                }
+            }
+
+            updateCameraMirror();
+
+            /*
+             * Inform server of restored media state.
+             */
+            if (socket.connected) {
+                socket.emit("media-status", {
+                    camera: !!videoTrack?.enabled,
+                    mic: !!audioTrack?.enabled
+                });
+            }
+
+            console.warn(
+                "[CAMERA] Previous camera restored"
+            );
+
         } catch (restoreError) {
             console.error(
                 "[CAMERA] Could not restore previous camera:",
