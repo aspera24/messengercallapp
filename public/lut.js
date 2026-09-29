@@ -8,6 +8,7 @@ let currentFilter = "none";
 let shaderMaterial = null;
 let workerTimer = null;
 
+
 async function createFilteredStream(stream) {
     if (workerTimer) {
         workerTimer.postMessage('stop');

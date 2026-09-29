@@ -337,6 +337,50 @@ window.onload = async () => {
 
 let currentFacingMode = "user";
 let cameraStream = null;
+let filteredStream = null;
+let filteredVideoTrack = null;
+let switchingCamera = false;
+
+async function buildFilteredCameraStream(rawCameraStream) {
+    try {
+        const result = await createFilteredStream(rawCameraStream);
+
+        if (!result) {
+            throw new Error("Filter returned no stream");
+        }
+
+        const processedVideoTrack =
+            result.getVideoTracks()[0];
+
+        if (!processedVideoTrack) {
+            throw new Error("Filter returned no video track");
+        }
+
+        filteredStream = result;
+        filteredVideoTrack = processedVideoTrack;
+
+        return result;
+
+    } catch (error) {
+        console.warn(
+            "[FILTER] Failed. Falling back to raw camera:",
+            error
+        );
+
+        filteredStream = null;
+        filteredVideoTrack = null;
+
+        const fallback = new MediaStream();
+
+        const video = rawCameraStream.getVideoTracks()[0];
+        const audio = rawCameraStream.getAudioTracks()[0];
+
+        if (video) fallback.addTrack(video);
+        if (audio) fallback.addTrack(audio);
+
+        return fallback;
+    }
+}
 
 async function ensureMediaReady(attempt = 0) {
     const loader = document.getElementById("localLoading");
@@ -388,31 +432,20 @@ async function ensureMediaReady(attempt = 0) {
             return false;
         }
 
-        let filteredVideo;
-        try {
-            filteredVideo = await createFilteredStream(rawStream);
-        } catch (filterErr) {
-            filteredVideo = rawStream;
-        }
-
-        const finalStream = filteredVideo;
-
-        rawStream.getVideoTracks().forEach(track => {
-            finalStream.addTrack(track);
-        });
-
-        rawStream.getAudioTracks().forEach(track => {
-            finalStream.addTrack(track);
-        });
-
+        const finalStream =
+            await buildFilteredCameraStream(rawStream);
 
         stream = finalStream;
+
         localVideo.srcObject = stream;
 
         updateCameraMirror();
 
         const localPreview = document.getElementById("localPreview");
-        if (localPreview) localPreview.srcObject = stream;
+
+        if (localPreview) {
+            localPreview.srcObject = stream;
+        }
 
         videoTrack = stream.getVideoTracks()[0];
         audioTrack = stream.getAudioTracks()[0];
@@ -420,6 +453,7 @@ async function ensureMediaReady(attempt = 0) {
         setupMicLevel();
 
         if (loader) loader.style.display = "none";
+
         return true;
 
     } catch (err) {
@@ -434,7 +468,7 @@ async function ensureMediaReady(attempt = 0) {
 }
 
 
-let switchingCamera = false;
+
 
 async function switchCamera() {
     if (switchingCamera) {
@@ -481,25 +515,17 @@ async function switchCamera() {
             streamsToStop.push(oldCameraStream);
         }
 
-        if (oldStream && oldStream !== oldCameraStream) {
-            streamsToStop.push(oldStream);
-        }
-
-        const stoppedTracks = new Set();
+        // const stoppedTracks = new Set();
 
         streamsToStop.forEach(activeStream => {
             activeStream.getVideoTracks().forEach(track => {
-                if (!stoppedTracks.has(track)) {
-                    stoppedTracks.add(track);
-
-                    try {
-                        track.stop();
-                    } catch (error) {
-                        console.warn(
-                            "[CAMERA] Could not stop old track:",
-                            error
-                        );
-                    }
+                try {
+                    track.stop();
+                } catch (error) {
+                    console.warn(
+                        "[CAMERA] Could not stop old camera:",
+                        error
+                    );
                 }
             });
         });
@@ -648,23 +674,31 @@ async function switchCamera() {
             throw new Error("No video track from new camera");
         }
 
-        /*
-         * Use raw track first.
-         * The filter can cause camera switching problems on phones.
-         */
-        let finalVideoTrack = rawVideoTrack;
 
-        /*
-         * TEMPORARILY DISABLED:
-         * createFilteredStream may create a processed track
-         * that is not reliable during camera switching.
-         *
-         * Test switching first using the raw camera track.
-         */
+        let newFilteredStream;
 
-        /*
-         * Replace video track in all P2P connections.
-         */
+        try {
+            newFilteredStream =
+                await buildFilteredCameraStream(newCameraStream);
+        } catch (filterError) {
+            console.warn(
+                "[CAMERA] Filter failed on new camera:",
+                filterError
+            );
+
+            newFilteredStream = new MediaStream();
+            newFilteredStream.addTrack(rawVideoTrack);
+        }
+
+        const finalVideoTrack =
+            newFilteredStream.getVideoTracks()[0];
+
+        if (!finalVideoTrack) {
+            throw new Error(
+                "No filtered video track from new camera"
+            );
+        }
+
         for (const peerId in peers) {
             const peer = peers[peerId];
 
@@ -710,10 +744,15 @@ async function switchCamera() {
          * Update variables.
          */
         currentFacingMode = targetFacingMode;
+
         cameraStream = newCameraStream;
         stream = newLocalStream;
+
         videoTrack = finalVideoTrack;
         audioTrack = oldAudioTrack || null;
+
+        filteredStream = newFilteredStream;
+        filteredVideoTrack = finalVideoTrack;
 
         /*
          * Update local video.
@@ -1042,7 +1081,7 @@ function startMeeting() {
 let joinedUsers = 0;
 
 socket.on("meeting-started", async (data) => {
-    
+
     roomId = data.roomId;
     activeRoom = roomId;
 
@@ -1338,11 +1377,11 @@ setInterval(async () => {
                     if (!params.encodings?.length) return;
 
                     if (report.currentRoundTripTime > 0.35) {
-                        params.encodings[0].maxBitrate = 180000;
+                        params.encodings[0].maxBitrate = 450000;
                         params.encodings[0].maxFramerate = 15;
                     } else {
-                        params.encodings[0].maxBitrate = 350000;
-                        params.encodings[0].maxFramerate = 20;
+                        params.encodings[0].maxBitrate = 800000;
+                        params.encodings[0].maxFramerate = 24;
                     }
 
                     sender.setParameters(params).catch(() => { });
