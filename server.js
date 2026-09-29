@@ -361,7 +361,8 @@ io.on("connection", (socket) => {
             peerSocketMap[user.token] = socket.id;
 
             socket.emit("meeting-started", {
-                roomId: activeMeeting.roomId
+                roomId: activeMeeting.roomId,
+                startedAt: activeMeeting.startedAt
             });
 
         }
@@ -381,7 +382,8 @@ io.on("connection", (socket) => {
         ) {
 
             socket.emit("meeting-started", {
-                roomId: activeMeeting.roomId
+                roomId: activeMeeting.roomId,
+                startedAt: activeMeeting.startedAt
             });
 
         }
@@ -953,7 +955,8 @@ io.on("connection", (socket) => {
                                 });
 
                                 socket.emit("meeting-started", {
-                                    roomId
+                                    roomId,
+                                    startedAt: activeMeeting.startedAt
                                 });
 
                                 startMeetingBroadcast(roomId);
@@ -1516,11 +1519,12 @@ io.on("connection", (socket) => {
 
             reconnectTimers[user.token] = setTimeout(() => {
 
-                socket.to(roomId).emit(
-                    "user-disconnected",
-                    user.token
-                );
+                if (onlineUsers[user.token]?.sockets?.size > 0) {
+                    delete reconnectTimers[user.token];
+                    return;
+                }
 
+                socket.to(roomId).emit("user-disconnected", user.token);
                 endMeeting(roomId);
 
             }, 20000);

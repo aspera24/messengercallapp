@@ -367,7 +367,7 @@ async function ensureMediaReady(attempt = 0) {
             facingMode: { ideal: currentFacingMode },
             width: { ideal: 480, max: 640 },
             height: { ideal: 360, max: 480 },
-            frameRate: { ideal: 30, max: 30 }
+            frameRate: { ideal: 20, max: 24 }
         };
 
         const rawStream = await navigator.mediaDevices.getUserMedia({
@@ -581,7 +581,7 @@ async function switchCamera() {
                             },
                             frameRate: {
                                 ideal: 20,
-                                max: 30
+                                max: 24
                             }
                         },
                         audio: false
@@ -616,7 +616,7 @@ async function switchCamera() {
                             },
                             frameRate: {
                                 ideal: 20,
-                                max: 30
+                                max: 24
                             }
                         },
                         audio: false
@@ -1042,8 +1042,13 @@ function startMeeting() {
 let joinedUsers = 0;
 
 socket.on("meeting-started", async (data) => {
+    
     roomId = data.roomId;
     activeRoom = roomId;
+
+    if (data.startedAt) {
+        startMeetingTimer(new Date(data.startedAt).getTime());
+    }
 
     if (!currentUser) return;
 
@@ -1253,7 +1258,10 @@ function createPeer(userId) {
                 username: "user",
                 credential: "password"
             }
-        ]
+        ],
+        iceTransportPolicy: "all",
+        bundlePolicy: "max-bundle",
+        rtcpMuxPolicy: "require"
     });
 
     stream.getTracks().forEach(track => { peer.addTrack(track, stream); });
@@ -1263,8 +1271,9 @@ function createPeer(userId) {
         try {
             const params = sender.getParameters();
             params.encodings = [{
-                maxBitrate: 800000,
-                maxFramerate: 30
+                maxBitrate: 350000,
+                maxFramerate: 20,
+                scaleResolutionDownBy: 1
             }];
             sender.setParameters(params);
         } catch (e) {
@@ -1312,6 +1321,36 @@ function createPeer(userId) {
     peers[userId] = peer;
     return peer;
 }
+
+// Adaptive WebRTC Quality 
+setInterval(async () => {
+    for (const peer of Object.values(peers)) {
+        try {
+            const stats = await peer.getStats();
+
+            stats.forEach(report => {
+                if (report.type === "candidate-pair" && report.state === "succeeded") {
+
+                    const sender = peer.getSenders().find(s => s.track?.kind === "video");
+                    if (!sender) return;
+
+                    const params = sender.getParameters();
+                    if (!params.encodings?.length) return;
+
+                    if (report.currentRoundTripTime > 0.35) {
+                        params.encodings[0].maxBitrate = 180000;
+                        params.encodings[0].maxFramerate = 15;
+                    } else {
+                        params.encodings[0].maxBitrate = 350000;
+                        params.encodings[0].maxFramerate = 20;
+                    }
+
+                    sender.setParameters(params).catch(() => { });
+                }
+            });
+        } catch (e) { }
+    }
+}, 3000);
 
 socket.on("offer", async ({ offer, from, firstname }) => {
     let peer = peers[from] || createPeer(from);
@@ -1701,7 +1740,7 @@ function addRemoteVideo(userId, stream) {
     if (currentUser.acc_type === "admin" && !wrapper.querySelector(".remove-user-btn")) {
         const removeBtn = document.createElement("button");
         removeBtn.className = "remove-user-btn";
-        removeBtn.innerHTML = '';
+        removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         removeBtn.onclick = () => {
             if (confirm("Remove this user?")) {
                 socket.emit("remove-user", { roomId, userId });

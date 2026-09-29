@@ -1057,10 +1057,20 @@ input:focus {
     font-size: 14px;
     letter-spacing: 1px;
     color: #8a8a8a;
+    transition: all 0.25s ease;
+}
+
+#userTable tbody tr {
+    transition: background-color 0.25s ease, transform 0.2s ease;
 }
 
 #userTable tbody tr:hover {
-    background: #36363644;
+    background-color: rgba(255,255,255,0.05);
+    transform: translateY(-2px);
+}
+
+#userTable tbody tr:hover td {
+    color: #fff;
 }
 
 #userTable tbody td:last-of-type {
@@ -1427,7 +1437,7 @@ input:focus {
 }
 
 .smallVideo #localPreview {
-    border-radius: 15px;
+    border: 1px solid #f3bd92;
 }
 
 
@@ -1514,7 +1524,8 @@ video.camera-environment {
 }
 
 .videos-container p {
-    position: absolute;
+    position: relative;
+    text-align: left;
 }
 
 
@@ -1523,7 +1534,7 @@ video.camera-environment {
     padding: 25px;
     overflow: hidden;
     display: grid;
-    gap: 10px;
+    /* gap: 10px; */
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     grid-auto-rows: 210px;
     min-width: 0;
@@ -1532,7 +1543,8 @@ video.camera-environment {
 }
 
 #videos .video-box {
-    border-radius: 18px;
+    /* border-radius: 18px; */
+    border: 1px solid #f3bd92;
     overflow: hidden;
     position: relative;
     contain: layout paint;
