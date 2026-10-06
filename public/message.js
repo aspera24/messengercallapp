@@ -127,9 +127,9 @@ async function loadUsers() {
 
                             <div class="onlineStatus">
                                 ${data.online
-                                    ? '<span class="onlineDot"></span>'
-                                    : ""
-                                }
+                            ? '<span class="onlineDot"></span>'
+                            : ""
+                        }
                             </div>
                             <div class="prof">
                                 <i class="fa-solid fa-user"></i>
@@ -251,6 +251,17 @@ socket.on("user-online", ({ token }) => {
 
     user.online = true;
 
+    if (
+        activeChatUser &&
+        activeChatUser.token === token
+    ) {
+        const status = document.getElementById("messageUserStatus");
+
+        if (status) {
+            status.textContent = "Online";
+        }
+    }
+
     table
         .rows()
         .invalidate()
@@ -271,6 +282,17 @@ socket.on("user-offline", ({ token }) => {
     if (!user) return;
 
     user.online = false;
+
+    if (
+        activeChatUser &&
+        activeChatUser.token === token
+    ) {
+        const status = document.getElementById("messageUserStatus");
+
+        if (status) {
+            status.textContent = "Offline";
+        }
+    }
 
     table
         .rows()
@@ -328,10 +350,22 @@ async function openChat(token, firstname, lastname) {
 
     const container = document.getElementById("messageContainer");
     const userName = document.getElementById("messageUserName");
+    const userStatus = document.getElementById("messageUserStatus");
     const messageBody = document.getElementById("messageBody");
     const messageText = document.getElementById("messageText");
 
+    const user = table
+        ?.rows()
+        .data()
+        .toArray()
+        .find(user => user.token === token);
+
     userName.textContent = firstname + " " + lastname;
+
+    if (userStatus) {
+        userStatus.textContent = user?.online ? "Online" : "Offline";
+    }
+
     container.style.display = "flex";
 
     requestAnimationFrame(() => {
