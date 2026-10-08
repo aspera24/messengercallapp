@@ -484,7 +484,7 @@ async function ensureMediaReady(attempt = 0) {
 
         stream = finalStream;
 
-        localVideo.srcObject = stream;
+        localVideo.srcObject = cameraStream;
 
         updateCameraMirror();
 
@@ -1483,7 +1483,7 @@ function createPeer(userId) {
             const params = sender.getParameters();
             params.encodings = [{
                 maxBitrate: 800000,
-                maxFramerate: 24,
+                maxFramerate: 30,
                 scaleResolutionDownBy: 1
             }];
             sender.setParameters(params);
@@ -1550,10 +1550,10 @@ setInterval(async () => {
 
                     if (report.currentRoundTripTime > 0.35) {
                         params.encodings[0].maxBitrate = 450000;
-                        params.encodings[0].maxFramerate = 15;
+                        params.encodings[0].maxFramerate = 20;
                     } else {
                         params.encodings[0].maxBitrate = 800000;
-                        params.encodings[0].maxFramerate = 24;
+                        params.encodings[0].maxFramerate = 30;
                     }
 
                     sender.setParameters(params).catch(() => { });

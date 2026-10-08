@@ -82,8 +82,9 @@ async function createFilteredStream(stream) {
         depth: false,
         stencil: false,
         powerPreference: "high-performance",
-        preserveDrawingBuffer: true
+        preserveDrawingBuffer: false
     });
+
     renderer.setPixelRatio(1);
     renderer.autoClear = false;
     renderer.setSize(vw, vh, false);
@@ -169,7 +170,7 @@ async function createFilteredStream(stream) {
         self.onmessage = function(e) {
             if (e.data === 'start') {
                 if (timer) clearInterval(timer);
-                timer = setInterval(() => { self.postMessage('tick'); }, 1000 / 24);
+                timer = setInterval(() => { self.postMessage('tick'); }, 1000 / 30);
             } else if (e.data === 'stop') {
                 clearInterval(timer);
                 timer = null;
@@ -206,7 +207,7 @@ async function createFilteredStream(stream) {
                 texture.needsUpdate = true;
                 renderer.render(scene, camera);
                 clearInterval(checkCanvasInterval);
-                const filteredStream = canvas.captureStream(24);
+                const filteredStream = canvas.captureStream(30);
 
                 resolve(filteredStream);
             }

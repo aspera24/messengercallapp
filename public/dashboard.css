@@ -1131,12 +1131,14 @@ input:focus {
 }
 
 #userTable thead th {
-    background: #363636;
+    /* background: #363636;
     color: #a3a3a3;
     border: none !important;
     padding: 10px;
     font-size: 12px;
-    cursor: pointer;
+    cursor: pointer; */
+
+    display: none;
 }
 
 #userTable thead th:first-child {
@@ -1548,23 +1550,18 @@ video {
     height: 100%;
     object-fit: cover;
     background: #000;
-    transform: translateZ(0);
     backface-visibility: hidden;
 }
 
 /* Front camera */
 video.camera-user {
-    transform: translateZ(0) scaleX(-1) !important;
+    transform: scaleX(-1) !important;
 }
 
 /* Rear camera */
 video.camera-environment {
-    transform: translateZ(0) scaleX(1) !important;
+    transform: scaleX(1) !important;
 }
-
-/* .video-box video {
-    transform: scaleX(-1); 
-} */
 
 
 
