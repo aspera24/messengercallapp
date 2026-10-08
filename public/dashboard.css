@@ -369,11 +369,43 @@ input:focus {
 .messageAvatar {
     width: 40px;
     height: 40px;
+    min-width: 40px;
+
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    background: #353535;
+}
+
+.messageAvatar img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    display: block;
+}
+
+.messageUserAvatarImage {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    display: block;
+}
+
+.messageUserAvatarFallback {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #aaa;
 }
 
 
@@ -390,7 +422,13 @@ input:focus {
     opacity: 0.8;
 }
 
+.rightBtns {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
+#infoBtn,
 #closeMessageBtn {
     border: none;
     background: transparent;
@@ -406,6 +444,7 @@ input:focus {
 }
 
 
+#infoBtn:hover,
 #closeMessageBtn:hover {
     background: rgba(255, 255, 255, 0.15);
 }
@@ -473,9 +512,10 @@ input:focus {
     height: 30px;
 
     border-radius: 50%;
+    overflow: hidden;
+    /* importante para circle gyud ang image */
 
     background: #444;
-
     color: #aaa;
 
     display: flex;
@@ -485,6 +525,31 @@ input:focus {
     font-size: 13px;
 
     margin-bottom: 2px;
+}
+
+/* Profile picture sa received message */
+.chatMessageAvatarImage {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+    object-position: center;
+
+    border-radius: 50%;
+}
+
+/* Fallback user icon */
+.chatMessageAvatarFallback {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 13px;
 }
 
 
@@ -498,7 +563,6 @@ input:focus {
 
     min-width: 0;
     max-width: 100%;
-
 }
 
 .chatMessageWrapper.sent .chatMessageContent {
@@ -522,8 +586,6 @@ input:focus {
 
     word-wrap: break-word;
     overflow-wrap: anywhere;
-
-    cursor: pointer;
 }
 
 
@@ -637,7 +699,7 @@ input:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
+    /* opacity: 0; */
     transition:
         opacity 0.15s ease,
         background 0.15s ease;
@@ -790,14 +852,14 @@ input:focus {
 #messageText {
     flex: 1;
     min-height: 42px;
-    max-height: 120px;
+    max-height: 100px;
     resize: none;
     overflow-y: auto;
     background: #333333;
     color: white;
     letter-spacing: 1px;
-    border-radius: 12px;
-    padding: 10px 15px;
+    border-radius: 8px;
+    padding: 2px 8px;
     outline: none;
     font-family: inherit;
     font-size: 14px;
@@ -843,30 +905,75 @@ input:focus {
 
 .prof {
     position: relative;
+
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+
+    border-radius: 50%;
+
     display: flex;
-    align-items: end;
+    align-items: center;
+    justify-content: center;
+
+    background: #3a3a3a;
+
+    overflow: visible;
 }
 
 .prof i {
     background: rgb(53, 53, 53);
-    height: 35px;
+
     width: 35px;
+    height: 35px;
+
     border-radius: 50%;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     overflow: hidden;
-    
+}
+
+.userProfilePicture {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+
+    border-radius: 50%;
+}
+
+.userProfileFallback {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #aaa;
 }
 
 .unreadBadge {
+    position: absolute;
+
+    right: -5px;
+    bottom: -5px;
+
+    z-index: 10;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
     min-width: 20px;
     height: 20px;
-    padding: 0 2px;
+
+    padding: 0 4px;
 
     border-radius: 50px;
 
@@ -875,9 +982,7 @@ input:focus {
 
     font-size: 10px;
     font-weight: 700;
-    position: absolute;
-    right: -5px;
-    bottom: -8px;
+
     line-height: 1;
 }
 
@@ -1065,7 +1170,7 @@ input:focus {
 }
 
 #userTable tbody tr:hover {
-    background-color: rgba(255,255,255,0.05);
+    background-color: rgba(255, 255, 255, 0.05);
     transform: translateY(-2px);
 }
 
@@ -1298,15 +1403,11 @@ input:focus {
     right: 8px;
     display: flex;
     gap: 6px;
-    opacity: 0;
     transition: 0.2s;
     z-index: 1000;
-
 }
 
-.video-box:hover .controls {
-    opacity: 1;
-}
+
 
 .controls button {
     background: rgba(15, 23, 42, .8);

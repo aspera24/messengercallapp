@@ -23,6 +23,42 @@
 
         <div class="profileGrid">
 
+            <!-- PROFILE PICTURE -->
+            <section class="profileCard profilePictureCard">
+
+                <h2>Profile Picture</h2>
+
+                <div class="profilePictureContent">
+
+                    <div class="profilePicturePreview">
+                        <img id="profilePicturePreview" src="/default-profile.png" alt="Profile Picture">
+                    </div>
+
+                    <div class="profilePictureActions">
+
+                        <label for="profilePictureInput" class="primaryBtn uploadPictureBtn">
+                            <i class="fa-solid fa-camera"></i>
+                            Choose Photo
+                        </label>
+
+                        <input type="file" id="profilePictureInput" accept="image/jpeg,image/png,image/webp" hidden>
+
+                        <button type="button" class="secondaryBtn" id="removeProfilePictureBtn">
+                            <i class="fa-solid fa-trash"></i>
+                            Remove Photo
+                        </button>
+
+                        <small>
+                            JPG, PNG or WEBP. Maximum recommended size: 2 MB.
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </section>
+           
+
             <!-- ACCOUNT INFORMATION -->
             <section class="profileCard">
 

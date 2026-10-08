@@ -4,7 +4,44 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
     const db = require("../config/db.config");
     const authMiddleware = require("../middleware/authMiddleware");
     const crypto = require("crypto");
+    const multer = require("multer");
+    const sharp = require("sharp");
+    const ENCRYPTION_KEY = Buffer.from(process.env.CHAT_ENCRYPTION_KEY, 'hex');
+    // const IV_LENGTH = 16;
 
+    const uploadProfilePicture = multer({
+        storage: multer.memoryStorage(),
+        limits: {
+            fileSize: 10 * 1024 * 1024
+        },
+        fileFilter: (req, file, cb) => {
+
+            const allowedTypes = [
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ];
+
+            if (!allowedTypes.includes(file.mimetype)) {
+                return cb(
+                    new Error(
+                        "Only JPG, PNG and WEBP images are allowed."
+                    )
+                );
+            }
+
+            cb(null, true);
+
+        }
+    });
+
+    function decryptMessage(encryptedText, ivHex) {
+        const iv = Buffer.from(ivHex, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    }
 
     router.get("/messages/:token", async (req, res) => {
 
@@ -30,41 +67,33 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                 req.cookies?.meetflow_session;
 
             if (!sessionToken) {
-
                 return res.status(401).json({
                     error: "Unauthorized"
                 });
-
             }
 
 
             const [currentRows] =
                 await db.promise().query(
                     `
-                SELECT
-                    u.id,
-                    u.token,
-                    u.acc_type
-
-                FROM sessions s
-
-                INNER JOIN users u
-                    ON s.user_id = u.id
-
-                WHERE s.token = ?
-
-                LIMIT 1
-                `,
+                    SELECT
+                        u.id,
+                        u.token,
+                        u.acc_type
+                    FROM sessions s
+                    INNER JOIN users u
+                        ON s.user_id = u.id
+                    WHERE s.token = ?
+                    LIMIT 1
+                    `,
                     [sessionToken]
                 );
 
 
             if (!currentRows.length) {
-
                 return res.status(401).json({
                     error: "Unauthorized"
                 });
-
             }
 
 
@@ -76,30 +105,25 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
             const [otherRows] =
                 await db.promise().query(
                     `
-                SELECT
-                    id,
-                    token,
-                    acc_type,
-                    firstname,
-                    lastname
-
-                FROM users
-
-                WHERE token = ?
-                AND is_active = 1
-
-                LIMIT 1
-                `,
+                    SELECT
+                        id,
+                        token,
+                        acc_type,
+                        firstname,
+                        lastname
+                    FROM users
+                    WHERE token = ?
+                    AND is_active = 1
+                    LIMIT 1
+                    `,
                     [otherToken]
                 );
 
 
             if (!otherRows.length) {
-
                 return res.status(404).json({
                     error: "User not found"
                 });
-
             }
 
 
@@ -109,52 +133,47 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
             // MESSAGE QUERY
             let sql = `
-            SELECT
-            id,
-            sender_type,
-            sender_id,
-            receiver_type,
-            receiver_id,
-            message,
-            is_deleted,
-            is_edited,
-            is_read,
-            created_at,
+                SELECT
+                id,
+                sender_type,
+                sender_id,
+                receiver_type,
+                receiver_id,
+                message,
+                encryption_iv, 
+                is_deleted,
+                is_edited,
+                is_read,
+                created_at,
 
-            CASE
-                WHEN created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-                THEN 1
-                ELSE 0
-            END AS canEdit
+                CASE
+                    WHEN created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+                    THEN 1
+                    ELSE 0
+                END AS canEdit
 
-            FROM messages
+                FROM messages
 
-            WHERE
-
-            (
-
+                WHERE
                 (
-                    sender_type = ?
-                    AND sender_id = ?
-                    AND receiver_type = ?
-                    AND receiver_id = ?
+                    (
+                        sender_type = ?
+                        AND sender_id = ?
+                        AND receiver_type = ?
+                        AND receiver_id = ?
+                    )
+                    OR
+                    (
+                        sender_type = ?
+                        AND sender_id = ?
+                        AND receiver_type = ?
+                        AND receiver_id = ?
+                    )
                 )
-
-                OR
-
-                (
-                    sender_type = ?
-                    AND sender_id = ?
-                    AND receiver_type = ?
-                    AND receiver_id = ?
-                )
-
-            )
-        `;
+            `;
 
 
             const params = [
-
                 // CURRENT → OTHER
                 currentUser.acc_type,
                 currentUser.id,
@@ -166,34 +185,27 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                 otherUser.id,
                 currentUser.acc_type,
                 currentUser.id
-
             ];
 
 
             // =========================
             // CURSOR
             // =========================
-
             if (cursor) {
-
                 sql += `
                 AND id < ?
             `;
-
                 params.push(cursor);
-
             }
 
 
             // =========================
             // GET NEWEST FIRST
             // =========================
-
             sql += `
-            ORDER BY id DESC
-            LIMIT ?
-        `;
-
+                ORDER BY id DESC
+                LIMIT ?
+            `;
             params.push(limit);
 
 
@@ -207,27 +219,47 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
             // =========================
             // OLDEST → NEWEST
             // =========================
-
             rows.reverse();
 
 
-            // =========================
-            // IS MINE
-            // =========================
-
+            // ===========================================
+            // DECRYPTION LOGIC and DATA PARSING
+            // ===========================================
             rows.forEach(row => {
 
+                // Checking of message owner
                 row.isMine =
                     row.sender_type === currentUser.acc_type &&
                     row.sender_id === currentUser.id;
 
+                // Decryption happens when the message is not deleted and has an encryption_iv
+                if (Number(row.is_deleted) === 1) {
+                    row.message = "This message was deleted.";
+                } else if (row.message && row.encryption_iv) {
+                    try {
+                        row.message = decryptMessage(row.message, row.encryption_iv);
+                    } catch (decryptErr) {
+                        console.log("--- DECRYPTION DEBUG LINE ---");
+                        console.error(`Error sa ID ${row.id}:`, decryptErr.message);
+                        console.log("Message String:", row.message);
+                        console.log("IV String:", row.encryption_iv);
+
+                        row.message = row.message;
+                    }
+
+                }
+
+                // Remove 'encryption_iv' from the object before sending the response
+                // to prevent it from being exposed in the frontend/browser UI network tab.
+                delete row.encryption_iv;
+
             });
+
 
 
             // =========================
             // NEXT CURSOR
             // =========================
-
             const nextCursor =
                 rows.length > 0
                     ? rows[0].id
@@ -237,99 +269,74 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
             // =========================
             // HAS MORE
             // =========================
-
             let hasMore = false;
-
 
             if (nextCursor !== null) {
 
                 const [moreRows] =
                     await db.promise().query(
                         `
-                    SELECT id
-
-                    FROM messages
-
-                    WHERE id < ?
-
-                    AND
-                    (
-
+                        SELECT id
+                        FROM messages
+                        WHERE id < ?
+                        AND
                         (
-                            sender_type = ?
-                            AND sender_id = ?
-                            AND receiver_type = ?
-                            AND receiver_id = ?
+                            (
+                                sender_type = ?
+                                AND sender_id = ?
+                                AND receiver_type = ?
+                                AND receiver_id = ?
+                            )
+                            OR
+                            (
+                                sender_type = ?
+                                AND sender_id = ?
+                                AND receiver_type = ?
+                                AND receiver_id = ?
+                            )
                         )
-
-                        OR
-
-                        (
-                            sender_type = ?
-                            AND sender_id = ?
-                            AND receiver_type = ?
-                            AND receiver_id = ?
-                        )
-
-                    )
-
-                    LIMIT 1
-                    `,
+                        LIMIT 1
+                        `,
                         [
-
                             nextCursor,
-
                             // CURRENT → OTHER
                             currentUser.acc_type,
                             currentUser.id,
                             otherUser.acc_type,
                             otherUser.id,
-
                             // OTHER → CURRENT
                             otherUser.acc_type,
                             otherUser.id,
                             currentUser.acc_type,
                             currentUser.id
-
                         ]
                     );
 
-
                 hasMore =
                     moreRows.length > 0;
-
             }
 
 
             // =========================
             // RESPONSE
             // =========================
-
             res.json({
-
                 messages: rows,
-
                 nextCursor,
-
                 hasMore
-
             });
 
 
         } catch (error) {
-
             console.error(
                 "GET CHAT MESSAGES ERROR:",
                 error
             );
 
-
             res.status(500).json({
                 error: "Failed to load messages"
             });
-
         }
-
     });
 
     router.get("/unread-count/:token", authMiddleware, async (req, res) => {
@@ -977,99 +984,96 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
     });
 
-    router.put(
-        "/profile/password",
-        authMiddleware,
-        (req, res) => {
+    router.put("/profile/password", authMiddleware, (req, res) => {
 
-            const userId = req.user?.id;
+        const userId = req.user?.id;
 
-            if (!userId) {
+        if (!userId) {
 
-                return res.status(401).json({
-                    message: "Unauthorized"
-                });
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
 
-            }
+        }
 
 
-            let {
-                current_password,
-                new_password
-            } = req.body;
+        let {
+            current_password,
+            new_password
+        } = req.body;
 
 
-            // =========================
-            // CLEAN INPUT
-            // =========================
+        // =========================
+        // CLEAN INPUT
+        // =========================
 
-            current_password =
-                typeof current_password === "string"
-                    ? current_password
-                    : "";
+        current_password =
+            typeof current_password === "string"
+                ? current_password
+                : "";
 
-            new_password =
-                typeof new_password === "string"
-                    ? new_password
-                    : "";
-
-
-            // =========================
-            // VALIDATION
-            // =========================
-
-            if (
-                !current_password ||
-                !new_password
-            ) {
-
-                return res.status(400).json({
-                    message:
-                        "Current password and new password are required."
-                });
-
-            }
+        new_password =
+            typeof new_password === "string"
+                ? new_password
+                : "";
 
 
-            if (new_password.length < 8) {
+        // =========================
+        // VALIDATION
+        // =========================
 
-                return res.status(400).json({
-                    message:
-                        "New password must be at least 8 characters."
-                });
+        if (
+            !current_password ||
+            !new_password
+        ) {
 
-            }
+            return res.status(400).json({
+                message:
+                    "Current password and new password are required."
+            });
 
-
-            if (new_password.length > 255) {
-
-                return res.status(400).json({
-                    message:
-                        "New password is too long."
-                });
-
-            }
+        }
 
 
-            if (
-                current_password ===
-                new_password
-            ) {
+        if (new_password.length < 8) {
 
-                return res.status(400).json({
-                    message:
-                        "New password must be different from your current password."
-                });
+            return res.status(400).json({
+                message:
+                    "New password must be at least 8 characters."
+            });
 
-            }
+        }
 
 
-            // =========================
-            // GET CURRENT PASSWORD
-            // =========================
+        if (new_password.length > 255) {
 
-            db.query(
-                `
+            return res.status(400).json({
+                message:
+                    "New password is too long."
+            });
+
+        }
+
+
+        if (
+            current_password ===
+            new_password
+        ) {
+
+            return res.status(400).json({
+                message:
+                    "New password must be different from your current password."
+            });
+
+        }
+
+
+        // =========================
+        // GET CURRENT PASSWORD
+        // =========================
+
+        db.query(
+            `
                 SELECT
                     id,
                     password
@@ -1082,106 +1086,544 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
                 LIMIT 1
                 `,
-                [userId],
+            [userId],
 
-                (err, result) => {
+            (err, result) => {
 
-                    if (err) {
+                if (err) {
 
-                        console.error(
-                            "GET CURRENT PASSWORD ERROR:",
-                            err
-                        );
+                    console.error(
+                        "GET CURRENT PASSWORD ERROR:",
+                        err
+                    );
 
-                        return res.status(500).json({
-                            message:
-                                "Failed to verify password."
-                        });
+                    return res.status(500).json({
+                        message:
+                            "Failed to verify password."
+                    });
 
-                    }
-
-
-                    if (!result.length) {
-
-                        return res.status(404).json({
-                            message: "User not found."
-                        });
-
-                    }
+                }
 
 
-                    const user =
-                        result[0];
+                if (!result.length) {
+
+                    return res.status(404).json({
+                        message: "User not found."
+                    });
+
+                }
 
 
-                    // =========================
-                    // VERIFY CURRENT PASSWORD
-                    // =========================
-
-                    if (
-                        current_password !==
-                        user.password
-                    ) {
-
-                        return res.status(401).json({
-                            message:
-                                "Current password is incorrect."
-                        });
-
-                    }
+                const user =
+                    result[0];
 
 
-                    // =========================
-                    // UPDATE PASSWORD
-                    // =========================
+                // =========================
+                // VERIFY CURRENT PASSWORD
+                // =========================
 
-                    db.query(
-                        `
+                if (
+                    current_password !==
+                    user.password
+                ) {
+
+                    return res.status(401).json({
+                        message:
+                            "Current password is incorrect."
+                    });
+
+                }
+
+
+                // =========================
+                // UPDATE PASSWORD
+                // =========================
+
+                db.query(
+                    `
                         UPDATE users
 
                         SET password = ?
 
                         WHERE id = ?
                         `,
-                        [
-                            new_password,
-                            userId
-                        ],
+                    [
+                        new_password,
+                        userId
+                    ],
 
-                        (err) => {
+                    (err) => {
 
-                            if (err) {
+                        if (err) {
 
-                                console.error(
-                                    "UPDATE PASSWORD ERROR:",
-                                    err
-                                );
+                            console.error(
+                                "UPDATE PASSWORD ERROR:",
+                                err
+                            );
 
-                                return res.status(500).json({
-                                    message:
-                                        "Failed to change password."
-                                });
-
-                            }
-
-
-                            res.json({
-
-                                success: true,
-
+                            return res.status(500).json({
                                 message:
-                                    "Password changed successfully."
-
+                                    "Failed to change password."
                             });
 
                         }
-                    );
 
-                }
+
+                        res.json({
+
+                            success: true,
+
+                            message:
+                                "Password changed successfully."
+
+                        });
+
+                    }
+                );
+
+            }
+        );
+
+    }
+    );
+
+    router.get("/profile/picture", authMiddleware, async (req, res) => {
+
+        const userId = req.user?.id;
+
+        if (!userId) {
+
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
+
+        }
+
+
+        try {
+
+            const [rows] =
+                await db.promise().query(
+                    `
+                    SELECT
+                        profile_picture,
+                        profile_picture_type
+
+                    FROM users
+
+                    WHERE id = ?
+                    AND is_active = 1
+
+                    LIMIT 1
+                    `,
+                    [userId]
+                );
+
+
+            if (!rows.length) {
+
+                return res.status(404).json({
+                    message: "User not found."
+                });
+
+            }
+
+
+            const user = rows[0];
+
+
+            if (!user.profile_picture) {
+
+                return res.status(404).end();
+
+            }
+
+
+            res.setHeader(
+                "Content-Type",
+                user.profile_picture_type ||
+                "image/jpeg"
             );
+
+            res.setHeader(
+                "Cache-Control",
+                "private, max-age=300"
+            );
+
+
+            return res.send(
+                user.profile_picture
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "GET PROFILE PICTURE ERROR:",
+                error
+            );
+
+
+            return res.status(500).json({
+                message:
+                    "Failed to load profile picture."
+            });
+
+        }
+
+    }
+    );
+
+    router.get("/profile/picture/full", authMiddleware, async (req, res) => {
+
+        const userId = req.user?.id;
+
+        if (!userId) {
+
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
+
+        }
+
+
+        try {
+
+            const [rows] =
+                await db.promise().query(
+                    `
+                    SELECT
+                        profile_picture_full,
+                        profile_picture_type
+
+                    FROM users
+
+                    WHERE id = ?
+                    AND is_active = 1
+
+                    LIMIT 1
+                    `,
+                    [userId]
+                );
+
+
+            if (!rows.length) {
+
+                return res.status(404).end();
+
+            }
+
+
+            const user = rows[0];
+
+
+            if (!user.profile_picture_full) {
+
+                return res.status(404).end();
+
+            }
+
+
+            res.setHeader(
+                "Content-Type",
+                user.profile_picture_type ||
+                "image/jpeg"
+            );
+
+            res.setHeader(
+                "Cache-Control",
+                "private, max-age=300"
+            );
+
+
+            return res.send(
+                user.profile_picture_full
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "GET FULL PROFILE PICTURE ERROR:",
+                error
+            );
+
+
+            return res.status(500).json({
+                message:
+                    "Failed to load full profile picture."
+            });
+
+        }
+
+    }
+    );
+
+    router.put("/profile/picture", authMiddleware, uploadProfilePicture.single("profilePicture"),
+        async (req, res) => {
+
+            const userId = req.user?.id;
+
+            if (!userId) {
+
+                return res.status(401).json({
+                    message: "Unauthorized"
+                });
+
+            }
+
+
+            if (!req.file) {
+
+                return res.status(400).json({
+                    message:
+                        "Please select a profile picture."
+                });
+
+            }
+
+
+            try {
+
+                /*
+                 * =========================
+                 * CREATE THUMBNAIL
+                 * =========================
+                 */
+
+                const thumbnail =
+                    await sharp(req.file.buffer)
+                        .rotate()
+                        .resize(160, 160, {
+                            fit: "cover",
+                            position: "centre"
+                        })
+                        .jpeg({
+                            quality: 60,
+                            mozjpeg: true
+                        })
+                        .toBuffer();
+
+
+                /*
+                 * =========================
+                 * CREATE FULL IMAGE
+                 * =========================
+                 */
+
+                const fullImage =
+                    await sharp(req.file.buffer)
+                        .rotate()
+                        .resize(1200, 1200, {
+                            fit: "inside",
+                            withoutEnlargement: true
+                        })
+                        .jpeg({
+                            quality: 85,
+                            mozjpeg: true
+                        })
+                        .toBuffer();
+
+
+                /*
+                 * =========================
+                 * SAVE TO DATABASE
+                 * =========================
+                 */
+
+                await db.promise().query(
+                    `
+                    UPDATE users
+
+                    SET
+                        profile_picture = ?,
+                        profile_picture_full = ?,
+                        profile_picture_type = ?
+
+                    WHERE id = ?
+
+                    AND is_active = 1
+                    `,
+                    [
+                        thumbnail,
+                        fullImage,
+                        "image/jpeg",
+                        userId
+                    ]
+                );
+
+                io.emit("profile-picture-updated", {
+                    token: req.user.token
+                });
+
+                return res.json({
+
+                    success: true,
+
+                    message:
+                        "Profile picture updated successfully."
+
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "UPLOAD PROFILE PICTURE ERROR:",
+                    error
+                );
+
+
+                return res.status(500).json({
+                    message:
+                        "Failed to update profile picture."
+                });
+
+            }
 
         }
     );
+
+    router.delete("/profile/picture", authMiddleware, async (req, res) => {
+
+        const userId = req.user?.id;
+
+        if (!userId) {
+
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
+
+        }
+
+
+        try {
+
+            await db.promise().query(
+                `
+                UPDATE users
+
+                SET
+                    profile_picture = NULL,
+                    profile_picture_full = NULL,
+                    profile_picture_type = NULL
+
+                WHERE id = ?
+
+                AND is_active = 1
+                `,
+                [userId]
+            );
+
+
+            return res.json({
+
+                success: true,
+
+                message:
+                    "Profile picture removed successfully."
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "DELETE PROFILE PICTURE ERROR:",
+                error
+            );
+
+
+            return res.status(500).json({
+                message:
+                    "Failed to remove profile picture."
+            });
+
+        }
+
+    }
+    );
+
+    router.get("/profile/picture/:token", authMiddleware, async (req, res) => {
+
+        try {
+
+            const token =
+                String(req.params.token || "").trim();
+
+            if (!token) {
+
+                return res.status(400).end();
+
+            }
+
+
+            const [rows] =
+                await db.promise().query(
+                    `
+                    SELECT
+                        profile_picture,
+                        profile_picture_type
+
+                    FROM users
+
+                    WHERE token = ?
+                    AND is_active = 1
+
+                    LIMIT 1
+                    `,
+                    [token]
+                );
+
+
+            if (!rows.length) {
+
+                return res.status(404).end();
+
+            }
+
+
+            const user = rows[0];
+
+
+            if (!user.profile_picture) {
+
+                return res.status(404).end();
+
+            }
+
+
+            res.setHeader(
+                "Content-Type",
+                user.profile_picture_type ||
+                "image/jpeg"
+            );
+
+            res.setHeader(
+                "Cache-Control",
+                "private, max-age=300"
+            );
+
+
+            return res.send(
+                user.profile_picture
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "GET USER PROFILE PICTURE ERROR:",
+                error
+            );
+
+
+            return res.status(500).end();
+
+        }
+
+    }
+    );
+
 
     return router
 }

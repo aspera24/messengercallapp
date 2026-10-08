@@ -26,7 +26,7 @@ body {
     max-width: 900px;
     margin: 50px auto;
     padding: 20px;
-    max-width: 2000px;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
@@ -244,4 +244,91 @@ button {
         text-align: left;
         
     }
+}
+
+/* =========================================
+   PROFILE PICTURE
+========================================= */
+
+.profilePictureContent {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.profilePicturePreview {
+    width: 120px;
+    height: 120px;
+    min-width: 120px;
+
+    border-radius: 50%;
+    overflow: hidden;
+
+    background: #1d1d1d;
+    border: 2px solid #474747;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profilePicturePreview img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    display: block;
+}
+
+.profilePictureActions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.uploadPictureBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.profilePictureActions small {
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.profilePictureActions .secondaryBtn {
+    background: #3a3a3a;
+    color: #d1d5db;
+    width: 100%;
+}
+
+.profilePictureActions .secondaryBtn:hover {
+    background: #454545;
+}
+
+
+/* =========================================
+   PROFILE PICTURE MOBILE
+========================================= */
+
+@media (max-width: 700px) {
+
+    .profilePictureContent {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .profilePictureActions {
+        align-items: center;
+        width: 100%;
+    }
+
 }

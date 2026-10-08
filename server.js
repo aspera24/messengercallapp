@@ -1625,216 +1625,111 @@ io.on("connection", (socket) => {
     });
 
 
+
+
+
+    // FOR REALTIME CHAT 
+    const crypto = require('crypto');
+    require('dotenv').config();
+
+    const ENCRYPTION_KEY = Buffer.from(process.env.CHAT_ENCRYPTION_KEY, 'hex');
+    const IV_LENGTH = 16;
+
+    function encryptMessage(plainText) {
+        const iv = crypto.randomBytes(IV_LENGTH);
+        const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+        let encrypted = cipher.update(plainText, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        return {
+            encryptedMessage: encrypted,
+            iv: iv.toString('hex')
+        };
+    }
+
+
+
     socket.on("chat-message", async (data) => {
-
         try {
+            const { to, message } = data;
 
-            const {
-                to,
-                message
-            } = data;
-
-
-            // VALIDATION
-            if (!to || typeof to !== "string") {
-                return;
-            }
-
-            if (!message || typeof message !== "string") {
-                return;
-            }
-
+            // VALIDATIONS...]
+            if (!to || typeof to !== "string") return;
+            if (!message || typeof message !== "string") return;
             const cleanMessage = message.trim();
+            if (!cleanMessage || cleanMessage.length > 5000) return;
 
-            if (!cleanMessage) {
-                return;
-            }
-
-            if (cleanMessage.length > 5000) {
-                return;
-            }
-
-
-            // GET AUTHENTICATED SENDER
             const sender = socket.data.user;
-
             if (!sender) {
-
-                console.log(
-                    "Chat rejected: socket has no authenticated user"
-                );
-
+                console.log("Chat rejected: socket has no authenticated user");
                 return;
             }
-
 
             const senderToken = sender.token;
             const senderId = sender.id;
             const senderType = sender.acc_type;
 
-
-            console.log("CHAT SENDER:", {
-                id: senderId,
-                token: senderToken,
-                type: senderType
-            });
-
-
-            // FIND RECIPIENT
             const recipient = onlineUsers[to];
 
-
-            if (!recipient) {
-
-                console.log(
-                    "Chat recipient is offline:",
-                    to
-                );
-
-            }
-
-
-            // FIND RECIPIENT IN DATABASE
             db.query(
-                `
-            SELECT
-                id,
-                firstname,
-                lastname,
-                username,
-                acc_type,
-                token
-            FROM users
-            WHERE token = ?
-            AND is_active = 1
-            LIMIT 1
-            `,
+                `SELECT id, firstname, lastname, username, acc_type, token FROM users WHERE token = ? AND is_active = 1 LIMIT 1`,
                 [to],
                 (err, rows) => {
-
-                    if (err) {
-
-                        console.error(
-                            "CHAT RECIPIENT DB ERROR:",
-                            err
-                        );
-
-                        return;
-                    }
-
-
-                    if (!rows.length) {
-
-                        console.log(
-                            "Chat recipient not found:",
-                            to
-                        );
-
-                        return;
-                    }
-
+                    if (err) { console.error("CHAT RECIPIENT DB ERROR:", err); return; }
+                    if (!rows.length) { console.log("Chat recipient not found:", to); return; }
 
                     const receiver = rows[0];
 
+                    // --- ENCRYPTION HAPPENS ---
+                    const { encryptedMessage, iv } = encryptMessage(cleanMessage);
 
-                    // SAVE MESSAGE
                     db.query(
-                        `
-                    INSERT INTO messages (
+                        `INSERT INTO messages (
                         sender_type,
                         sender_id,
                         receiver_type,
                         receiver_id,
-                        message
-                    )
-                    VALUES (?, ?, ?, ?, ?)
-                    `,
+                        message,
+                        encryption_iv
+                    ) VALUES (?, ?, ?, ?, ?, ?)`,
                         [
                             senderType,
                             senderId,
                             receiver.acc_type,
                             receiver.id,
-                            cleanMessage
+                            encryptedMessage, // <--- encrypted text
+                            iv                // <--- IV vector string
                         ],
                         (err, result) => {
-
-                            if (err) {
-
-                                console.error(
-                                    "CHAT MESSAGE INSERT ERROR:",
-                                    err
-                                );
-
-                                return;
-                            }
+                            if (err) { console.error("CHAT MESSAGE INSERT ERROR:", err); return; }
 
 
-                            // MESSAGE DATA
                             const messageData = {
-
                                 id: result.insertId,
-
                                 from: senderToken,
-
                                 fromType: senderType,
-
                                 to: receiver.token,
-
                                 toType: receiver.acc_type,
-
                                 message: cleanMessage,
-
                                 createdAt: new Date()
-
                             };
 
-
-                            // SEND TO RECIPIENT
                             if (recipient) {
-
-                                recipient.sockets.forEach(
-                                    socketId => {
-
-                                        io.to(socketId).emit(
-                                            "chat-message",
-                                            messageData
-                                        );
-
-                                    }
-                                );
-
+                                recipient.sockets.forEach(socketId => {
+                                    io.to(socketId).emit("chat-message", messageData);
+                                });
                             }
 
-
-                            // CONFIRM TO SENDER
-                            socket.emit(
-                                "chat-message-sent",
-                                messageData
-                            );
-
-
-                            console.log(
-                                "CHAT MESSAGE SENT:",
-                                messageData
-                            );
-
+                            socket.emit("chat-message-sent", messageData);
+                            console.log("CHAT MESSAGE SENT SECURELY");
                         }
                     );
-
                 }
             );
-
-
         } catch (error) {
-
-            console.error(
-                "chat-message error:",
-                error
-            );
-
+            console.error("chat-message error:", error);
         }
-
     });
+
 
     socket.on("mark-chat-read", async (data) => {
 
@@ -2255,22 +2150,18 @@ io.on("connection", (socket) => {
                 return;
             }
 
-
             if (
                 typeof message !== "string"
             ) {
                 return;
             }
 
-
             const cleanMessage =
                 message.trim();
-
 
             if (!cleanMessage) {
                 return;
             }
-
 
             if (cleanMessage.length > 5000) {
                 return;
@@ -2280,23 +2171,18 @@ io.on("connection", (socket) => {
             const sender =
                 socket.data.user;
 
-
             if (!sender) {
-
                 console.log(
                     "Edit rejected: socket has no authenticated user"
                 );
-
                 return;
             }
-
 
             const senderId =
                 sender.id;
 
             const senderType =
                 sender.acc_type;
-
 
             const id =
                 Number(messageId);
@@ -2305,35 +2191,29 @@ io.on("connection", (socket) => {
             const [rows] =
                 await db.promise().query(
                     `
-                SELECT
-                    id,
-                    sender_id,
-                    sender_type,
-                    receiver_id,
-                    receiver_type,
-                    message,
-                    is_deleted,
-                    created_at
-                FROM messages
-
-                WHERE id = ?
-
-                LIMIT 1
-                `,
+                    SELECT
+                        id,
+                        sender_id,
+                        sender_type,
+                        receiver_id,
+                        receiver_type,
+                        message,
+                        is_deleted,
+                        created_at
+                    FROM messages
+                    WHERE id = ?
+                    LIMIT 1
+                    `,
                     [id]
                 );
 
-
             if (!rows.length) {
-
                 console.log(
                     "Edit message not found:",
                     id
                 );
-
                 return;
             }
-
 
             const msg =
                 rows[0];
@@ -2346,7 +2226,6 @@ io.on("connection", (socket) => {
                 msg.sender_type !==
                 senderType
             ) {
-
                 console.log(
                     "Unauthorized message edit attempt:",
                     {
@@ -2354,7 +2233,6 @@ io.on("connection", (socket) => {
                         userId: senderId
                     }
                 );
-
                 return;
             }
 
@@ -2362,12 +2240,10 @@ io.on("connection", (socket) => {
             if (
                 Number(msg.is_deleted) === 1
             ) {
-
                 console.log(
                     "Cannot edit deleted message:",
                     id
                 );
-
                 return;
             }
 
@@ -2378,27 +2254,21 @@ io.on("connection", (socket) => {
             const [timeRows] =
                 await db.promise().query(
                     `
-                    SELECT
-                        id
-
-                    FROM messages
-
-                    WHERE id = ?
-
-                    AND created_at > DATE_SUB(
-                        NOW(),
-                        INTERVAL 5 MINUTE
-                    )
-
-                    LIMIT 1
-                    `,
+                SELECT
+                    id
+                FROM messages
+                WHERE id = ?
+                AND created_at > DATE_SUB(
+                    NOW(),
+                    INTERVAL 5 MINUTE
+                )
+                LIMIT 1
+                `,
                     [id]
                 );
 
-
             // MESSAGE TOO OLD
             if (!timeRows.length) {
-
                 console.log(
                     "Edit rejected: 5-minute limit exceeded",
                     {
@@ -2413,54 +2283,52 @@ io.on("connection", (socket) => {
                         reason: "EDIT_TIME_EXPIRED"
                     }
                 );
-
                 return;
-
             }
 
+            // ===================================
+            // ENCRYPTION FOR NEW MESSAGE
+            // ===================================
+        
+            const { encryptedMessage, iv } = encryptMessage(cleanMessage);
 
             // UPDATE MESSAGE
             const [updateResult] =
                 await db.promise().query(
                     `
-                UPDATE messages
-                SET
-                    message = ?,
-                    is_edited = 1
-
-                WHERE id = ?
-
-                AND sender_id = ?
-
-                AND sender_type = ?
-
-                AND is_deleted = 0
-                `,
+                    UPDATE messages
+                    SET
+                        message = ?,
+                        encryption_iv = ?,
+                        is_edited = 1
+                    WHERE id = ?
+                    AND sender_id = ?
+                    AND sender_type = ?
+                    AND is_deleted = 0
+                    `,
                     [
-                        cleanMessage,
+                        encryptedMessage, // <--- encrypted string
+                        iv,               // <--- new random IV vector
                         id,
                         senderId,
                         senderType
                     ]
                 );
 
-
             if (
                 updateResult.affectedRows === 0
             ) {
-
                 console.log(
                     "Message was not edited:",
                     id
                 );
-
                 return;
             }
 
-            // EDIT EVENT DATA
+            // EDIT EVENT DATA (PLAIN TEXT)
             const editData = {
                 messageId: id,
-                message: cleanMessage,
+                message: cleanMessage, 
                 isEdited: true,
                 editedAt: new Date()
             };
@@ -2475,17 +2343,13 @@ io.on("connection", (socket) => {
             const [receiverRows] =
                 await db.promise().query(
                     `
-                SELECT
-                    token
-
-                FROM users
-
-                WHERE id = ?
-
-                AND acc_type = ?
-
-                LIMIT 1
-                `,
+            SELECT
+                token
+            FROM users
+            WHERE id = ?
+            AND acc_type = ?
+            LIMIT 1
+            `,
                     [
                         msg.receiver_id,
                         msg.receiver_type
@@ -2498,45 +2362,34 @@ io.on("connection", (socket) => {
                 const receiverToken =
                     receiverRows[0].token;
 
-
                 const onlineRecipient =
                     onlineUsers[receiverToken];
 
-
                 if (onlineRecipient) {
-
                     onlineRecipient.sockets.forEach(
                         socketId => {
-
                             io.to(socketId).emit(
                                 "chat-message-edited",
                                 editData
                             );
-
                         }
                     );
-
                 }
-
             }
 
-
             console.log(
-                "CHAT MESSAGE EDITED:",
-                editData
+                "CHAT MESSAGE EDITED SECURELY:",
+                id
             );
 
-
         } catch (error) {
-
             console.error(
                 "edit-chat-message error:",
                 error
             );
-
         }
-
     });
+
 });
 
 

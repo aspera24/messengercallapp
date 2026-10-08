@@ -11,7 +11,6 @@ const loadedMessageIds = new Set();
 const pendingReadMessageIds = new Set();
 
 
-
 async function loadUsers() {
 
     const res = await fetch("/users", {
@@ -19,15 +18,7 @@ async function loadUsers() {
     });
 
     const users = await res.json();
-
-    console.log("CURRENT USER:", currentUser);
-    console.log("USERS FROM /users:", users);
-
     const isAdmin = currentUser?.acc_type === "admin";
-
-    console.log("IS ADMIN:", isAdmin);
-    console.log("USERS COUNT:", users.length);
-    console.log("FIRST USER:", users[0]);
 
     // GET UNREAD COUNT FOR EACH USER
     const usersWithUnread = await Promise.all(
@@ -50,7 +41,11 @@ async function loadUsers() {
 
                 return {
                     ...user,
-                    unreadCount: count
+
+                    unreadCount: count,
+
+                    profilePicture:
+                        `/profile/picture/${encodeURIComponent(user.token)}?v=${Date.now()}`
                 };
 
             } catch (error) {
@@ -61,22 +56,22 @@ async function loadUsers() {
                     error
                 );
 
-                const previousCount = Number(unreadCounts[user.token]) || 0;
+                const previousCount =
+                    Number(unreadCounts[user.token]) || 0;
 
                 return {
                     ...user,
-                    unreadCount: previousCount
+
+                    unreadCount: previousCount,
+
+                    profilePicture:
+                        `/profile/picture/${encodeURIComponent(user.token)}?v=${Date.now()}`
                 };
 
             }
 
         })
 
-    );
-
-    console.log(
-        "USERS WITH UNREAD COUNT:",
-        usersWithUnread
     );
 
     if (table) {
@@ -114,6 +109,28 @@ async function loadUsers() {
                         `
                             : "";
 
+
+                    const profilePicture =
+                        data.profilePicture
+                            ? `
+                                <img
+                                    src="${data.profilePicture}"
+                                    class="userProfilePicture"
+                                    alt="Profile"
+                                    loading="lazy"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                >
+
+                                <i
+                                    class="fa-solid fa-user userProfileFallback"
+                                    style="display:none;"
+                                ></i>
+                            `
+                            : `
+                                <i class="fa-solid fa-user"></i>
+                            `;
+
+
                     return `
                         <div
                             class="employeeName"
@@ -131,10 +148,17 @@ async function loadUsers() {
                             : ""
                         }
                             </div>
+
+
                             <div class="prof">
-                                <i class="fa-solid fa-user"></i>
+
+                                ${profilePicture}
+
                                 ${unreadBadge}
+
                             </div>
+
+
                             <span>
                                 ${data.firstname} ${data.lastname}
                             </span>
@@ -237,6 +261,7 @@ async function loadUsers() {
 
 }
 
+
 socket.on("user-online", ({ token }) => {
 
     if (!table) return;
@@ -301,6 +326,65 @@ socket.on("user-offline", ({ token }) => {
 
 });
 
+socket.on("profile-picture-updated", ({ token }) => {
+
+    if (!table) return;
+
+    const user =
+        table
+            .rows()
+            .data()
+            .toArray()
+            .find(user => user.token === token);
+
+    if (!user) return;
+
+    // Generate a NEW URL so browser won't use old cached image
+    user.profilePicture =
+        `/profile/picture/${encodeURIComponent(token)}?v=${Date.now()}`;
+
+    // Redraw only the affected table data
+    table
+        .rows()
+        .invalidate()
+        .draw(false);
+
+
+    // If this user is currently open in chat,
+    // update the chat header immediately too
+    if (
+        activeChatUser &&
+        activeChatUser.token === token
+    ) {
+
+        const messageUserAvatar =
+            document.getElementById("messageUserAvatar");
+
+        if (messageUserAvatar) {
+
+            messageUserAvatar.innerHTML = `
+                <img
+                    src="${user.profilePicture}"
+                    alt="Profile"
+                    class="messageUserAvatarImage"
+                    onerror="
+                        this.style.display='none';
+                        this.nextElementSibling.style.display='flex';
+                    "
+                >
+
+                <i
+                    class="fa-solid fa-user messageUserAvatarFallback"
+                    style="display:none;"
+                ></i>
+            `;
+
+        }
+
+    }
+
+});
+
 
 function updateUnreadBadge(userToken, count) {
 
@@ -360,7 +444,42 @@ async function openChat(token, firstname, lastname) {
         .toArray()
         .find(user => user.token === token);
 
-    userName.textContent = firstname + " " + lastname;
+    userName.textContent =
+        firstname + " " + lastname;
+
+
+    // =================================
+    // CHAT USER PROFILE PICTURE
+    // =================================
+
+    const messageUserAvatar =
+        document.getElementById("messageUserAvatar");
+
+    if (messageUserAvatar) {
+
+        const profilePicture =
+            user?.profilePicture ||
+            `/profile/picture/${encodeURIComponent(token)}?v=${Date.now()}`;
+
+        messageUserAvatar.innerHTML = `
+            <img
+                src="${profilePicture}"
+                alt="Profile"
+                class="messageUserAvatarImage"
+                onerror="
+                    this.style.display='none';
+                    this.nextElementSibling.style.display='flex';
+                "
+            >
+
+            <i
+                class="fa-solid fa-user messageUserAvatarFallback"
+                style="display:none;"
+            ></i>
+        `;
+
+    }
+
 
     if (userStatus) {
         userStatus.textContent = user?.online ? "Online" : "Offline";
@@ -452,7 +571,8 @@ async function openChat(token, firstname, lastname) {
                     Number(message.is_deleted) === 1,
                     Number(message.is_read) === 1,
                     Number(message.is_edited) === 1,
-                    Number(message.canEdit) === 1
+                    Number(message.canEdit) === 1,
+                    user?.profilePicture
                 );
 
             });
@@ -507,7 +627,7 @@ document.getElementById("closeMessageBtn")
     });
 
 document.getElementById("sendMessageBtn")
-    .addEventListener("click", sendChatMessage);
+    .addEventListener("click", sendChatMessage());
 
 document.getElementById("messageText")
     .addEventListener("keydown", function (e) {
@@ -613,7 +733,8 @@ function createChatMessageElement(
     isDeleted = false,
     isRead = false,
     isEdited = false,
-    canEdit = false
+    canEdit = false,
+    profilePicture = null
 ) {
 
     const wrapper = document.createElement("div");
@@ -634,8 +755,30 @@ function createChatMessageElement(
         avatar.className =
             "chatMessageAvatar";
 
-        avatar.innerHTML =
-            `<i class="fa-solid fa-user"></i>`;
+        if (profilePicture) {
+
+            avatar.innerHTML = `
+                <img
+                    src="${profilePicture}"
+                    alt="Profile"
+                    class="chatMessageAvatarImage"
+                    onerror="
+                        this.style.display='none';
+                        this.nextElementSibling.style.display='flex';
+                    "
+                >
+
+                <i
+                    class="fa-solid fa-user chatMessageAvatarFallback"
+                    style="display:none;"
+                ></i>
+            `;
+
+        } else {
+
+            avatar.innerHTML =
+                `<i class="fa-solid fa-user"></i>`;
+        }
 
         wrapper.appendChild(avatar);
     }
@@ -665,7 +808,6 @@ function createChatMessageElement(
 
     content.appendChild(bubble);
 
-    // TIMESTAMP
     // TIMESTAMP
     if (createdAt) {
 
@@ -850,7 +992,8 @@ function addChatMessage(
     isDeleted = false,
     isRead = false,
     isEdited = false,
-    canEdit = false
+    canEdit = false,
+    profilePicture = null
 ) {
 
     const body =
@@ -885,7 +1028,8 @@ function addChatMessage(
             isDeleted,
             isRead,
             isEdited,
-            canEdit
+            canEdit,
+            profilePicture
         );
 
     body.appendChild(wrapper);
@@ -1499,6 +1643,12 @@ socket.on("chat-message-edited", function (data) {
 
     }
 
+    // EDIT SUCCESSFULLY SAVED
+    if (editingMessageId === messageId) {
+        cancelEditMessage();
+    }
+
+
 });
 
 function isNearBottom(body) {
@@ -1570,6 +1720,13 @@ socket.on("chat-message", function (data) {
     const nearBottom =
         isNearBottom(body);
 
+    const senderUser =
+        table
+            ?.rows()
+            .data()
+            .toArray()
+            .find(user => user.token === data.from);
+
     addChatMessage(
         data.message,
         "received",
@@ -1579,7 +1736,8 @@ socket.on("chat-message", function (data) {
         false, // isDeleted
         true,  // isRead
         false, // isEdited
-        false  // canEdit
+        false,  // canEdit
+        senderUser?.profilePicture
     );
 
     // =================================
