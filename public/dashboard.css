@@ -858,12 +858,13 @@ input:focus {
     background: #333333;
     color: white;
     letter-spacing: 1px;
-    border-radius: 8px;
+    /* border-radius: 8px; */
     padding: 2px 8px;
     outline: none;
+    border: none;
     font-family: inherit;
     font-size: 14px;
-    line-height: 20px;
+    /* line-height: 20px; */
     box-sizing: border-box;
 }
 

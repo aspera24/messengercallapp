@@ -1648,88 +1648,177 @@ io.on("connection", (socket) => {
 
 
 
-    socket.on("chat-message", async (data) => {
-        try {
-            const { to, message } = data;
 
-            // VALIDATIONS...]
-            if (!to || typeof to !== "string") return;
-            if (!message || typeof message !== "string") return;
+    socket.on("chat-message", async (data, callback) => {
+        // Safely acknowledge success or failure to the sender.
+        const respond = (result) => {
+            if (typeof callback === "function") {
+                callback(result);
+            }
+        };
+
+        try {
+            const { to, message } = data || {};
+
+            // VALIDATIONS
+            if (!to || typeof to !== "string") {
+                return respond({
+                    success: false,
+                    error: "Invalid recipient."
+                });
+            }
+
+            if (!message || typeof message !== "string") {
+                return respond({
+                    success: false,
+                    error: "Message cannot be empty."
+                });
+            }
+
             const cleanMessage = message.trim();
-            if (!cleanMessage || cleanMessage.length > 5000) return;
+
+            if (!cleanMessage || cleanMessage.length > 5000) {
+                return respond({
+                    success: false,
+                    error: "Message is empty or exceeds 5000 characters."
+                });
+            }
 
             const sender = socket.data.user;
+
             if (!sender) {
-                console.log("Chat rejected: socket has no authenticated user");
-                return;
+                console.log(
+                    "Chat rejected: socket has no authenticated user"
+                );
+
+                return respond({
+                    success: false,
+                    error: "You are not authenticated."
+                });
             }
 
             const senderToken = sender.token;
             const senderId = sender.id;
             const senderType = sender.acc_type;
 
-            const recipient = onlineUsers[to];
-
             db.query(
-                `SELECT id, firstname, lastname, username, acc_type, token FROM users WHERE token = ? AND is_active = 1 LIMIT 1`,
+                `SELECT id, firstname, lastname, username, acc_type, token
+             FROM users
+             WHERE token = ? AND is_active = 1
+             LIMIT 1`,
                 [to],
                 (err, rows) => {
-                    if (err) { console.error("CHAT RECIPIENT DB ERROR:", err); return; }
-                    if (!rows.length) { console.log("Chat recipient not found:", to); return; }
+                    if (err) {
+                        console.error("CHAT RECIPIENT DB ERROR:", err);
+
+                        return respond({
+                            success: false,
+                            error: "Failed to find recipient."
+                        });
+                    }
+
+                    if (!rows.length) {
+                        console.log("Chat recipient not found:", to);
+
+                        return respond({
+                            success: false,
+                            error: "Recipient not found."
+                        });
+                    }
 
                     const receiver = rows[0];
 
-                    // --- ENCRYPTION HAPPENS ---
-                    const { encryptedMessage, iv } = encryptMessage(cleanMessage);
+                    try {
+                        // ENCRYPT MESSAGE
+                        const { encryptedMessage, iv } =
+                            encryptMessage(cleanMessage);
 
-                    db.query(
-                        `INSERT INTO messages (
-                        sender_type,
-                        sender_id,
-                        receiver_type,
-                        receiver_id,
-                        message,
-                        encryption_iv
-                    ) VALUES (?, ?, ?, ?, ?, ?)`,
-                        [
-                            senderType,
-                            senderId,
-                            receiver.acc_type,
-                            receiver.id,
-                            encryptedMessage, // <--- encrypted text
-                            iv                // <--- IV vector string
-                        ],
-                        (err, result) => {
-                            if (err) { console.error("CHAT MESSAGE INSERT ERROR:", err); return; }
+                        db.query(
+                            `INSERT INTO messages (
+                            sender_type,
+                            sender_id,
+                            receiver_type,
+                            receiver_id,
+                            message,
+                            encryption_iv
+                        ) VALUES (?, ?, ?, ?, ?, ?)`,
+                            [
+                                senderType,
+                                senderId,
+                                receiver.acc_type,
+                                receiver.id,
+                                encryptedMessage,
+                                iv
+                            ],
+                            (err, result) => {
+                                if (err) {
+                                    console.error(
+                                        "CHAT MESSAGE INSERT ERROR:",
+                                        err
+                                    );
 
+                                    return respond({
+                                        success: false,
+                                        error: "Failed to save message."
+                                    });
+                                }
 
-                            const messageData = {
-                                id: result.insertId,
-                                from: senderToken,
-                                fromType: senderType,
-                                to: receiver.token,
-                                toType: receiver.acc_type,
-                                message: cleanMessage,
-                                createdAt: new Date()
-                            };
+                                const messageData = {
+                                    id: result.insertId,
+                                    from: senderToken,
+                                    fromType: senderType,
+                                    to: receiver.token,
+                                    toType: receiver.acc_type,
+                                    message: cleanMessage,
+                                    createdAt: new Date()
+                                };
 
-                            if (recipient) {
-                                recipient.sockets.forEach(socketId => {
-                                    io.to(socketId).emit("chat-message", messageData);
-                                });
+                                // Notify all recipient sockets, if online.
+                                const recipient = onlineUsers[to];
+
+                                if (recipient?.sockets) {
+                                    recipient.sockets.forEach(socketId => {
+                                        io.to(socketId).emit(
+                                            "chat-message",
+                                            messageData
+                                        );
+                                    });
+                                }
+
+                                // Preserve your existing event.
+                                socket.emit(
+                                    "chat-message-sent",
+                                    messageData
+                                );
+
+                                console.log("CHAT MESSAGE SENT SECURELY");
+
+                                // ACKNOWLEDGE ONLY AFTER DATABASE INSERT SUCCEEDS.
+                                respond({ success: true });
                             }
+                        );
+                    } catch (error) {
+                        console.error(
+                            "CHAT MESSAGE PROCESSING ERROR:",
+                            error
+                        );
 
-                            socket.emit("chat-message-sent", messageData);
-                            console.log("CHAT MESSAGE SENT SECURELY");
-                        }
-                    );
+                        respond({
+                            success: false,
+                            error: "Failed to process message."
+                        });
+                    }
                 }
             );
         } catch (error) {
             console.error("chat-message error:", error);
+
+            respond({
+                success: false,
+                error: "An unexpected error occurred."
+            });
         }
     });
-
 
     socket.on("mark-chat-read", async (data) => {
 
@@ -2289,7 +2378,7 @@ io.on("connection", (socket) => {
             // ===================================
             // ENCRYPTION FOR NEW MESSAGE
             // ===================================
-        
+
             const { encryptedMessage, iv } = encryptMessage(cleanMessage);
 
             // UPDATE MESSAGE
@@ -2328,7 +2417,7 @@ io.on("connection", (socket) => {
             // EDIT EVENT DATA (PLAIN TEXT)
             const editData = {
                 messageId: id,
-                message: cleanMessage, 
+                message: cleanMessage,
                 isEdited: true,
                 editedAt: new Date()
             };

@@ -6,6 +6,8 @@ let chatCursor = null;
 let chatHasMore = false;
 let chatLoading = false;
 let editingMessageId = null;
+let isSendingMessage = false;
+let sendMessageTimeout = null;
 
 const loadedMessageIds = new Set();
 const pendingReadMessageIds = new Set();
@@ -627,7 +629,7 @@ document.getElementById("closeMessageBtn")
     });
 
 document.getElementById("sendMessageBtn")
-    .addEventListener("click", sendChatMessage());
+    .addEventListener("click", sendChatMessage);
 
 document.getElementById("messageText")
     .addEventListener("keydown", function (e) {
@@ -666,63 +668,95 @@ socket.on("chat-message-sent", function (data) {
     input.value = "";
     input.style.height = "auto";
     input.focus();
+    resetSendMessageLoading();
 
 });
 
+
+function setSendMessageLoading(isLoading) {
+    const sendBtn = document.getElementById("sendMessageBtn");
+
+    if (!sendBtn) return;
+
+    if (isLoading) {
+        sendBtn.innerHTML = `
+            <i class="fa-solid fa-spinner fa-spin"></i>
+        `;
+        sendBtn.title = "Sending message...";
+        sendBtn.disabled = true;
+        sendBtn.classList.add("sending");
+    } else {
+        sendBtn.innerHTML = `
+            <i class="fa-solid fa-paper-plane"></i>
+        `;
+        sendBtn.title = "Send message";
+        sendBtn.disabled = false;
+        sendBtn.classList.remove("sending");
+    }
+}
+
+function resetSendMessageLoading() {
+    clearTimeout(sendMessageTimeout);
+    sendMessageTimeout = null;
+    isSendingMessage = false;
+
+    if (editingMessageId === null) {
+        setSendMessageLoading(false);
+    }
+}
+
 function sendChatMessage() {
+    const input = document.getElementById("messageText");
+    const message = input.value.trim();
 
-    const input =
-        document.getElementById(
-            "messageText"
-        );
+    if (!message) return;
 
-
-    const message =
-        input.value.trim();
-
-
-    if (!message) {
-        return;
-    }
-
-    // EDIT MODE
+    // EDIT MODE: preserve your existing edit behavior.
     if (editingMessageId !== null) {
-
-        socket.emit(
-            "edit-chat-message",
-            {
-                messageId:
-                    editingMessageId,
-
-                message:
-                    message
-            }
-        );
-
+        socket.emit("edit-chat-message", {
+            messageId: editingMessageId,
+            message: message
+        });
 
         return;
     }
 
-    // NORMAL SEND
-    if (!activeChatUser) {
-        return;
-    }
+    if (!activeChatUser || isSendingMessage) return;
 
+    isSendingMessage = true;
+
+    const recipientToken = activeChatUser.token;
+
+    setSendMessageLoading(true);
+
+    sendMessageTimeout = setTimeout(() => {
+        resetSendMessageLoading();
+        console.warn("[CHAT] Send timed out.");
+    }, 15000);
 
     socket.emit(
         "chat-message",
         {
+            to: recipientToken,
+            message: message
+        },
+        (response) => {
+            // Requires a server acknowledgement callback.
+            if (response?.success) {
+                // The chat-message-sent event handles clearing
+                // the input when the server confirms delivery.
+            } else if (response) {
+                console.error(
+                    "[CHAT] Failed to send:",
+                    response.error || "Unknown error"
+                );
 
-            to:
-                activeChatUser.token,
-
-            message:
-                message
-
+                resetSendMessageLoading();
+            }
         }
     );
-
 }
+
 
 
 function createChatMessageElement(
