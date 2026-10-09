@@ -332,63 +332,103 @@ socket.on("user-offline", ({ token }) => {
 });
 
 socket.on("profile-picture-updated", ({ token }) => {
+    if (!token) return;
 
-    if (!table) return;
+    // Create a fresh URL to bypass browser cache
+    const newProfilePicture = getChatProfilePictureUrl(token);
 
-    const user =
-        table
+    if (table) {
+        const user = table
             .rows()
             .data()
             .toArray()
             .find(user => user.token === token);
 
-    if (!user) return;
+        if (user) {
+            user.profilePicture = newProfilePicture;
 
-    // Generate a NEW URL so browser won't use old cached image
-    user.profilePicture =
-        `/profile/picture/${encodeURIComponent(token)}?v=${Date.now()}`;
+            table
+                .rows()
+                .invalidate()
+                .draw(false);
+        }
+    }
 
-    // Redraw only the affected table data
-    table
-        .rows()
-        .invalidate()
-        .draw(false);
-
-
-    // If this user is currently open in chat,
-    // update the chat header immediately too
     if (
         activeChatUser &&
         activeChatUser.token === token
     ) {
+        activeChatUser.profilePicture = newProfilePicture;
 
         const messageUserAvatar =
             document.getElementById("messageUserAvatar");
 
         if (messageUserAvatar) {
+            const img = messageUserAvatar.querySelector(
+                ".messageUserAvatarImage"
+            );
 
-            messageUserAvatar.innerHTML = `
-                <img
-                    src="${user.profilePicture}"
-                    alt="Profile"
-                    class="messageUserAvatarImage"
-                    onerror="
-                        this.style.display='none';
-                        this.nextElementSibling.style.display='flex';
-                    "
-                >
-
-                <i
-                    class="fa-solid fa-user messageUserAvatarFallback"
-                    style="display:none;"
-                ></i>
-            `;
-
+            if (img) {
+                img.src = newProfilePicture;
+                img.style.display = "";
+            } else {
+                messageUserAvatar.innerHTML = `
+                    <img
+                        src="${newProfilePicture}"
+                        alt="Profile"
+                        class="messageUserAvatarImage"
+                        onerror="
+                            this.style.display='none';
+                            this.nextElementSibling.style.display='flex';
+                        "
+                    >
+                    <i
+                        class="fa-solid fa-user messageUserAvatarFallback"
+                        style="display:none;"
+                    ></i>
+                `;
+            }
         }
-
     }
 
+    // Only update messages belonging to this chat's sender
+    if (
+        activeChatUser &&
+        activeChatUser.token === token
+    ) {
+        document
+            .querySelectorAll(
+                "#messageBody .chatMessageWrapper.received .chatMessageAvatar"
+            )
+            .forEach(avatar => {
+                let img = avatar.querySelector(
+                    ".chatMessageAvatarImage"
+                );
+
+                if (img) {
+                    img.src = newProfilePicture;
+                    img.style.display = "";
+                } else {
+                    avatar.innerHTML = `
+                        <img
+                            src="${newProfilePicture}"
+                            alt="Profile"
+                            class="chatMessageAvatarImage"
+                            onerror="
+                                this.style.display='none';
+                                this.nextElementSibling.style.display='flex';
+                            "
+                        >
+                        <i
+                            class="fa-solid fa-user chatMessageAvatarFallback"
+                            style="display:none;"
+                        ></i>
+                    `;
+                }
+            });
+    }
 });
+
 
 function updateUnreadBadge(userToken, count) {
 
