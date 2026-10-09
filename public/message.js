@@ -13,6 +13,10 @@ const loadedMessageIds = new Set();
 const pendingReadMessageIds = new Set();
 
 
+function getChatProfilePictureUrl(token) {
+    return `/profile/picture/${encodeURIComponent(token)}?v=${Date.now()}`;
+}
+
 async function loadUsers() {
 
     const res = await fetch("/users", {
@@ -263,7 +267,6 @@ async function loadUsers() {
 
 }
 
-
 socket.on("user-online", ({ token }) => {
 
     if (!table) return;
@@ -387,7 +390,6 @@ socket.on("profile-picture-updated", ({ token }) => {
 
 });
 
-
 function updateUnreadBadge(userToken, count) {
 
     if (!table) {
@@ -417,12 +419,12 @@ function updateUnreadBadge(userToken, count) {
 
 }
 
-
 async function openChat(token, firstname, lastname) {
 
     activeChatUser = {
         token: token,
-        firstname: firstname
+        firstname: firstname,
+        profilePicture: getChatProfilePictureUrl(token)
     };
 
 
@@ -458,14 +460,9 @@ async function openChat(token, firstname, lastname) {
         document.getElementById("messageUserAvatar");
 
     if (messageUserAvatar) {
-
-        const profilePicture =
-            user?.profilePicture ||
-            `/profile/picture/${encodeURIComponent(token)}?v=${Date.now()}`;
-
         messageUserAvatar.innerHTML = `
             <img
-                src="${profilePicture}"
+                src="${activeChatUser.profilePicture}"
                 alt="Profile"
                 class="messageUserAvatarImage"
                 onerror="
@@ -479,7 +476,6 @@ async function openChat(token, firstname, lastname) {
                 style="display:none;"
             ></i>
         `;
-
     }
 
 
@@ -574,7 +570,7 @@ async function openChat(token, firstname, lastname) {
                     Number(message.is_read) === 1,
                     Number(message.is_edited) === 1,
                     Number(message.canEdit) === 1,
-                    user?.profilePicture
+                    activeChatUser.profilePicture
                 );
 
             });
@@ -672,7 +668,6 @@ socket.on("chat-message-sent", function (data) {
 
 });
 
-
 function setSendMessageLoading(isLoading) {
     const sendBtn = document.getElementById("sendMessageBtn");
 
@@ -756,8 +751,6 @@ function sendChatMessage() {
         }
     );
 }
-
-
 
 function createChatMessageElement(
     message,
@@ -1011,12 +1004,6 @@ function createChatMessageElement(
     return wrapper;
 }
 
-
-
-
-
-
-
 function addChatMessage(
     message,
     type,
@@ -1265,15 +1252,17 @@ async function loadOlderMessages() {
             const element =
                 createChatMessageElement(
                     message.message,
-                    message.isMine
-                        ? "sent"
-                        : "received",
+                    message.isMine ? "sent" : "received",
                     message.id,
                     message.created_at,
                     Number(message.is_deleted) === 1,
                     Number(message.is_read) === 1,
                     Number(message.is_edited) === 1,
-                    Number(message.canEdit) === 1
+                    Number(message.canEdit) === 1,
+
+                    message.isMine
+                        ? null
+                        : activeChatUser.profilePicture
                 );
 
 
@@ -1754,12 +1743,12 @@ socket.on("chat-message", function (data) {
     const nearBottom =
         isNearBottom(body);
 
-    const senderUser =
-        table
-            ?.rows()
-            .data()
-            .toArray()
-            .find(user => user.token === data.from);
+    // const senderUser =
+    //     table
+    //         ?.rows()
+    //         .data()
+    //         .toArray()
+    //         .find(user => user.token === data.from);
 
     addChatMessage(
         data.message,
@@ -1771,7 +1760,7 @@ socket.on("chat-message", function (data) {
         true,  // isRead
         false, // isEdited
         false,  // canEdit
-        senderUser?.profilePicture
+        getChatProfilePictureUrl(data.from)
     );
 
     // =================================
