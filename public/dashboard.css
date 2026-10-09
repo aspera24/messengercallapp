@@ -263,7 +263,7 @@ input:focus {
     bottom: 40px;
     width: 380px;
     height: 500px;
-    background: #272727;
+    background: #343434;
     border-radius: 14px;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
     display: none;
@@ -353,9 +353,8 @@ input:focus {
     align-items: center;
     justify-content: space-between;
     padding: 0 15px;
-    background: #2563eb;
+    /* background: #222222; */
     color: #fff;
-    border-bottom: 1px solid #6a8eff;
 }
 
 
@@ -453,7 +452,7 @@ input:focus {
     flex: 1;
     padding: 15px;
     overflow-y: auto;
-    background: #222222;
+    /* background: #222222; */
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -842,8 +841,7 @@ input:focus {
 .messageInput {
     min-height: 65px;
     padding: 10px;
-    background: #333333;
-    border-top: 1px solid #272727;
+    /* background: #222222; */
     display: flex;
     align-items: flex-end;
     gap: 8px;
@@ -855,25 +853,18 @@ input:focus {
     max-height: 100px;
     resize: none;
     overflow-y: auto;
-    background: #333333;
-    color: white;
-    letter-spacing: 1px;
-    /* border-radius: 8px; */
-    padding: 2px 8px;
+    background: transparent;
+    color: #c9c9c9;
+    padding: 5px 8px;
     outline: none;
-    border: none;
+    border: 1px solid #3f3e3e;
     font-family: inherit;
-    font-size: 14px;
-    /* line-height: 20px; */
-    box-sizing: border-box;
+    line-height: 20px;
+    border-bottom-left-radius: 5px;
 }
 
 .messageTimestamp strong {
     font-weight: 700;
-}
-
-#messageText:focus {
-    border-color: #2563eb;
 }
 
 #sendMessageBtn {
