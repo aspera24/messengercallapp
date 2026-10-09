@@ -17,7 +17,7 @@ process.on("unhandledRejection", (err) => {
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const { parseCookie } = require("cookie");
-const authMiddleware = require("./middleware/authMiddleware");
+// const authMiddleware = require("./middleware/authMiddleware");
 
 const userMediaState = {};
 let activeMeeting = null;
@@ -64,7 +64,7 @@ const rooms = {};       // roomId -> admin data
 const pendingRequests = {};
 const requestTimers = {};
 const joinedUsersInMeeting = {};
-const port = 3000;
+const port = process.env.PORT || 3000;
 const reconnectTimers = {};
 const peerSocketMap = {};
 const callAllProgress = {};
@@ -2396,6 +2396,6 @@ io.on("connection", (socket) => {
 
 
 
-server.listen(port, () => {
+server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);
 });
