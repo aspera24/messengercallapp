@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#06152e">
     <title>MeetFlow</title>
-    <link rel="stylesheet" href="/dashboard.css">
+
+    <!-- Load legacy responsive styles first; dashboard.css overrides them where needed. -->
     <link rel="stylesheet" href="/dashboard-tab-mob.css">
+    <link rel="stylesheet" href="/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" href="data:,">
 
@@ -16,337 +19,236 @@
 
 <body>
     <div id="overlay" onclick="toggleSidebar()"></div>
+
     <div class="app">
-
-        <div class="topbar">
-            <button id="menuBtn" onclick="toggleSidebar()">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-            <h2>
-                <div class="logo">
-                    <div class="bubble"></div>
-                    MF
-                </div>
-                MeetFlow
-            </h2>
-            <span class="profileCont">
-                <h3 id="uname"></h3>
-                <i id="profile" class="fa-solid fa-user" style="cursor: pointer;"></i>
-            </span>
-
-        </div>
-
         <div class="centCont">
-            <div class="leftCont">
-                <div class="leftInnerCont">
-                    <canvas id="effectCanvas" style="display:none"></canvas>
-
-                    <div class="video-grid">
-
-                        <div class="video-box" id="localBox">
-
-                            <div class="video-loading" id="localLoading">
-                                <i class="fa-solid fa-video fa-beat-fade"></i>
-                                <span>Connecting Camera...</span>
-                            </div>
-
-                            <video id="local" class="camera-user" autoplay muted playsinline></video>
-
-                            <div class="video-status" id="localStatus">
-                                <i class="fa-solid fa-user"></i>
-                                <span id="statusText">Camera Off</span>
-                            </div>
-
-                            <span class="tag">You</span>
-
-                            <div class="controls">
-
-                                <button id="camBtn" onclick="toggleCamera()" title="Camera">
-                                    <i class="fa-solid fa-video"></i>
-                                </button>
-
-                                <button id="micBtn" onclick="toggleMic()" title="Microphone">
-                                    <i class="fa-solid fa-microphone"></i>
-                                </button>
-
-                                <button id="switchCameraBtn" type="button" onclick="switchCamera()">
-                                    <i class="fa-solid fa-camera-rotate"></i>
-                                </button>
-
-                            </div>
-
-                            <div class="mic-level">
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                            </div>
-
-                        </div>
-
+            <!-- LEFT SIDEBAR: keep existing IDs used by app.js -->
+            <aside class="leftCont" aria-label="Main sidebar">
+                <div class="leftBrand">
+                    <div class="brandMark"><span>MF</span></div>
+                    <div class="brandCopy">
+                        <strong>MeetFlow</strong>
+                        <small>Connect · Collaborate · Get Things Done</small>
                     </div>
+                </div>
 
-                    <!-- <div class="filter-box">
+                <nav class="sideNav" aria-label="Dashboard navigation">
+                    <a class="sideNavItem active" href="#meetingWorkspace">
+                        <i class="fa-solid fa-video"></i><span>Meeting</span>
+                    </a>
+                    <button class="sideNavItem" type="button"
+                        onclick="document.getElementById('messageContainer').classList.toggle('show')">
+                        <i class="fa-regular fa-comments"></i><span>Chat</span>
+                    </button>
+                    <a class="sideNavItem" href="#accountSection">
+                        <i class="fa-solid fa-users"></i><span>Employees</span>
+                    </a>
+                    <a class="sideNavItem" href="#missedCallContainer">
+                        <i class="fa-solid fa-phone-slash"></i><span>Missed Calls</span>
+                    </a>
+                </nav>
 
-                        <label>Camera Filter</label>
-
-                        <select id="cameraFilter">
-
-                            <option value="">None</option>
-                            <option value="Grayscale">Grayscale</option>
-                            <option value="Warm">Warm</option>
-                            <option value="Cool">Cool</option>
-                            <option value="Cinematic">Cinematic</option>
-
-                        </select>
-
-                        <button id="importLutBtn">
-                            <i class="fa-solid fa-file-import"></i>
-                            Import LUT
-                        </button>
-
-                        <input type="file" id="lutFile" accept=".cube" hidden>
-
-                    </div> -->
-
-                    <div class="userListCont">
-
-                        <button id="endBtn" onclick="endMeeting()">
-                            <i class="fa-solid fa-phone-slash"></i>
-                            End Meeting
-                        </button>
-
-                        <button title="Call all employees" id="callAllBtn" onclick="callAllUsers()">
-                            <i class="fa-solid fa-phone"></i>
-                            Call All
-                        </button>
-
-                        <div class="listBar">
-                            <h3>Account/s</h3>
-                            <i id="addEmp" title="Add Employee" class="fa-solid fa-user-plus"></i>
-                        </div>
-
-                        <table id="userTable" class="display" style="width:100%">
-                            <thead>
-                                <!-- <tr>
-                                    <th>Name</th>
-                                    <th width="150">Actions</th>
-                                </tr> -->
-                            </thead>
-
-                            <tbody></tbody>
-                        </table>
+                <section id="missedCallContainer" class="missedCallContainer sidebarMissedCalls">
+                    <div class="title"><i class="fa-solid fa-phone-slash"></i><span>Missed Calls</span></div>
+                    <div id="missedCallList">
+                        <div class="empty">No missed calls.</div>
                     </div>
+                </section>
 
-                    <div id="missedCallContainer" class="missedCallContainer">
-                        <div class="title">
-                            <i class="fa-solid fa-phone-slash"></i>
-                            Missed Calls
-                        </div>
-
-                        <div id="missedCallList">
-                            <div class="empty">
-                                No missed calls.
-                            </div>
-                        </div>
-                    </div>
+                <div class="sidebarFooter">
+                    <div class="footerBrandMark">MF</div>
+                    <div><strong>MeetFlow</strong><small>Better meetings. Stronger teams.</small></div>
                 </div>
 
                 <button title="Sign out" class="logoutBtn" id="logoutBtn" onclick="logout()">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Sign out
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Sign out</span>
                 </button>
-            </div>
-            <div class="rightCont">
-                <div class="videos-container">
-                    <p>View all participants' live camera feeds in real time. Active
-                        speakers and newly joined
-                        participants will appear here during the meeting.
-                    </p>
-                    <div class="smallVideo">
-                        <video id="localPreview" class="camera-user" autoplay muted playsinline></video>
-                    </div>
-                    <div id="videos"></div>
-                    <div id="meetingTimer" class="meeting-timer" style="display:none;">
-                        <i class="fa-regular fa-clock"></i>
-                        <span>00:00:00</span>
-                    </div>
-                </div>
+            </aside>
 
-                <div id="messageContainer" class="messageContainer">
-
-                    <div class="messageHeader">
-
-                        <div class="messageUser">
-                            <div class="messageAvatar" id="messageUserAvatar">
-                                <i class="fa-solid fa-user"></i>
-                            </div>
-
+            <!-- MAIN CONTENT -->
+            <main class="rightCont" id="meetingWorkspace">
+                <header class="topbar">
+                    <div class="topbarLeft">
+                        <button id="menuBtn" onclick="toggleSidebar()" aria-label="Toggle sidebar"><i
+                                class="fa-solid fa-bars"></i></button>
+                        <div class="topbarTitle">
+                            <span class="meetingIcon"><i class="fa-solid fa-video"></i></span>
                             <div>
-                                <h4 id="messageUserName"></h4>
-                                <span id="messageUserStatus"></span>
+                                <h1>Team Meeting</h1>
+                                <p>MeetFlow workspace <span class="topbarDot"></span> Live collaboration</p>
                             </div>
                         </div>
+                    </div>
+                    <div class="topbarRight">
+                        <span class="meetingStatus"><span class="statusDot"></span> Ready to connect</span>
+                        <span class="profileCont">
+                            <h3 id="uname"></h3><i id="profile" class="fa-solid fa-user" title="Profile" role="button"
+                                tabindex="0"></i>
+                        </span>
+                    </div>
+                </header>
 
+                <section class="meetingContent">
+                    <div class="meetingLeftView">
+                        <div class="meetingHeading">
+                            <div><span class="eyebrow">VIDEO CONFERENCE</span>
+                                <h2>Meeting room</h2>
+                                <p>Connect face-to-face with your team.</p>
+                            </div>
+                            <div id="meetingTimer" class="meeting-timer" style="display:none;"><i
+                                    class="fa-regular fa-clock"></i><span>00:00:00</span></div>
+                        </div>
+
+                        <div class="videos-container">
+                            <p class="videoIntro">Your camera and connected participants will appear here during the
+                                meeting.</p>
+
+                            <!-- Retained for existing mobile/local preview logic. -->
+                            <div class="smallVideo"><video id="localPreview" class="camera-user" autoplay muted
+                                    playsinline></video></div>
+
+                            <div class="video-grid" id="videoGrid">
+                                <div class="video-box local-video-box" id="localBox">
+                                    <div class="video-loading" id="localLoading"><i
+                                            class="fa-solid fa-video fa-beat-fade"></i><span>Connecting camera...</span>
+                                    </div>
+                                    <video id="local" class="camera-user" autoplay muted playsinline></video>
+                                    <div class="video-status" id="localStatus"><i class="fa-solid fa-user"></i><span
+                                            id="statusText">Camera Off</span></div>
+                                    <span class="tag">You</span>
+                                    <div class="controls">
+                                        <button id="camBtn" onclick="toggleCamera()" title="Camera"
+                                            aria-label="Toggle camera"><i class="fa-solid fa-video"></i></button>
+                                        <button id="micBtn" onclick="toggleMic()" title="Microphone"
+                                            aria-label="Toggle microphone"><i
+                                                class="fa-solid fa-microphone"></i></button>
+                                        <button id="switchCameraBtn" type="button" onclick="switchCamera()"
+                                            title="Switch camera" aria-label="Switch camera"><i
+                                                class="fa-solid fa-camera-rotate"></i></button>
+                                    </div>
+                                    <div class="mic-level" aria-hidden="true">
+                                        <div class="bar"></div>
+                                        <div class="bar"></div>
+                                        <div class="bar"></div>
+                                        <div class="bar"></div>
+                                        <div class="bar"></div>
+                                    </div>
+                                </div>
+                                <!-- app.js can continue appending remote participant tiles here. -->
+                                <div id="videos" class="remote-videos"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebarSection" id="accountSection">
+                        <div class="sectionHeading listBar">
+                            <div>
+                                <span class="eyebrow">WORKSPACE</span>
+                                <h3>Employees</h3>
+                            </div>
+                            <i id="addEmp" title="Add Employee" class="fa-solid fa-user-plus" role="button" tabindex="0"
+                                aria-label="Add employee"></i>
+                        </div>
+
+                        <div class="sidebarActions">
+                            <button title="Call all employees" id="callAllBtn" onclick="callAllUsers()">
+                                <i class="fa-solid fa-phone"></i><span>Call All</span>
+                            </button>
+                            <button id="endBtn" onclick="endMeeting()">
+                                <i class="fa-solid fa-phone-slash"></i><span>End Meeting</span>
+                            </button>
+                        </div>
+
+                        <div class="userListCont">
+                            <table id="userTable" class="display" style="width:100%">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Existing chat container and IDs are preserved for message.js. -->
+                <section id="messageContainer" class="messageContainer" aria-label="Chat">
+                    <div class="messageHeader">
+                        <div class="messageUser">
+                            <div class="messageAvatar" id="messageUserAvatar"><i class="fa-solid fa-user"></i></div>
+                            <div class="messageUserDetails">
+                                <h4 id="messageUserName"></h4><span id="messageUserStatus"></span>
+                            </div>
+                        </div>
                         <div class="rightBtns">
-                            <button id="infoBtn" title="Information">
-                                <i class="fa-solid fa-circle-info"></i>
-                            </button>
-
-                            <button id="closeMessageBtn" title="Close">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
+                            <button id="infoBtn" title="Information" aria-label="Information"><i
+                                    class="fa-solid fa-circle-info"></i></button>
+                            <button id="closeMessageBtn" title="Close" aria-label="Close chat"><i
+                                    class="fa-solid fa-xmark"></i></button>
                         </div>
-
                     </div>
-
                     <div id="messageBody" class="messageBody">
-
-                        <div class="messageEmpty">
-                            <i class="fa-regular fa-comments"></i>
-                            <span>Start a conversation</span>
-                        </div>
-
+                        <div class="messageEmpty"><i class="fa-regular fa-comments"></i><span>Start a
+                                conversation</span></div>
                     </div>
-
-                    <div class="messageInput">
-
-                        <textarea type="text" id="messageText" placeholder="Type a message..."
-                            autocomplete="off"></textarea>
-
-                        <button id="sendMessageBtn" title="Send">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-
-                    </div>
-
-                </div>
-            </div>
+                    <div class="messageInput"><textarea id="messageText" placeholder="Type a message..."
+                            autocomplete="off" rows="1"></textarea><button id="sendMessageBtn" title="Send"
+                            aria-label="Send message"><i class="fa-solid fa-paper-plane"></i></button></div>
+                </section>
+            </main>
         </div>
-
-
     </div>
 
+    <!-- Meeting invitation modal -->
     <div id="meetingRequestModal" class="meeting-modal">
-
         <div class="meeting-modal-content">
-            <h3>
-                <i class="fa-solid fa-video"></i>
-                Meeting Invitation
-            </h3>
-
+            <h3><i class="fa-solid fa-video"></i> Meeting invitation</h3>
             <p id="meetingRequestText"></p>
-
-            <button id="acceptMeetingBtn">
-                Accept
-            </button>
-
-            <button id="declineMeetingBtn">
-                Decline
-            </button>
-
+            <div class="modalActions"><button id="acceptMeetingBtn">Accept</button><button
+                    id="declineMeetingBtn">Decline</button></div>
         </div>
-
     </div>
 
+    <!-- Add employee modal -->
     <div id="addEmployeeModal" class="meeting-modal">
-
         <div class="employee-modal">
-
             <div class="employee-header">
-
-                <div class="employee-icon">
-                    <i class="fa-solid fa-user-plus"></i>
-                </div>
-
+                <div class="employee-icon"><i class="fa-solid fa-user-plus"></i></div>
                 <div>
                     <h2>Add Employee</h2>
                     <p>Create a new employee account.</p>
                 </div>
-
             </div>
-
             <div class="form-grid">
-
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" id="empFirstname" placeholder="Juan">
+                <div class="form-group"><label for="empFirstname">First Name</label><input type="text" id="empFirstname"
+                        placeholder="Juan"></div>
+                <div class="form-group"><label for="empLastname">Last Name</label><input type="text" id="empLastname"
+                        placeholder="Dela Cruz"></div>
+                <div class="form-group"><label for="empUsername">Username</label><input type="text" id="empUsername"
+                        placeholder="juan123"></div>
+                <div class="form-group"><label for="empPassword">Password</label>
+                    <div class="password-field"><input type="password" id="empPassword" placeholder="Enter password"><i
+                            id="toggleEmpPassword" class="fa-solid fa-eye" role="button" tabindex="0"
+                            aria-label="Toggle password visibility"></i></div>
                 </div>
-
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" id="empLastname" placeholder="Dela Cruz">
-                </div>
-
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="empUsername" placeholder="juan123">
-                </div>
-
-                <div class="form-group">
-                    <label>Password</label>
-
-                    <div class="password-field">
-                        <input type="password" id="empPassword" placeholder="••••••••">
-
-                        <i id="toggleEmpPassword" class="fa-solid fa-eye">
-                        </i>
-                    </div>
-
-                </div>
-
             </div>
-
-            <div class="employee-actions">
-
-                <button id="closeEmployeeModal" class="cancel-btn">
-                    <i class="fa-solid fa-xmark"></i>
-                    Cancel
-                </button>
-
-                <button id="saveEmployeeBtn" class="save-btn">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    Save Employee
-                </button>
-
-            </div>
-
+            <div class="employee-actions"><button id="closeEmployeeModal" class="cancel-btn"><i
+                        class="fa-solid fa-xmark"></i> Cancel</button><button id="saveEmployeeBtn" class="save-btn"><i
+                        class="fa-solid fa-floppy-disk"></i> Save Employee</button></div>
         </div>
-
     </div>
 
+    <!-- Toast notifications -->
     <div id="toast" class="toast">
-
-        <div class="toast-icon">
-            <i id="toastIcon" class="fa-solid fa-circle-info"></i>
-        </div>
-
+        <div class="toast-icon"><i id="toastIcon" class="fa-solid fa-circle-info"></i></div>
         <div class="toast-body">
-
-            <h4 id="toastTitle">
-                Notification
-            </h4>
-
-            <p id="toastMessage">
-                Sample message
-            </p>
-
-        </div>
-
-        <button id="toastClose">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-
+            <h4 id="toastTitle">Notification</h4>
+            <p id="toastMessage">Sample message</p>
+        </div><button id="toastClose" aria-label="Close notification"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
     <script src="/lut.js" defer></script>
     <script src="/app.js" defer></script>
     <script src="/message.js" defer></script>
-
 </body>
 
 </html>
