@@ -263,7 +263,8 @@ input:focus {
     bottom: 40px;
     width: 380px;
     height: 500px;
-    background: #343434;
+    background: transparent;
+    backdrop-filter: blur(10px);
     border-radius: 14px;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
     display: none;

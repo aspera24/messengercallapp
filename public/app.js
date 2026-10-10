@@ -337,97 +337,95 @@ window.onload = async () => {
 
 let currentFacingMode = "user";
 let cameraStream = null;
-let filteredStream = null;
-let filteredVideoTrack = null;
 let switchingCamera = false;
 
-async function buildFilteredCameraStream(rawCameraStream) {
-    try {
-        const result =
-            await createFilteredStream(rawCameraStream);
+// async function buildFilteredCameraStream(rawCameraStream) {
+//     try {
+//         const result =
+//             await createFilteredStream(rawCameraStream);
 
-        if (!result) {
-            throw new Error("Filter returned no stream");
-        }
+//         if (!result) {
+//             throw new Error("Filter returned no stream");
+//         }
 
-        const processedVideoTrack =
-            result.getVideoTracks()[0];
+//         const processedVideoTrack =
+//             result.getVideoTracks()[0];
 
-        if (!processedVideoTrack) {
-            throw new Error(
-                "Filter returned no video track"
-            );
-        }
+//         if (!processedVideoTrack) {
+//             throw new Error(
+//                 "Filter returned no video track"
+//             );
+//         }
 
-        /*
-         * IMPORTANT:
-         * canvas.captureStream() only contains VIDEO.
-         * Add the original microphone track back.
-         */
-        const finalStream =
-            new MediaStream();
+//         /*
+//          * IMPORTANT:
+//          * canvas.captureStream() only contains VIDEO.
+//          * Add the original microphone track back.
+//          */
+//         const finalStream =
+//             new MediaStream();
 
-        // Filtered video
-        finalStream.addTrack(
-            processedVideoTrack
-        );
+//         // Filtered video
+//         finalStream.addTrack(
+//             processedVideoTrack
+//         );
 
-        // Original microphone
-        const originalAudioTrack =
-            rawCameraStream.getAudioTracks()[0];
+//         // Original microphone
+//         const originalAudioTrack =
+//             rawCameraStream.getAudioTracks()[0];
 
-        if (originalAudioTrack) {
-            finalStream.addTrack(
-                originalAudioTrack
-            );
-        }
+//         if (originalAudioTrack) {
+//             finalStream.addTrack(
+//                 originalAudioTrack
+//             );
+//         }
 
-        filteredStream = finalStream;
-        filteredVideoTrack = processedVideoTrack;
+//         filteredStream = finalStream;
+//         filteredVideoTrack = processedVideoTrack;
 
-        console.log(
-            "[FILTER] Final stream:",
-            {
-                videoTracks: finalStream.getVideoTracks().length,
-                audioTracks: finalStream.getAudioTracks().length
-            }
-        );
+//         console.log(
+//             "[FILTER] Final stream:",
+//             {
+//                 videoTracks: finalStream.getVideoTracks().length,
+//                 audioTracks: finalStream.getAudioTracks().length
+//             }
+//         );
 
-        return finalStream;
+//         return finalStream;
 
-    } catch (error) {
-        console.warn(
-            "[FILTER] Failed. Falling back to raw camera:",
-            error
-        );
+//     } catch (error) {
+//         console.warn(
+//             "[FILTER] Failed. Falling back to raw camera:",
+//             error
+//         );
 
-        filteredStream = null;
-        filteredVideoTrack = null;
+//         filteredStream = null;
+//         filteredVideoTrack = null;
 
-        /*
-         * Fallback:
-         * Return the original VIDEO + AUDIO.
-         */
-        const fallback =
-            new MediaStream();
+//         /*
+//          * Fallback:
+//          * Return the original VIDEO + AUDIO.
+//          */
+//         const fallback =
+//             new MediaStream();
 
-        const video =
-            rawCameraStream.getVideoTracks()[0];
+//         const video =
+//             rawCameraStream.getVideoTracks()[0];
 
-        const audio =
-            rawCameraStream.getAudioTracks()[0];
+//         const audio =
+//             rawCameraStream.getAudioTracks()[0];
 
-        if (video) {
-            fallback.addTrack(video);
-        }
+//         if (video) {
+//             fallback.addTrack(video);
+//         }
 
-        if (audio) {
-            fallback.addTrack(audio);
-        }
+//         if (audio) {
+//             fallback.addTrack(audio);
+//         }
 
-        return fallback;
-    }
-}
+//         return fallback;
+//     }
+// }
 
 async function ensureMediaReady(attempt = 0) {
     const loader = document.getElementById("localLoading");
@@ -479,12 +477,9 @@ async function ensureMediaReady(attempt = 0) {
             return false;
         }
 
-        const finalStream =
-            await buildFilteredCameraStream(rawStream);
+        stream = rawStream;
 
-        stream = finalStream;
-
-        localVideo.srcObject = cameraStream;
+        localVideo.srcObject = stream;
 
         updateCameraMirror();
 
@@ -496,6 +491,8 @@ async function ensureMediaReady(attempt = 0) {
 
         videoTrack = stream.getVideoTracks()[0];
         audioTrack = stream.getAudioTracks()[0];
+
+        console.log("[CAMERA SETTINGS]", videoTrack.getSettings());
 
         setupMicLevel();
 
@@ -535,7 +532,6 @@ async function switchCamera() {
 
     switchingCamera = true;
 
-    const oldStream = stream;
     const oldCameraStream = cameraStream;
     const oldAudioTrack =
         stream?.getAudioTracks?.()[0] || audioTrack;
@@ -646,11 +642,11 @@ async function switchCamera() {
                             },
                             width: {
                                 ideal: 480,
-                                max: 640
+                                max: 1920
                             },
                             height: {
                                 ideal: 360,
-                                max: 480
+                                max: 1080
                             },
                             frameRate: {
                                 ideal: 24,
@@ -722,28 +718,26 @@ async function switchCamera() {
         }
 
 
-        let newFilteredStream;
+        // let newFilteredStream;
 
-        try {
-            newFilteredStream =
-                await buildFilteredCameraStream(newCameraStream);
-        } catch (filterError) {
-            console.warn(
-                "[CAMERA] Filter failed on new camera:",
-                filterError
-            );
+        // try {
+        //     newFilteredStream =
+        //         await buildFilteredCameraStream(newCameraStream);
+        // } catch (filterError) {
+        //     console.warn(
+        //         "[CAMERA] Filter failed on new camera:",
+        //         filterError
+        //     );
 
-            newFilteredStream = new MediaStream();
-            newFilteredStream.addTrack(rawVideoTrack);
-        }
+        //     newFilteredStream = new MediaStream();
+        //     newFilteredStream.addTrack(rawVideoTrack);
+        // }
 
         const finalVideoTrack =
-            newFilteredStream.getVideoTracks()[0];
+            newCameraStream.getVideoTracks()[0];
 
         if (!finalVideoTrack) {
-            throw new Error(
-                "No filtered video track from new camera"
-            );
+            throw new Error("No video track from new camera");
         }
 
         for (const peerId in peers) {
@@ -798,8 +792,8 @@ async function switchCamera() {
         videoTrack = finalVideoTrack;
         audioTrack = oldAudioTrack || null;
 
-        filteredStream = newFilteredStream;
-        filteredVideoTrack = finalVideoTrack;
+        // filteredStream = newFilteredStream;
+        // filteredVideoTrack = finalVideoTrack;
 
         /*
          * Update local video.
@@ -1149,20 +1143,20 @@ async function restoreLocalMediaAfterOnline() {
 window.addEventListener("offline", () => { stopLocalMediaBecauseOffline(); });
 window.addEventListener("online", () => { restoreLocalMediaAfterOnline(); });
 
-document.getElementById("cameraFilter").addEventListener("change", async e => {
-    await changeCameraFilter(e.target.value);
-});
+// document.getElementById("cameraFilter").addEventListener("change", async e => {
+//     await changeCameraFilter(e.target.value);
+// });
 
-document.getElementById("importLutBtn").addEventListener("click", () => {
-    document.getElementById("lutFile").click();
-});
+// document.getElementById("importLutBtn").addEventListener("click", () => {
+//     document.getElementById("lutFile").click();
+// });
 
-document.getElementById("lutFile").addEventListener("change", async (e) => {
-    const files = e.target.files;
-    if (files.length > 0) {
-        await loadUserLUT(files[0]);
-    }
-});
+// document.getElementById("lutFile").addEventListener("change", async (e) => {
+//     const files = e.target.files;
+//     if (files.length > 0) {
+//         await loadUserLUT(files[0]);
+//     }
+// });
 
 let pendingRequestTokens = [];
 let pendingCallAll = false;
