@@ -263,22 +263,22 @@ input:focus {
     bottom: 40px;
     width: 380px;
     height: 500px;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.267);
 
     /* Safari / iPhone */
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(3px);
 
     /* Other browsers */
-    backdrop-filter: blur(10px);
-    
+    backdrop-filter: blur(3px);
+
     border-radius: 14px;
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
     display: none;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid #303030;
     transform-origin: 100% 100%;
     backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     will-change: transform, opacity, clip-path;
 
     opacity: 0;
