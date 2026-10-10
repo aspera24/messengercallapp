@@ -264,7 +264,13 @@ input:focus {
     width: 380px;
     height: 500px;
     background: transparent;
+
+    /* Safari / iPhone */
+    -webkit-backdrop-filter: blur(10px);
+
+    /* Other browsers */
     backdrop-filter: blur(10px);
+    
     border-radius: 14px;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
     display: none;
