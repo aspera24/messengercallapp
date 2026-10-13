@@ -36,16 +36,6 @@
                     <a class="sideNavItem active" href="#meetingWorkspace">
                         <i class="fa-solid fa-video"></i><span>Meeting</span>
                     </a>
-                    <button class="sideNavItem" type="button"
-                        onclick="document.getElementById('messageContainer').classList.toggle('show')">
-                        <i class="fa-regular fa-comments"></i><span>Chat</span>
-                    </button>
-                    <a class="sideNavItem" href="#accountSection">
-                        <i class="fa-solid fa-users"></i><span>Employees</span>
-                    </a>
-                    <a class="sideNavItem" href="#missedCallContainer">
-                        <i class="fa-solid fa-phone-slash"></i><span>Missed Calls</span>
-                    </a>
                 </nav>
 
                 <section id="missedCallContainer" class="missedCallContainer sidebarMissedCalls">
@@ -107,35 +97,51 @@
                             <div class="smallVideo"><video id="localPreview" class="camera-user" autoplay muted
                                     playsinline></video></div>
 
-                            <div class="video-grid" id="videoGrid">
-                                <div class="video-box local-video-box" id="localBox">
-                                    <div class="video-loading" id="localLoading"><i
-                                            class="fa-solid fa-video fa-beat-fade"></i><span>Connecting camera...</span>
+                            <div class="centerStream">
+                                <div class="video-grid" id="videoGrid">
+                                    <div class="video-box local-video-box" id="localBox">
+                                        <div class="video-loading" id="localLoading"><i
+                                                class="fa-solid fa-video fa-beat-fade"></i><span>Connecting
+                                                camera...</span>
+                                        </div>
+                                        <video id="local" class="camera-user" autoplay muted playsinline></video>
+                                        <div class="video-status" id="localStatus"><i class="fa-solid fa-user"></i><span
+                                                id="statusText">Camera Off</span></div>
+                                        <span class="tag">You</span>
+
+                                        <div class="mic-level" aria-hidden="true">
+                                            <div class="bar"></div>
+                                            <div class="bar"></div>
+                                            <div class="bar"></div>
+                                            <div class="bar"></div>
+                                            <div class="bar"></div>
+                                        </div>
                                     </div>
-                                    <video id="local" class="camera-user" autoplay muted playsinline></video>
-                                    <div class="video-status" id="localStatus"><i class="fa-solid fa-user"></i><span
-                                            id="statusText">Camera Off</span></div>
-                                    <span class="tag">You</span>
-                                    <div class="controls">
-                                        <button id="camBtn" onclick="toggleCamera()" title="Camera"
-                                            aria-label="Toggle camera"><i class="fa-solid fa-video"></i></button>
-                                        <button id="micBtn" onclick="toggleMic()" title="Microphone"
-                                            aria-label="Toggle microphone"><i
-                                                class="fa-solid fa-microphone"></i></button>
-                                        <button id="switchCameraBtn" type="button" onclick="switchCamera()"
-                                            title="Switch camera" aria-label="Switch camera"><i
-                                                class="fa-solid fa-camera-rotate"></i></button>
-                                    </div>
-                                    <div class="mic-level" aria-hidden="true">
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                    </div>
+                                    <!-- app.js can continue appending remote participant tiles here. -->
+                                    <div id="videos" class="remote-videos"></div>
                                 </div>
-                                <!-- app.js can continue appending remote participant tiles here. -->
-                                <div id="videos" class="remote-videos"></div>
+                            </div>
+
+                            <div class="controlCont">
+                                <div class="controls">
+                                    <button id="camBtn" onclick="toggleCamera()" title="Toggle Camera"
+                                        aria-label="Toggle Camera">
+                                        <i class="fa-solid fa-video"></i>
+                                        <span>Stop Video</span>
+                                    </button>
+
+                                    <button id="micBtn" onclick="toggleMic()" title="Toggle Microphone"
+                                        aria-label="Toggle Microphone">
+                                        <i class="fa-solid fa-microphone"></i>
+                                        <span>Mute</span>
+                                    </button>
+
+                                    <button id="switchCameraBtn" type="button" onclick="switchCamera()"
+                                        title="Switch Camera" aria-label="Switch Camera">
+                                        <i class="fa-solid fa-camera-rotate"></i>
+                                        <span>Switch Camera</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

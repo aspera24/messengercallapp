@@ -19,6 +19,7 @@
 * {
     box-sizing: border-box;
     scrollbar-width: thin;
+    scrollbar-color: #616f88 transparent;
 }
 
 html,
@@ -76,9 +77,9 @@ a {
     display: grid;
     grid-template-columns: var(--mf-sidebar-width) minmax(0, 1fr);
     width: 100%;
-    max-width: 1920px;
-    min-height: 100vh;
-    min-height: 100dvh;
+    overflow: hidden;
+    height: 100%;
+    max-height: 1200px;
     margin-inline: auto;
     background: var(--mf-bg);
     border-inline: 1px solid rgba(101, 156, 231, .08);
@@ -91,8 +92,6 @@ a {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    min-height: 100vh;
-    min-height: 100dvh;
     padding: 22px 15px 14px;
     overflow: hidden;
     background: linear-gradient(180deg, #071b3a 0%, #06152e 72%, #071b3a 100%);
@@ -286,7 +285,9 @@ a {
 
 .userListCont {
     min-width: 0;
-    overflow: auto;
+    overflow: hidden;
+    overflow-y: scroll;
+    height: 300px;
     padding: 10px;
     background: linear-gradient(180deg, #071b3a 0%, #06152e 72%, #071b3a 100%);
     border-radius: 10px;
@@ -321,15 +322,20 @@ a {
 
 #userTable .dt-layout-row {
     margin: 8px 0 !important;
+    display: none;
 }
 
-#userTable .dt-search,
+#userTable .dt-length {
+    display: none !important;
+}
+
+/* #userTable .dt-search,
 #userTable .dt-length,
 #userTable .dt-info,
 #userTable .dt-paging {
     color: var(--mf-muted) !important;
     font-size: 10px;
-}
+} */
 
 #userTable input,
 #userTable select {
@@ -432,9 +438,6 @@ a {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow: hidden;
     background: radial-gradient(ellipse at 47% 38%, rgba(9, 55, 116, .23), transparent 55%), linear-gradient(140deg, #06152e, #031026 76%);
 }
 
@@ -563,7 +566,7 @@ a {
 
 .meetingContent {
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr minmax(300px, .3fr);
     flex: 1;
     flex-direction: column;
     min-width: 0;
@@ -606,6 +609,7 @@ a {
 .videos-container {
     position: relative;
     min-width: 0;
+    height: 100%;
 }
 
 .videoIntro {
@@ -618,40 +622,80 @@ a {
     display: none;
 }
 
-.video-grid,
+
+
+.centerStream {
+    height: 65vh;
+    max-height: 720px;
+    min-height: 300px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding: 10px;
+    box-sizing: border-box;
+
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: thin;
+    scrollbar-color: #42658f transparent;
+}
+
+/* Keep the grid and its 3 columns */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    grid-auto-flow: row;
+    grid-auto-rows: auto;
+    align-content: start;
+    align-items: stretch;
+    gap: 13px;
+
+    width: 100%;
+    min-width: 686px;
+    box-sizing: border-box;
+}
+
+/* Let remote video tiles participate in the parent grid */
 #videos,
 .remote-videos {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-content: start;
-    gap: 13px;
-    min-width: 0;
-}
-
-.video-grid {
-    align-items: stretch;
-}
-
-#videos {
     display: contents;
 }
+
+/* Prevent video tiles from shrinking */
+.video-grid>.video-box {
+    width: 100%;
+    min-width: 220px;
+    max-width: none;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.video-grid video {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+}
+
+
 
 .video-box {
     position: relative;
     isolation: isolate;
-    min-width: 0;
+    min-width: 220px;
     aspect-ratio: 16 / 14;
     overflow: hidden;
     background: linear-gradient(145deg, #0c2852, #071832);
-    border: 1px solid rgba(108, 163, 235, .19);
+    border: 4px solid rgba(108, 163, 235, .19);
     border-radius: 13px;
     box-shadow: 0 10px 24px rgba(0, 0, 0, .12);
 }
 
-.video-box:first-child,
 .local-video-box {
     border-color: rgba(21, 149, 255, .72);
-    box-shadow: 0 0 0 1px rgba(21, 149, 255, .12), 0 10px 28px rgba(0, 0, 0, .16);
+    box-shadow: 0 0 0 1px rgba(21, 149, 255, .12),
+        0 10px 28px rgba(0, 0, 0, .16);
 }
 
 .video-box video {
@@ -663,6 +707,7 @@ a {
     object-fit: cover;
     background: #07152b;
 }
+
 
 .video-box .tag,
 .video-box .video-status {
@@ -687,38 +732,6 @@ a {
 .video-box .video-status {
     right: 10px;
     color: #a9c7ee;
-}
-
-.video-box .controls {
-    position: absolute;
-    z-index: 3;
-    top: 10px;
-    right: 10px;
-    display: flex;
-    gap: 5px;
-    opacity: 0;
-    transition: opacity .16s ease;
-}
-
-.video-box:hover .controls,
-.video-box:focus-within .controls {
-    opacity: 1;
-}
-
-.video-box .controls button {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    color: white;
-    background: rgba(4, 20, 44, .85);
-    border: 1px solid rgba(255, 255, 255, .12);
-    border-radius: 9px;
-    cursor: pointer;
-}
-
-.video-box .controls button:hover {
-    background: var(--mf-blue);
 }
 
 .video-loading {
@@ -767,6 +780,57 @@ a {
 .mic-level .bar:nth-child(4) {
     height: 13px;
 }
+
+.controlCont {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-self: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px 20px;
+    border-radius: 100px;
+}
+
+.controls button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    min-width: 65px;
+    min-height: 60px;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.controls button i {
+    font-size: 19px;
+}
+
+.controls button span {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.controls button:hover {
+    color: #1d4f89;
+}
+
+
+
+
 
 /* Chat window */
 .messageContainer {
@@ -1317,16 +1381,15 @@ a {
         right: 6px;
     }
 
-    .video-box .controls {
-        top: 5px;
-        right: 5px;
-        opacity: 1;
+    .meeting-control-btn {
+        min-width: 72px;
+        min-height: 64px;
+        padding: 8px;
+        font-size: 10px;
     }
 
-    .video-box .controls button {
-        width: 27px;
-        height: 27px;
-        font-size: 10px;
+    .meeting-control-btn i {
+        font-size: 18px;
     }
 
     .form-grid {

@@ -235,7 +235,7 @@ async function loadUsers() {
         searching: true,
         ordering: true,
         info: true,
-        lengthChange: true,
+        lengthChange: false,
         pagingType: "simple",
 
         columnDefs: isAdmin
