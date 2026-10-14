@@ -440,8 +440,25 @@ async function ensureMediaReady(attempt = 0) {
     }
 
     if (stream) {
-        if (loader) loader.style.display = "none";
-        return true;
+        const existingVideoTrack = stream.getVideoTracks()[0];
+
+        if (existingVideoTrack?.readyState === "live") {
+            if (loader) loader.style.display = "none";
+            return true;
+        }
+
+        stream.getTracks().forEach(track => {
+            try {
+                track.stop();
+            } catch (error) {
+                console.warn("[MEDIA] Could not stop stale track:", error);
+            }
+        });
+
+        stream = null;
+        cameraStream = null;
+        videoTrack = null;
+        audioTrack = null;
     }
 
     if (loader) {
@@ -452,12 +469,14 @@ async function ensureMediaReady(attempt = 0) {
     try {
         console.log("[MEDIA] Internet available. Requesting camera/mic...");
 
+
         const videoConstraints = {
             facingMode: { ideal: currentFacingMode },
-            width: { ideal: 480, max: 640 },
-            height: { ideal: 360, max: 480 },
-            frameRate: { ideal: 24, max: 30 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
         };
+
 
         const rawStream = await navigator.mediaDevices.getUserMedia({
             video: videoConstraints,
@@ -641,16 +660,13 @@ async function switchCamera() {
                                 exact: selectedDevice.deviceId
                             },
                             width: {
-                                ideal: 480,
-                                max: 1920
+                                ideal: 1920
                             },
                             height: {
-                                ideal: 360,
-                                max: 1080
+                                ideal: 1080
                             },
                             frameRate: {
-                                ideal: 24,
-                                max: 30
+                                ideal: 30
                             }
                         },
                         audio: false
@@ -671,21 +687,19 @@ async function switchCamera() {
             try {
                 newCameraStream =
                     await navigator.mediaDevices.getUserMedia({
+
                         video: {
                             facingMode: {
                                 ideal: targetFacingMode
                             },
                             width: {
-                                ideal: 480,
-                                max: 640
+                                ideal: 1920
                             },
                             height: {
-                                ideal: 360,
-                                max: 480
+                                ideal: 1080
                             },
                             frameRate: {
-                                ideal: 24,
-                                max: 30
+                                ideal: 30
                             }
                         },
                         audio: false
@@ -858,6 +872,7 @@ async function switchCamera() {
 
 
         try {
+
             const restoredStream =
                 await navigator.mediaDevices.getUserMedia({
                     video: {
@@ -865,16 +880,13 @@ async function switchCamera() {
                             ideal: previousFacingMode
                         },
                         width: {
-                            ideal: 480,
-                            max: 640
+                            ideal: 1920
                         },
                         height: {
-                            ideal: 360,
-                            max: 480
+                            ideal: 1080
                         },
                         frameRate: {
-                            ideal: 24,
-                            max: 30
+                            ideal: 30
                         }
                     },
                     audio: false
@@ -1477,7 +1489,7 @@ function createPeer(userId) {
             const params = sender.getParameters();
             params.encodings = [{
                 maxBitrate: 800000,
-                maxFramerate: 30,
+                maxFramerate: 24,
                 scaleResolutionDownBy: 1
             }];
             sender.setParameters(params);
@@ -1544,7 +1556,7 @@ setInterval(async () => {
 
                     if (report.currentRoundTripTime > 0.35) {
                         params.encodings[0].maxBitrate = 450000;
-                        params.encodings[0].maxFramerate = 20;
+                        params.encodings[0].maxFramerate = 30;
                     } else {
                         params.encodings[0].maxBitrate = 800000;
                         params.encodings[0].maxFramerate = 30;

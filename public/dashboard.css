@@ -66,6 +66,7 @@ a {
 }
 
 .app {
+    height: 100vh;
     min-height: 100vh;
     min-height: 100dvh;
     max-height: 1100px;
@@ -609,7 +610,11 @@ a {
 .videos-container {
     position: relative;
     min-width: 0;
-    height: 100%;
+    min-height: 0;
+    height: 90%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .videoIntro {
@@ -618,24 +623,19 @@ a {
     font-size: 11px;
 }
 
-.smallVideo {
-    display: none;
-}
-
-
-
 .centerStream {
-    height: 65vh;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
     max-height: 720px;
-    min-height: 300px;
 
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
 
     padding: 10px;
     box-sizing: border-box;
 
-    overscroll-behavior-y: contain;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 
     scrollbar-width: thin;
@@ -781,21 +781,43 @@ a {
     height: 13px;
 }
 
+
 .controlCont {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+
     width: 100%;
-    height: 100px;
+    min-height: 100px;
+    height: auto;
+
     padding: 10px;
+    box-sizing: border-box;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    position: relative;
+    z-index: 5;
 }
 
 .controls {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+
     gap: 10px;
-    justify-self: center;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    width: fit-content;
+    max-width: 100%;
+
     padding: 10px 20px;
-    border-radius: 100px;
+    box-sizing: border-box;
+
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
 }
+
 
 .controls button {
     display: flex;
@@ -1244,10 +1266,6 @@ a {
         --mf-sidebar-width: 245px;
     }
 
-    .video-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .topbarRight {
         gap: 12px;
     }
@@ -1355,11 +1373,6 @@ a {
 
     .videoIntro {
         line-height: 1.5;
-    }
-
-    .video-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
     }
 
     .video-box {
