@@ -2042,6 +2042,67 @@ async function setupRemoteMicLevel(userId, remoteStream) {
     animate(0);
 }
 
+
+
+
+/* ==========================================
+   FLOATING EMPLOYEE PANEL
+========================================== */
+
+function toggleAccountSection(force) {
+    const panel = document.getElementById("accountSection");
+    const button = document.getElementById("viewAccountSectionBtn");
+
+    if (!panel || !button) return;
+
+    const shouldOpen =
+        typeof force === "boolean"
+            ? force
+            : !document.body.classList.contains("account-panel-open");
+
+    document.body.classList.toggle(
+        "account-panel-open",
+        shouldOpen
+    );
+
+    button.setAttribute("aria-expanded", String(shouldOpen));
+
+    button.setAttribute(
+        "aria-label",
+        shouldOpen ? "Close employees panel" : "View employees panel"
+    );
+
+    button.innerHTML = shouldOpen
+        ? '<i class="fa-solid fa-xmark"></i>'
+        : '<i class="fa-solid fa-users"></i>';
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const button = document.getElementById("viewAccountSectionBtn");
+
+    if (button) {
+        button.addEventListener("click", () => {
+            toggleAccountSection();
+        });
+    }
+
+    // Close the floating panel using Escape.
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            toggleAccountSection(false);
+        }
+    });
+
+    // Return to the normal desktop layout when expanded.
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 1100) {
+            toggleAccountSection(false);
+        }
+    });
+});
+
+
+
 function toggleCamera() {
     if (!videoTrack) return;
 

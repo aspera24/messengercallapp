@@ -1,7 +1,7 @@
 :root {
     color-scheme: dark;
-    --mf-bg: #06142b;
-    --mf-bg-deep: #030d20;
+    --mf-bg: #383841;
+    --mf-bg-deep: #24222d;
     --mf-panel: #0a1d3d;
     --mf-panel-2: #0e2851;
     --mf-blue: #087cff;
@@ -80,7 +80,8 @@ a {
     width: 100%;
     overflow: hidden;
     height: 100%;
-    max-height: 1200px;
+    padding: 20px;
+    gap: 20px;
     margin-inline: auto;
     background: var(--mf-bg);
     border-inline: 1px solid rgba(101, 156, 231, .08);
@@ -93,23 +94,11 @@ a {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    border-radius: 15px;
     padding: 22px 15px 14px;
     overflow: hidden;
-    background: linear-gradient(180deg, #071b3a 0%, #06152e 72%, #071b3a 100%);
+    background: var(--mf-bg-deep);
     border-right: 1px solid var(--mf-border);
-}
-
-.leftCont::before {
-    position: absolute;
-    z-index: -1;
-    right: -100px;
-    bottom: 75px;
-    left: -100px;
-    height: 220px;
-    content: "";
-    pointer-events: none;
-    opacity: .7;
-    background: radial-gradient(ellipse at 30% 100%, rgba(0, 106, 255, .38), transparent 58%);
 }
 
 .leftBrand {
@@ -197,7 +186,7 @@ a {
 
 .sideNavItem.active {
     color: white;
-    background: linear-gradient(100deg, #0969e7, #0750b5);
+    background: #8138df;
     border-color: rgba(82, 166, 255, .26);
     box-shadow: 0 8px 24px rgba(0, 81, 197, .18);
 }
@@ -208,7 +197,10 @@ a {
 
 .sidebarSection {
     min-width: 0;
-    padding: 20px 0 20px 20px;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 15px;
+    background: var(--mf-bg-deep);
 }
 
 .sectionHeading {
@@ -254,6 +246,7 @@ a {
     grid-template-columns: 1fr 1fr;
     gap: 7px;
     margin-bottom: 12px;
+    border-radius: 15px;
 }
 
 .sidebarActions button {
@@ -290,7 +283,7 @@ a {
     overflow-y: scroll;
     height: 300px;
     padding: 10px;
-    background: linear-gradient(180deg, #071b3a 0%, #06152e 72%, #071b3a 100%);
+    background: var(--mf-bg);
     border-radius: 10px;
     border: 1px solid rgba(108, 163, 235, .19);
 }
@@ -439,7 +432,7 @@ a {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    background: radial-gradient(ellipse at 47% 38%, rgba(9, 55, 116, .23), transparent 55%), linear-gradient(140deg, #06152e, #031026 76%);
+    gap: 15px;
 }
 
 .topbar {
@@ -451,8 +444,8 @@ a {
     gap: 18px;
     min-height: 78px;
     padding: 13px clamp(16px, 2vw, 32px);
-    background: rgba(5, 24, 53, .92);
-    border-bottom: 1px solid var(--mf-border);
+    background: var(--mf-bg-deep);
+    border-radius: 15px;
 }
 
 .topbarLeft,
@@ -567,11 +560,11 @@ a {
 
 .meetingContent {
     display: grid;
-    grid-template-columns: 1fr minmax(300px, .3fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.3fr);
+    gap: 15px;
     flex: 1;
-    flex-direction: column;
     min-width: 0;
-    padding: 24px clamp(16px, 2vw, 32px) 28px;
+    min-height: 0;
 }
 
 .meetingHeading {
@@ -607,14 +600,38 @@ a {
     font-variant-numeric: tabular-nums;
 }
 
-.videos-container {
+
+.meetingLeftView {
     position: relative;
+
+    width: 100%;
     min-width: 0;
     min-height: 0;
-    height: 90%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    height: 100%;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    padding: 20px;
+    box-sizing: border-box;
+    border-radius: 15px;
+    background: var(--mf-bg-deep);
+    scrollbar-width: thin;
+    scrollbar-color: #42658f transparent;
+    -webkit-overflow-scrolling: touch;
+}
+
+.videos-container {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+
+    overflow: visible;
+    padding: 10px 0;
+    box-sizing: border-box;
 }
 
 .videoIntro {
@@ -623,37 +640,24 @@ a {
     font-size: 11px;
 }
 
-.centerStream {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: auto;
-    max-height: 720px;
 
-    overflow-y: auto;
-    overflow-x: auto;
-
-    padding: 10px;
-    box-sizing: border-box;
-
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-
-    scrollbar-width: thin;
-    scrollbar-color: #42658f transparent;
-}
 
 /* Keep the grid and its 3 columns */
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(220px, 1fr));
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-flow: row;
-    grid-auto-rows: auto;
+    grid-auto-rows: max-content;
+
     align-content: start;
-    align-items: stretch;
+    align-items: start;
     gap: 13px;
 
     width: 100%;
-    min-width: 686px;
+    min-width: 0;
+    max-width: 100%;
+
     box-sizing: border-box;
 }
 
@@ -664,18 +668,24 @@ a {
 }
 
 /* Prevent video tiles from shrinking */
-.video-grid>.video-box {
+.video-grid > .video-box {
     width: 100%;
-    min-width: 220px;
-    max-width: none;
-    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+
+    height: auto;
+    aspect-ratio: 16 / 14;
+
+    align-self: start;
     flex-shrink: 0;
+
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .video-grid video {
     width: 100%;
     height: 100%;
-    max-width: none;
 }
 
 
@@ -683,19 +693,15 @@ a {
 .video-box {
     position: relative;
     isolation: isolate;
-    min-width: 220px;
     aspect-ratio: 16 / 14;
     overflow: hidden;
-    background: linear-gradient(145deg, #0c2852, #071832);
-    border: 4px solid rgba(108, 163, 235, .19);
+    background: var(--mf-bg-deep);
     border-radius: 13px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, .12);
+    contain: paint layout;
 }
 
 .local-video-box {
-    border-color: rgba(21, 149, 255, .72);
-    box-shadow: 0 0 0 1px rgba(21, 149, 255, .12),
-        0 10px 28px rgba(0, 0, 0, .16);
+    border: 4px solid var(--mf-bg);
 }
 
 .video-box video {
@@ -706,6 +712,8 @@ a {
     height: 100%;
     object-fit: cover;
     background: #07152b;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 
@@ -783,22 +791,14 @@ a {
 
 
 .controlCont {
-    flex: 0 0 auto;
-    flex-shrink: 0;
-
+    position: sticky;
+    bottom: 0px;
+    left: 0;
     width: 100%;
-    min-height: 100px;
-    height: auto;
-
-    padding: 10px;
-    box-sizing: border-box;
-
+    z-index: 10;
     display: flex;
     justify-content: center;
     align-items: center;
-
-    position: relative;
-    z-index: 5;
 }
 
 .controls {
@@ -813,7 +813,7 @@ a {
 
     padding: 10px 20px;
     box-sizing: border-box;
-
+    background-color: #1a2332;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 24px;
 }
@@ -1252,12 +1252,14 @@ a {
 
 /* 1920x1080 is the design reference; content stays centered on ultrawide displays. */
 @media (min-width: 1600px) {
-    .centCont {
+    /* .centCont {
         max-width: 1920px;
-    }
+    } */
+}
 
+@media (max-width: 1500px) {
     .video-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -1307,15 +1309,17 @@ a {
         display: block;
     }
 
-    .rightCont {
+    /* .rightCont {
         min-height: 100vh;
         min-height: 100dvh;
-    }
+    } */
 
     .meetingContent {
         padding-top: 20px;
     }
 }
+
+
 
 @media (max-width: 600px) {
     .topbar {
@@ -1353,10 +1357,6 @@ a {
     #profile {
         width: 32px;
         height: 32px;
-    }
-
-    .meetingContent {
-        padding: 17px 12px 22px;
     }
 
     .meetingHeading {
