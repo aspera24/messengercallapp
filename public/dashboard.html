@@ -103,31 +103,31 @@
 
                         <p class="videoIntro">Your camera and connected participants will appear here during the
                             meeting.</p>
+
                         <div class="videos-container">
-
                             <div class="video-grid" id="videoGrid">
-                                <div class="video-box local-video-box" id="localBox">
-                                    <div class="video-loading" id="localLoading"><i
-                                            class="fa-solid fa-video fa-beat-fade"></i><span>Connecting
-                                            camera...</span>
-                                    </div>
-                                    <video id="local" class="camera-user" autoplay muted playsinline></video>
-                                    <div class="video-status" id="localStatus"><i class="fa-solid fa-user"></i><span
-                                            id="statusText">Camera Off</span></div>
-                                    <span class="tag">You</span>
-
-                                    <div class="mic-level" aria-hidden="true">
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                        <div class="bar"></div>
-                                    </div>
-                                </div>
                                 <!-- app.js can continue appending remote participant tiles here. -->
                                 <div id="videos" class="remote-videos"></div>
                             </div>
+                        </div>
 
+                        <div class="video-box local-video-box" id="localBox">
+                            <div class="video-loading" id="localLoading"><i
+                                    class="fa-solid fa-video fa-beat-fade"></i><span>Connecting
+                                    camera...</span>
+                            </div>
+                            <video id="local" class="camera-user" autoplay muted playsinline></video>
+                            <div class="video-status" id="localStatus"><i class="fa-solid fa-user"></i><span
+                                    id="statusText">Camera Off</span></div>
+                            <span class="tag">You</span>
+
+                            <div class="mic-level" aria-hidden="true">
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                            </div>
                         </div>
 
                         <div class="controlCont">

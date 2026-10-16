@@ -551,9 +551,9 @@ body {
     }
 }
 
-body:not(.account-panel-open) .meetingContent {
+/* body:not(.account-panel-open) .meetingContent {
     display: flex;
-}
+} */
 
 /* Sidebar visible: restore 2 columns */
 body.account-panel-open .meetingContent {
