@@ -12,7 +12,7 @@
     --mf-border: rgba(115, 166, 235, .17);
     --mf-green: #28e0ad;
     --mf-red: #ff5268;
-    --mf-sidebar-width: 272px;
+    --mf-sidebar-width: 300px;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -74,19 +74,25 @@ a {
     background: radial-gradient(ellipse at 62% 25%, rgba(12, 66, 139, .2), transparent 48%), var(--mf-bg-deep);
 }
 
+
 .centCont {
     display: grid;
     grid-template-columns: var(--mf-sidebar-width) minmax(0, 1fr);
     width: 100%;
-    overflow: hidden;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 2000px;
+    max-height: 1400px;
+    margin-inline: auto;
     padding: 20px;
     gap: 20px;
-    max-height: 1200px;
-    margin-inline: auto;
+    overflow: hidden;
+    box-sizing: border-box;
     background: var(--mf-bg);
     border-inline: 1px solid rgba(101, 156, 231, .08);
 }
+
 
 /* Sidebar */
 .leftCont {
@@ -197,11 +203,13 @@ a {
 }
 
 .sidebarSection {
-    min-width: 0;
+    position: relative;
+    z-index: 5;
+    min-width: 300px;
     min-height: 0;
-    overflow: hidden;
-    border-radius: 15px;
-    background: var(--mf-bg-deep);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .sectionHeading {
@@ -272,10 +280,19 @@ a {
     border-color: transparent;
 }
 
-.sidebarActions #endBtn {
-    color: #ff8794;
-    background: rgba(153, 34, 58, .18);
-    border-color: rgba(255, 82, 104, .2);
+#endBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    /* min-width: 0; */
+    min-height: 37px;
+    padding: 7px 8px;
+    color: #dceaff;
+    background: transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    color: #fc6675;
 }
 
 .userListCont {
@@ -562,10 +579,12 @@ a {
 .meetingContent {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.4fr);
-    gap: 15px;
+    gap: 20px;
+    background: var(--mf-bg-deep);
+    border-radius: 15px;
     flex: 1;
-    min-width: 0;
     min-height: 0;
+    padding: 30px;
 }
 
 .meetingHeading {
@@ -604,36 +623,37 @@ a {
 
 .meetingLeftView {
     position: relative;
-
     width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 
+    overflow-y: hidden;
     overflow-x: hidden;
-    overflow-y: auto;
 
-    padding: 20px;
     box-sizing: border-box;
-    border-radius: 15px;
-    background: var(--mf-bg-deep);
-    scrollbar-width: thin;
-    scrollbar-color: #42658f transparent;
-    -webkit-overflow-scrolling: touch;
+
+    container-type: inline-size;
+    container-name: meetingView;
 }
+
+
 
 .videos-container {
-    display: block;
-
+    display: flex;
+    flex-direction: column;
     width: 100%;
     min-width: 0;
-    height: auto;
-    min-height: 0;
-
-    overflow: visible;
-    padding: 10px 0;
+    flex: 1;
+    min-height: 250px;
+    max-height: 250px;
+    overflow: hidden;
     box-sizing: border-box;
 }
+
 
 .videoIntro {
     margin: 0 0 13px;
@@ -641,30 +661,26 @@ a {
     font-size: 11px;
 }
 
-
-
-/* Keep the grid and its 3 columns */
 .video-grid {
     display: flex;
-    grid-auto-flow: row;
-    grid-auto-rows: max-content;
-
-    align-content: start;
-    align-items: start;
+    flex-direction: row;
+    align-items: center;
     gap: 13px;
-    overflow-x: scroll;
     width: 100%;
-    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
     box-sizing: border-box;
+    scrollbar-width: none;
 }
 
-/* Let remote video tiles participate in the parent grid */
 #videos,
 .remote-videos {
     display: contents;
 }
 
-/* Prevent video tiles from shrinking */
 .video-grid>.video-box {
     width: 100%;
     min-width: 110px;
@@ -686,17 +702,18 @@ a {
 }
 
 
-
 .video-box {
     position: relative;
     isolation: isolate;
     aspect-ratio: 16 / 9;
+    max-height: 100%;
+    width: auto;
     height: 100%;
+    min-width: 320px;
     min-height: 120px;
-    min-width: 180px;
     overflow: hidden;
     background: var(--mf-bg-deep);
-    border-radius: 13px;
+    border-radius: 16px;
     contain: paint layout;
 }
 
@@ -704,6 +721,8 @@ a {
     border: 4px solid var(--mf-bg);
     aspect-ratio: 14 / 7 !important;
     height: auto;
+    min-width: 0;
+    margin-top: 10px;
 }
 
 .video-box video {
@@ -794,10 +813,8 @@ a {
 
 
 .controlCont {
-    position: sticky;
-    bottom: 0px;
-    left: 0;
     width: 100%;
+    height: 140px;
     z-index: 10;
     display: flex;
     justify-content: center;
@@ -807,20 +824,16 @@ a {
 .controls {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around;
     flex-wrap: wrap;
 
     gap: 10px;
-    width: fit-content;
-    max-width: 100%;
+    /* width: fit-content; */
+    width: 100%;
 
     padding: 10px 20px;
     box-sizing: border-box;
-    background-color: #1a2332;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 24px;
 }
-
 
 .controls button {
     display: flex;
@@ -841,11 +854,18 @@ a {
 }
 
 .controls button i {
-    font-size: 19px;
+    font-size: 29px;
+    background: var(--mf-bg);
+    height: 70px;
+    width: 70px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .controls button span {
-    font-size: 11px;
+    font-size: 21px;
     white-space: nowrap;
 }
 
@@ -1253,17 +1273,10 @@ a {
     background: rgba(0, 6, 17, .65);
 }
 
-/* 1920x1080 is the design reference; content stays centered on ultrawide displays. */
 @media (min-width: 1600px) {
     /* .centCont {
         max-width: 1920px;
     } */
-}
-
-@media (max-width: 1500px) {
-    .video-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 @media (max-width: 1250px) {
@@ -1317,12 +1330,7 @@ a {
         min-height: 100dvh;
     } */
 
-    .meetingContent {
-        padding-top: 20px;
-    }
 }
-
-
 
 @media (max-width: 600px) {
     .topbar {
@@ -1389,9 +1397,6 @@ a {
         font-size: 9px;
     }
 
-    .video-box .tag {
-        left: 6px;
-    }
 
     .video-box .video-status {
         right: 6px;
@@ -2154,3 +2159,4 @@ a {
 .employeeName:hover {
     color: #4a90e2;
 }
+

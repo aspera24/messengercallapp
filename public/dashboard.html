@@ -101,9 +101,6 @@
                                     class="fa-regular fa-clock"></i><span>00:00:00</span></div>
                         </div>
 
-                        <p class="videoIntro">Your camera and connected participants will appear here during the
-                            meeting.</p>
-
                         <div class="videos-container">
                             <div class="video-grid" id="videoGrid">
                                 <!-- app.js can continue appending remote participant tiles here. -->
@@ -149,6 +146,10 @@
                                     <i class="fa-solid fa-camera-rotate"></i>
                                     <span>Switch Camera</span>
                                 </button>
+
+                                <button id="endBtn" onclick="endMeeting()">
+                                    <span>End Meeting</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -166,9 +167,6 @@
                         <div class="sidebarActions">
                             <button title="Call all employees" id="callAllBtn" onclick="callAllUsers()">
                                 <i class="fa-solid fa-phone"></i><span>Call All</span>
-                            </button>
-                            <button id="endBtn" onclick="endMeeting()">
-                                <i class="fa-solid fa-phone-slash"></i><span>End Meeting</span>
                             </button>
                         </div>
 

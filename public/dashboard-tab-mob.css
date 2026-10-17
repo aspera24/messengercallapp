@@ -1,4 +1,3 @@
-
 /* ==========================================
    MEETFLOW RESPONSIVE LAYOUT
    Append at the END of dashboard.css
@@ -9,17 +8,6 @@ html,
 body {
     width: 100%;
     max-width: 100%;
-}
-
-.app,
-.centCont,
-.rightCont,
-.meetingContent,
-.meetingLeftView,
-.videos-container,
-.video-grid {
-    min-width: 0;
-    box-sizing: border-box;
 }
 
 .centCont {
@@ -41,7 +29,6 @@ body {
     min-width: 0;
 }
 
-
 .meetingLeftView {
     min-width: 0;
     min-height: 0;
@@ -51,48 +38,11 @@ body {
     overscroll-behavior: contain;
 }
 
-.videos-container {
-    min-width: 0;
-    width: 100%;
-    height: auto;
-    overflow: visible;
-}
-
-.video-grid {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-auto-rows: max-content;
-    align-items: start;
-    align-content: start;
-}
-
-.video-grid > .video-box {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 14;
-    align-self: start;
-}
 
 .video-box video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-/* Employee panel: normal desktop column */
-.sidebarSection {
-    position: relative;
-    z-index: 5;
-    min-width: 0;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 20px;
-    overscroll-behavior: contain;
 }
 
 .userListCont {
@@ -107,7 +57,6 @@ body {
     width: 100% !important;
 }
 
-/* Floating panel button: hidden on wide desktop */
 .viewAccountSectionBtn {
     display: none;
     flex: 0 0 auto;
@@ -129,18 +78,16 @@ body {
     background: var(--mf-blue);
 }
 
-/* Floating panel backdrop */
 #accountPanelOverlay {
     display: none;
 }
 
-/* Tablet and compact laptop */
 @media (max-width: 1100px) {
-    .meetingContent {
+    .rightCont .meetingContent {
         position: relative;
         display: block;
         min-height: 0;
-        padding: 0;
+        padding: 10px;
         overflow: hidden;
     }
 
@@ -169,11 +116,9 @@ body {
 
         padding: 18px;
 
-        background: linear-gradient(
-            180deg,
-            #0a2042 0%,
-            #06152e 100%
-        );
+        background: linear-gradient(180deg,
+                #0a2042 0%,
+                #06152e 100%);
 
         border: 1px solid rgba(115, 166, 235, .24);
         border-radius: 18px;
@@ -190,8 +135,7 @@ body {
             visibility .22s ease;
     }
 
-    body.account-panel-open
-    .sidebarSection#accountSection {
+    body.account-panel-open .sidebarSection#accountSection {
         visibility: visible;
         pointer-events: auto;
         opacity: 1;
@@ -219,24 +163,8 @@ body {
         visibility: visible;
         pointer-events: auto;
     }
-
-    .video-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .controls {
-        gap: 7px;
-        padding: 9px 12px;
-    }
-
-    .controls button {
-        min-width: 62px;
-        min-height: 58px;
-    }
 }
 
-/* Tablets in portrait and larger phones */
 @media (max-width: 760px) {
     .topbar {
         flex: 0 0 auto;
@@ -313,11 +241,6 @@ body {
         line-height: 1.5;
     }
 
-    .video-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 9px;
-    }
-
     .video-box {
         border-width: 2px;
         border-radius: 10px;
@@ -332,45 +255,8 @@ body {
         font-size: 9px;
     }
 
-    .video-box .tag {
-        left: 5px;
-    }
-
     .video-box .video-status {
         right: 5px;
-    }
-
-    .controlCont {
-        position: sticky;
-        z-index: 10;
-        bottom: 0;
-        width: 100%;
-        padding: 10px 0;
-  
-    }
-
-    .controls {
-        width: fit-content;
-        max-width: 100%;
-        flex-wrap: nowrap;
-        gap: 4px;
-        padding: 7px;
-        border-radius: 18px;
-    }
-
-    .controls button {
-        min-width: 0;
-        min-height: 55px;
-        padding: 7px 9px;
-        gap: 5px;
-    }
-
-    .controls button i {
-        font-size: 18px;
-    }
-
-    .controls button span {
-        font-size: 10px;
     }
 
     .messageContainer {
@@ -382,7 +268,8 @@ body {
     }
 }
 
-/* Small phones */
+
+
 @media (max-width: 480px) {
     .topbar {
         padding-inline: 9px;
@@ -431,33 +318,6 @@ body {
     }
 
     .meeting-timer {
-        font-size: 9px;
-    }
-
-    .video-grid {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 12px;
-    }
-
-    /* Keep tiles at a consistent video shape.
-       They must not stretch to fill the viewport height. */
-    .video-grid > .video-box {
-        width: 100%;
-        aspect-ratio: 16 / 10;
-        height: auto;
-    }
-
-    .controls {
-        gap: 2px;
-        padding: 6px;
-    }
-
-    .controls button {
-        min-width: 0;
-        padding: 7px 8px;
-    }
-
-    .controls button span {
         font-size: 9px;
     }
 
@@ -512,9 +372,194 @@ body {
         bottom: 10px;
         width: calc(100vw - 20px);
     }
+
+
 }
 
-/* Landscape phones: save vertical space */
+
+
+
+
+@media (max-width: 1040px) {
+    .meetingLeftView .videos-container {
+        min-height: 380px;
+        max-height: 380px;
+    }
+
+    .meetingLeftView .video-grid {
+        gap: 20px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 460px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 600px;
+    }
+}
+
+@media (max-width: 965px) {
+    .meetingLeftView .videos-container {
+        min-height: 380px;
+        max-height: 380px;
+    }
+
+    .meetingLeftView .video-grid {
+        gap: 20px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 460px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 620px;
+    }
+}
+
+@media (max-width: 770px) {
+    .meetingLeftView .videos-container {
+        min-height: 250px;
+        max-height: 250px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 400px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 400px;
+    }
+}
+
+@media (max-width: 450px) {
+    .meetingLeftView .videos-container {
+        min-height: 250px;
+        max-height: 250px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 250px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 420px) and (max-height: 970px) {
+    .meetingLeftView .videos-container {
+        min-height: 250px;
+        max-height: 250px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 250px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 360px;
+    }
+}
+
+@media (max-width: 420px) and (max-height: 930px) {
+    .meetingLeftView .videos-container {
+        min-height: 250px;
+        max-height: 250px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 230px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 310px;
+    }
+}
+
+@media (max-width: 400px) {
+    .meetingLeftView .videos-container {
+        min-height: 220px;
+        max-height: 220px;
+    }
+
+    .meetingLeftView .video-grid {
+        gap: 15px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 230px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 380px) {
+    .meetingLeftView .videos-container {
+        min-height: 115px;
+        max-height: 115px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 170px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 200px;
+    }
+}
+
+@media (max-width: 370px) {
+    .meetingLeftView .videos-container {
+        min-height: 140px;
+        max-height: 140px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 200px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 360px) {
+    .meetingLeftView .videos-container {
+        min-height: 150px;
+        max-height: 150px;
+    }
+
+    .meetingLeftView .video-grid .video-box {
+        min-height: 0;
+        min-width: 200px;
+    }
+
+    .meetingLeftView .local-video-box {
+        min-height: 280px;
+    }
+}
+
+
+/* @media (max-height: 950px) {
+    .meetingLeftView .videos-container {
+        min-height: 140px;
+        max-height: 140px;
+    }
+} */
+
 @media (max-width: 900px) and (orientation: landscape) {
     .topbar {
         min-height: 52px;
@@ -528,34 +573,78 @@ body {
     .meetingHeading {
         margin-bottom: 8px;
     }
-
-    .video-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .video-grid > .video-box {
-        aspect-ratio: 16 / 10;
-    }
-
-    .controls button {
-        min-height: 46px;
-        padding-block: 5px;
-    }
 }
 
-/* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
+
     .sidebarSection#accountSection,
     #accountPanelOverlay {
         transition: none;
     }
 }
 
-/* body:not(.account-panel-open) .meetingContent {
-    display: flex;
-} */
+@media (max-width: 1290px) {
+    .meetingLeftView .controlCont {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-/* Sidebar visible: restore 2 columns */
+    .meetingLeftView .controls {
+        width: 100%;
+        padding: 5px 10px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .meetingLeftView .controls button {
+        width: auto;
+        min-width: unset;
+
+        height: 42px;
+        min-height: unset;
+        padding: 6px 14px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .meetingLeftView .controls button i {
+        font-size: 14px;
+        width: auto;
+        height: auto;
+    }
+
+    .meetingLeftView .controls button span {
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    #endBtn span {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 530px) {
+    .meetingLeftView .controls button span {
+        display: none;
+    }
+
+    #endBtn span {
+        display: block;
+    }
+}
+
+body:not(.account-panel-open) .meetingContent {
+    display: flex;
+    grid-template-columns: none;
+}
+
 body.account-panel-open .meetingContent {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.3fr);
 }
