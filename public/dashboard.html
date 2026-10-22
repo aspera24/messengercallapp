@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#06152e">
     <title>MeetFlow</title>
 
-    <!-- Load legacy responsive styles first; dashboard.css overrides them where needed. -->
+    <!-- Legacy styles first, then MeetFlow base styles and responsive overrides. -->
     <link rel="stylesheet" href="/dashboard-tab-mob.css">
     <link rel="stylesheet" href="/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -93,9 +93,10 @@
                 <section class="meetingContent">
                     <div class="meetingLeftView">
                         <div class="meetingHeading">
-                            <div><span class="eyebrow">VIDEO CONFERENCE</span>
-                                <h2>Meeting room</h2>
-                                <p>Connect face-to-face with your team.</p>
+                            <div>
+                                <span class="eyebrow">VIDEO CONFERENCE</span>
+                                <h2 class="mr">Meeting room</h2>
+                                <p class="par">Connect face-to-face with your team.</p>
                             </div>
                             <div id="meetingTimer" class="meeting-timer" style="display:none;"><i
                                     class="fa-regular fa-clock"></i><span>00:00:00</span></div>

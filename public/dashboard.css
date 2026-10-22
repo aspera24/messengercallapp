@@ -205,11 +205,27 @@ a {
 .sidebarSection {
     position: relative;
     z-index: 5;
-    min-width: 300px;
+    width: 500px;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+}
+
+.dt-layout-end {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+}
+
+.dt-layout-end input {
+    padding: 8px 10px;
+    border: 2px solid rgba(108, 163, 235, .19);
+    margin-left: 5px;
+    border-radius: 6px;
+    background: transparent;
+    outline: none;
 }
 
 .sectionHeading {
@@ -299,9 +315,9 @@ a {
     min-width: 0;
     overflow: hidden;
     overflow-y: scroll;
-    height: 300px;
+    /* height: 300px; */
     padding: 10px;
-    background: var(--mf-bg);
+    /* background: var(--mf-bg); */
     border-radius: 10px;
     border: 1px solid rgba(108, 163, 235, .19);
 }
@@ -330,6 +346,13 @@ a {
 
 #userTable td {
     overflow-wrap: anywhere;
+}
+
+
+
+#userTable td:last-of-type .actionCont {
+    display: flex;
+    align-items: center;
 }
 
 #userTable .dt-layout-row {
@@ -576,185 +599,270 @@ a {
     border-radius: 50%;
 }
 
+
+/* ==============================
+   MEETING CONTENT
+============================== */
+
 .meetingContent {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.4fr);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.4fr);
+    gap: clamp(12px, 1.5vw, 20px);
+
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+
+    padding: clamp(12px, 2vw, 30px);
+    box-sizing: border-box;
+
     background: var(--mf-bg-deep);
     border-radius: 15px;
-    flex: 1;
-    min-height: 0;
-    padding: 30px;
 }
+
+
+/* ==============================
+   MEETING HEADER
+============================== */
 
 .meetingHeading {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 17px;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    margin-bottom: clamp(12px, 1.2vw, 17px);
 }
 
 .meetingHeading h2 {
     margin: 5px 0 4px;
-    font-size: clamp(20px, 1.6vw, 27px);
-    letter-spacing: -.5px;
+    font-size: clamp(18px, 1.6vw, 27px);
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    overflow-wrap: anywhere;
 }
 
 .meetingHeading p {
     margin: 0;
     color: var(--mf-muted);
-    font-size: 12px;
+    font-size: clamp(11px, 0.8vw, 12px);
 }
 
 .meeting-timer {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+
+    flex-shrink: 0;
     padding: 9px 12px;
+
     color: #cfe3ff;
     background: #0c2850;
     border: 1px solid var(--mf-border);
     border-radius: 10px;
+
     font-size: 12px;
     font-variant-numeric: tabular-nums;
 }
 
 
+/* ==============================
+   MAIN MEETING VIEW
+============================== */
+
 .meetingLeftView {
     position: relative;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
+
     display: flex;
     flex-direction: column;
-    justify-content: left;
-    
-    overflow-y: scroll;
+
+    width: 100%;
+    max-width: 1200px;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+
+    margin-inline: auto;
+
     overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
 
     box-sizing: border-box;
 
-    container-type: inline-size;
     container-name: meetingView;
+    container-type: inline-size;
 
-    max-width: 1000px;
-    margin: 0 auto;
+    transition: opacity 0.25s ease;
 }
 
 
+/* ==============================
+   VIDEO STREAM CONTAINER
+============================== */
 
 .videos-container {
     display: flex;
     flex-direction: column;
+
+    flex: 0 0 auto;
     width: 100%;
     min-width: 0;
-    /* flex: 1; */
-    min-height: 250px;
-    max-height: 250px;
-    overflow: hidden;
-    box-sizing: border-box;
-}
+    min-height: 0;
 
+    gap: 10px;
+    padding: 0;
+
+    box-sizing: border-box;
+    overflow: hidden;
+}
 
 .videoIntro {
-    margin: 0 0 13px;
+    flex: 0 0 auto;
+
+    margin: 0;
     color: #819bc0;
-    font-size: 11px;
+    font-size: clamp(10px, 0.8vw, 11px);
 }
+
+
+/* ==============================
+   HORIZONTAL VIDEO STREAMS
+============================== */
 
 .video-grid {
     display: flex;
     flex-direction: row;
-    align-items: center;
-    gap: 13px;
+    align-items: stretch;
+
+    gap: clamp(8px, 1vw, 13px);
+
     width: 100%;
-    height: 100%;
-    /* min-height: 0; */
+    min-width: 0;
+    min-height: 0;
+
     overflow-x: auto;
     overflow-y: hidden;
-    white-space: nowrap;
+
+    padding-bottom: 6px;
     box-sizing: border-box;
-    scrollbar-width: none;
+
+    white-space: normal;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--mf-border) transparent;
 }
 
+/* Keep the streams inside their existing wrappers */
 #videos,
 .remote-videos {
     display: contents;
 }
 
-.video-grid>.video-box {
-    width: 100%;
-    min-width: 110px;
-    max-width: 100%;
-
-    /* height: 100px; */
-    aspect-ratio: 16 / 9;
-
-    align-self: start;
-    flex-shrink: 0;
-
-    box-sizing: border-box;
-    overflow: hidden;
-}
-
-.video-grid video {
-    width: 100%;
-    height: 100%;
+/* Hide video container when there are no streams */
+.videos-container:has(.video-grid #videos:empty) {
+    display: none;
 }
 
 
-.video-box {
+/* ==============================
+   INDIVIDUAL VIDEO STREAMS
+============================== */
+
+.video-grid > .video-box {
     position: relative;
     isolation: isolate;
-    aspect-ratio: 16 / 9;
-    max-height: 100%;
+
+    flex: 0 0 clamp(180px, 25cqw, 320px);
+
     width: auto;
-    height: 100%;
-    min-width: 320px;
-    /* min-height: 120px; */
-    overflow: hidden;
-    background: var(--mf-bg-deep);
-    border-radius: 16px;
-    contain: paint layout;
-}
-
-.local-video-box {
-    border: 4px solid var(--mf-bg);
-    aspect-ratio: 14 / 7 !important;
     min-width: 0;
-    margin-top: 10px;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+
+    aspect-ratio: 16 / 9;
+
+    overflow: hidden;
+    box-sizing: border-box;
+
+    background: var(--mf-bg-deep);
+    border-radius: 12px;
+
+    contain: paint;
 }
 
+/* Video element */
 .video-box video {
     position: absolute;
     inset: 0;
+
     display: block;
     width: 100%;
     height: 100%;
+
     object-fit: cover;
     background: #07152b;
+
     transform: translateZ(0);
-    will-change: transform;
 }
 
+
+/* ==============================
+   MAIN / LOCAL CAMERA STREAM
+============================== */
+
+.video-grid > .video-box.local-video-box {
+    /*
+       The local camera is the main stream.
+       Keep it wider than a normal participant tile.
+    */
+    flex-basis: clamp(280px, 55cqw, 760px);
+
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+
+    aspect-ratio: 16 / 9;
+
+    margin-top: 0;
+    align-self: stretch;
+}
+
+
+/* ==============================
+   VIDEO NAME & STATUS LABELS
+============================== */
 
 .video-box .tag,
 .video-box .video-status {
     position: absolute;
-    z-index: 20;
+    z-index: 2;
     bottom: 10px;
+
     display: inline-flex;
     align-items: center;
     gap: 7px;
+
+    max-width: calc(100% - 20px);
     padding: 7px 9px;
-    color: white;
-    letter-spacing: 1px;
+
+    color: #fff;
     background: #8038dfb9;
-    border: 1px solid rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 7px;
-    font-size: 14px;
+
+    font-size: clamp(10px, 0.9vw, 13px);
+    letter-spacing: 0.3px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .video-box .tag {
@@ -765,6 +873,75 @@ a {
     left: 10px;
     color: #a9c7ee;
 }
+
+
+/* ==============================
+   RESPONSIVE LAYOUT
+============================== */
+
+/* Smaller desktop / tablet */
+/* @media (max-width: 900px) {
+    .meetingContent {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .meetingLeftView {
+        max-width: none;
+    }
+
+    .video-grid > .video-box {
+        flex-basis: clamp(180px, 42cqw, 300px);
+    }
+
+    .video-grid > .video-box.local-video-box {
+        flex-basis: clamp(260px, 65cqw, 560px);
+    }
+} */
+
+/* Mobile */
+/* @media (max-width: 600px) {
+    .meetingContent {
+        gap: 12px;
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    .meetingHeading {
+        align-items: flex-start;
+    }
+
+    .meetingHeading h2 {
+        font-size: 18px;
+    }
+
+    .meeting-timer {
+        padding: 7px 9px;
+        font-size: 11px;
+    }
+
+    .video-grid > .video-box {
+        flex-basis: 220px;
+        border-radius: 10px;
+    }
+
+    .video-grid > .video-box.local-video-box {
+        flex-basis: min(82cqw, 360px);
+    }
+
+    .video-box .tag,
+    .video-box .video-status {
+        bottom: 7px;
+        padding: 5px 7px;
+    }
+
+    .video-box .tag {
+        right: 7px;
+    }
+
+    .video-box .video-status {
+        left: 7px;
+    }
+} */
 
 .video-loading {
     position: absolute;
@@ -827,7 +1004,7 @@ a {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
 
     gap: 10px;
     /* width: fit-content; */
@@ -1275,178 +1452,15 @@ a {
     background: rgba(0, 6, 17, .65);
 }
 
-@media (min-width: 1600px) {
-    /* .centCont {
-        max-width: 1920px;
-    } */
-}
+/* Responsive rule moved to dashboard-responsive.css. */
 
-@media (max-width: 1250px) {
-    :root {
-        --mf-sidebar-width: 245px;
-    }
+/* Responsive rule moved to dashboard-responsive.css. */
 
-    .topbarRight {
-        gap: 12px;
-    }
-}
+/* Responsive rule moved to dashboard-responsive.css. */
 
-@media (max-width: 900px) {
-    :root {
-        --mf-sidebar-width: 260px;
-    }
+/* Responsive rule moved to dashboard-responsive.css. */
 
-    .centCont {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .leftCont {
-        position: fixed;
-        z-index: 30;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: min(var(--mf-sidebar-width), calc(100vw - 55px));
-        min-height: 0;
-        overflow-y: auto;
-        transform: translateX(-105%);
-        transition: transform .2s ease;
-        box-shadow: 18px 0 50px rgba(0, 0, 0, .25);
-    }
-
-    .leftCont.open,
-    body.sidebar-open .leftCont {
-        transform: translateX(0);
-    }
-
-    #menuBtn {
-        display: grid;
-    }
-
-    body.sidebar-open #overlay {
-        display: block;
-    }
-
-    /* .rightCont {
-        min-height: 100vh;
-        min-height: 100dvh;
-    } */
-
-}
-
-@media (max-width: 600px) {
-    .topbar {
-        min-height: 66px;
-        padding: 10px 12px;
-    }
-
-    .topbarTitle {
-        gap: 8px;
-    }
-
-    .meetingIcon {
-        width: 35px;
-        height: 35px;
-    }
-
-    .topbarTitle h1 {
-        font-size: 14px;
-    }
-
-    .topbarTitle p,
-    .meetingStatus {
-        display: none;
-    }
-
-    .topbarRight {
-        gap: 8px;
-    }
-
-    #uname {
-        max-width: 100px;
-        font-size: 11px;
-    }
-
-    #profile {
-        width: 32px;
-        height: 32px;
-    }
-
-    .meetingHeading {
-        align-items: flex-start;
-    }
-
-    .meetingHeading h2 {
-        font-size: 21px;
-    }
-
-    .meetingHeading p {
-        font-size: 11px;
-    }
-
-    .videoIntro {
-        line-height: 1.5;
-    }
-
-    .video-box {
-        border-radius: 10px;
-    }
-
-    .video-box .tag,
-    .video-box .video-status {
-        bottom: 6px;
-        padding: 5px 6px;
-        font-size: 9px;
-    }
-
-
-    .video-box .video-status {
-        right: 6px;
-    }
-
-    .meeting-control-btn {
-        min-width: 72px;
-        min-height: 64px;
-        padding: 8px;
-        font-size: 10px;
-    }
-
-    .meeting-control-btn i {
-        font-size: 18px;
-    }
-
-    .form-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .employee-modal,
-    .meeting-modal-content {
-        padding: 19px;
-    }
-
-    .employee-actions {
-        flex-wrap: wrap;
-    }
-
-    .messageContainer {
-        right: 10px;
-        bottom: 10px;
-        width: calc(100vw - 20px);
-        height: min(540px, calc(100dvh - 20px));
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-    *,
-    *::before,
-    *::after {
-        scroll-behavior: auto !important;
-        transition-duration: .01ms !important;
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-    }
-}
+/* Responsive rule moved to dashboard-responsive.css. */
 
 
 
@@ -2160,5 +2174,232 @@ a {
 
 .employeeName:hover {
     color: #4a90e2;
+}
+
+/* =========================================================
+   CLEAN BASE OVERRIDES
+   Responsive breakpoints are kept in dashboard-responsive.css.
+========================================================= */
+
+/* Prevent grid/flex children from forcing horizontal overflow. */
+.app,
+.centCont,
+.rightCont,
+.meetingContent,
+.meetingLeftView,
+.sidebarSection {
+    min-width: 0;
+}
+
+.app {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    max-height: none;
+}
+
+.centCont {
+    grid-template-columns: minmax(220px, var(--mf-sidebar-width)) minmax(0, 1fr);
+    padding: clamp(10px, 1.25vw, 20px);
+    gap: clamp(10px, 1.25vw, 20px);
+}
+
+.sidebarSection {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.userListCont {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.meetingContent {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.4fr);
+    align-items: stretch;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.meetingLeftView {
+    flex: 1 1 auto;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.meetingHeading,
+.videos-container,
+.controlCont {
+    flex: 0 0 auto;
+}
+
+.videos-container {
+    max-height: none;
+    min-height: 0;
+}
+
+.video-grid {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+    width: 100%;
+    height: clamp(120px, 20vh, 220px);
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    touch-action: pan-x;
+    background:  #1f1e27;
+}
+
+#videos,
+.remote-videos {
+    display: contents;
+}
+
+.video-grid > .video-box,
+.video-grid .video-box {
+    flex: 0 0 clamp(180px, 25cqw, 320px);
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    scroll-snap-align: start;
+}
+
+.video-box {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--mf-bg-deep);
+    border-radius: 12px;
+    box-sizing: border-box;
+    contain: paint;
+}
+
+.video-box video {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #07152b;
+    transform: translateZ(0);
+}
+
+/* The local camera is a sibling of .video-grid in the supplied HTML. */
+#localBox.local-video-box {
+    position: relative;
+    flex: 0 0 auto;
+    width: min(100%, 960px);
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    margin: clamp(10px, 1.2vw, 16px) auto 0;
+    overflow: hidden;
+    align-self: center;
+    border-radius: 0 !important;
+}
+
+#localBox.local-video-box video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.controlCont {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 94px;
+    margin-top: auto;
+    padding: 10px 0 0;
+    background: linear-gradient(to bottom, transparent, var(--mf-bg-deep) 50%);
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(8px, 1vw, 14px);
+    width: 100%;
+    padding: 8px;
+}
+
+.controls button {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 64px;
+    min-height: 62px;
+    padding: 6px;
+    color: #fff;
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.controls button i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(42px, 4.2vw, 58px);
+    height: clamp(42px, 4.2vw, 58px);
+    border-radius: 15px;
+    background: var(--mf-bg);
+    font-size: clamp(18px, 1.7vw, 25px);
+}
+
+.controls button span {
+    font-size: clamp(10px, 0.9vw, 12px);
+    white-space: nowrap;
+}
+
+.controls button:hover {
+    color: #8fc9ff;
+}
+
+#endBtn {
+    color: #ff6677;
+}
+
+/* Chat window stays inside the workspace on smaller screens. */
+.messageContainer {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 32px);
+}
+
+/* Keep images/video content within their parent boxes. */
+.video-box .tag,
+.video-box .video-status {
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
