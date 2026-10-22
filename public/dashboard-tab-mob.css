@@ -303,7 +303,7 @@ body {
     }
 
     .centCont {
-        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-columns: 0px minmax(0, 1fr) !important;
         padding: 10px;
         gap: 0;
     }
