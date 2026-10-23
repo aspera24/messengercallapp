@@ -772,7 +772,7 @@ a {
    INDIVIDUAL VIDEO STREAMS
 ============================== */
 
-.video-grid > .video-box {
+.video-grid>.video-box {
     position: relative;
     isolation: isolate;
 
@@ -815,7 +815,7 @@ a {
    MAIN / LOCAL CAMERA STREAM
 ============================== */
 
-.video-grid > .video-box.local-video-box {
+.video-grid>.video-box.local-video-box {
     /*
        The local camera is the main stream.
        Keep it wider than a normal participant tile.
@@ -993,7 +993,7 @@ a {
 
 .controlCont {
     width: 100%;
-    height: 140px;
+    height: 0px;
     z-index: 10;
     display: flex;
     justify-content: center;
@@ -1445,11 +1445,18 @@ a {
 }
 
 #overlay {
-    position: fixed;
-    z-index: 20;
-    inset: 0;
     display: none;
-    background: rgba(0, 6, 17, .65);
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+
+#overlay.show {
+    display: block;
+}
+
+.leftCont {
+    z-index: 1001;
 }
 
 /* Responsive rule moved to dashboard-responsive.css. */
@@ -2259,7 +2266,7 @@ a {
     overflow-y: hidden;
     scroll-snap-type: x proximity;
     touch-action: pan-x;
-    background:  #1f1e27;
+    background: #1f1e27;
 }
 
 #videos,
@@ -2267,7 +2274,7 @@ a {
     display: contents;
 }
 
-.video-grid > .video-box,
+.video-grid>.video-box,
 .video-grid .video-box {
     flex: 0 0 clamp(180px, 25cqw, 320px);
     width: auto;
@@ -2333,8 +2340,9 @@ a {
     height: auto;
     min-height: 94px;
     margin-top: auto;
-    padding: 10px 0 0;
-    background: linear-gradient(to bottom, transparent, var(--mf-bg-deep) 50%);
+    border-top: 1px solid rgba(115, 166, 235, .13);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
 }
 
 .controls {
@@ -2402,4 +2410,3 @@ a {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-

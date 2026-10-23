@@ -8,8 +8,8 @@
     <title>MeetFlow</title>
 
     <!-- Legacy styles first, then MeetFlow base styles and responsive overrides. -->
-    <link rel="stylesheet" href="/dashboard-tab-mob.css">
     <link rel="stylesheet" href="/dashboard.css">
+    <link rel="stylesheet" href="/dashboard-tab-mob.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" href="data:,">
 
@@ -73,7 +73,7 @@
                     <div class="topbarRight">
                         <button type="button" id="viewAccountSectionBtn" class="viewAccountSectionBtn"
                             aria-label="View employees panel" aria-controls="accountSection" aria-expanded="false"
-                            title="View employees">
+                            title="View employees" onclick="toggleAccountSection()">
                             <i class="fa-solid fa-users"></i>
                         </button>
 

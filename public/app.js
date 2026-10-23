@@ -254,9 +254,17 @@ let meetingStartTime = null;
 let meetingTimerInterval = null;
 
 window.toggleSidebar = function () {
-    document.querySelector(".leftCont").classList.toggle("show");
-    document.querySelector("#overlay").classList.toggle("show");
-}
+    const sidebar = document.querySelector(".leftCont");
+    const overlay = document.querySelector("#overlay");
+
+    if (!sidebar || !overlay) return;
+
+    const isOpen = sidebar.classList.contains("show");
+
+    sidebar.classList.toggle("show", !isOpen);
+    overlay.classList.toggle("show", !isOpen);
+};
+
 
 function startMeetingTimer(startedAt) {
     clearInterval(meetingTimerInterval);
