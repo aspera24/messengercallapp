@@ -28,6 +28,13 @@ let requestSoundPlaying = false;
 let lastLocalMicUpdate = 0;
 let remoteLastUpdates = {};
 
+// Active-speaker visual switching only. Remote audio playback/peer connections stay untouched.
+let activeSpeakerId = null;
+let activeSpeakerReturnTimer = null;
+let localIsSpeaking = false;
+const ACTIVE_SPEAKER_HOLD_MS = 1200;
+const ACTIVE_SPEAKER_THRESHOLD = 10;
+
 function setCallAllLoading(loading) {
     const btn = document.getElementById("callAllBtn");
     if (!btn) return;
@@ -1235,10 +1242,23 @@ function updateMicLevel(now = 0) {
 
     let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
     const box = document.getElementById("localBox");
-    const bars = document.querySelectorAll(".mic-level .bar");
+    const bars = document.querySelectorAll("#localBox .mic-level .bar");
+    const localMicEnabled = !!audioTrack?.enabled && !audioTrack?.muted;
+    const wasLocalSpeaking = localIsSpeaking;
+    localIsSpeaking = localMicEnabled && avg > ACTIVE_SPEAKER_THRESHOLD;
 
-    if (avg > 10) box?.classList.add("mic-active");
-    else box?.classList.remove("mic-active");
+    if (localIsSpeaking) {
+        box?.classList.add("mic-active");
+        // Local speaker takes priority immediately; stop remote speaker switching
+        // while the local microphone is actively detecting speech.
+        if (activeSpeakerReturnTimer) {
+            clearTimeout(activeSpeakerReturnTimer);
+            activeSpeakerReturnTimer = null;
+        }
+        if (activeSpeakerId !== null) setActiveSpeaker(null);
+    } else {
+        box?.classList.remove("mic-active");
+    }
 
     let level = Math.min(5, Math.floor(avg / 20));
     bars.forEach((bar, i) => {
@@ -1337,6 +1357,10 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
     remoteLastUpdates = {};
 
     document.getElementById("videos").innerHTML = "";
+    if (activeSpeakerReturnTimer) clearTimeout(activeSpeakerReturnTimer);
+    activeSpeakerReturnTimer = null;
+    activeSpeakerId = null;
+    setActiveSpeaker(null);
 
     if (stream) {
         stream.getTracks().forEach(t => t.stop());
@@ -1402,6 +1426,12 @@ socket.on("user-disconnected", (userId) => {
     if (remoteAudioNodes[userId]) {
         try { remoteAudioNodes[userId].source.disconnect(); remoteAudioNodes[userId].analyser.disconnect(); } catch (e) { }
         delete remoteAudioNodes[userId];
+    }
+
+    if (activeSpeakerId === userId) {
+        if (activeSpeakerReturnTimer) clearTimeout(activeSpeakerReturnTimer);
+        activeSpeakerReturnTimer = null;
+        setActiveSpeaker(null);
     }
 
     const wrapper = document.getElementById("wrap-" + userId);
@@ -1824,6 +1854,10 @@ socket.on("removed-from-meeting", () => {
     remoteLastUpdates = {};
 
     document.getElementById("videos").innerHTML = "";
+    if (activeSpeakerReturnTimer) clearTimeout(activeSpeakerReturnTimer);
+    activeSpeakerReturnTimer = null;
+    activeSpeakerId = null;
+    setActiveSpeaker(null);
 
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -1891,6 +1925,65 @@ document.getElementById("declineMeetingBtn").onclick = () => {
     socket.emit("meeting-request-declined");
     requestedRoom = null;
 };
+
+// Smooth visual transition for the preview swap; no external CSS edit required.
+if (!document.getElementById("active-speaker-transition-style")) {
+    const style = document.createElement("style");
+    style.id = "active-speaker-transition-style";
+    style.textContent = `
+        #local, #localPreview { transition: opacity 120ms ease, filter 120ms ease; }
+        #local.speaker-switching, #localPreview.speaker-switching { opacity: .35; filter: blur(1px); }
+    `;
+    document.head.appendChild(style);
+}
+
+function setActiveSpeaker(userId = null) {
+    const mainVideo = document.getElementById("local");
+    const smallPreview = document.getElementById("localPreview");
+    const nextVideo = userId ? document.getElementById(userId) : null;
+    const nextStream = nextVideo?.srcObject || null;
+
+    // Never switch to a remote participant while our own mic detects speech.
+    if (userId && localIsSpeaking) return;
+
+    // Always restore the original local camera stream when userId is null.
+    const targetStream = nextStream || stream;
+    if (!targetStream) return;
+
+    // The main #local video is the video shown inside #localBox. Keep the small
+    // preview in sync too, but mute both so this visual switch cannot duplicate audio.
+    [mainVideo, smallPreview].forEach(video => {
+        if (!video) return;
+        if (video.srcObject !== targetStream) {
+            video.classList.add("speaker-switching");
+            video.srcObject = targetStream;
+            video.muted = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.play().catch(() => {});
+            window.setTimeout(() => video.classList.remove("speaker-switching"), 120);
+        }
+    });
+
+    activeSpeakerId = nextStream ? userId : null;
+
+    const localBox = document.getElementById("localBox");
+    const tag = localBox?.querySelector(".tag");
+    if (tag) {
+        if (!tag.dataset.originalLabel) tag.dataset.originalLabel = tag.textContent.trim() || "You";
+        tag.textContent = activeSpeakerId
+            ? (peerNames[activeSpeakerId] || activeSpeakerId)
+            : tag.dataset.originalLabel;
+    }
+}
+
+function scheduleLocalPreviewRestore() {
+    if (activeSpeakerReturnTimer) clearTimeout(activeSpeakerReturnTimer);
+    activeSpeakerReturnTimer = setTimeout(() => {
+        activeSpeakerReturnTimer = null;
+        setActiveSpeaker(null);
+    }, ACTIVE_SPEAKER_HOLD_MS);
+}
 
 function addRemoteVideo(userId, stream) {
     let wrapper = document.getElementById("wrap-" + userId);
@@ -2026,6 +2119,7 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         if (track.muted) {
             bars.forEach(bar => { bar.style.height = "4px"; });
             wrapper.classList.remove("mic-active");
+            if (activeSpeakerId === userId) scheduleLocalPreviewRestore();
             return;
         }
 
@@ -2033,8 +2127,18 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         const state = userMediaStates[userId] || { mic: true, camera: true };
 
-        if (state?.mic && avg > 10) wrapper.classList.add("mic-active");
-        else wrapper.classList.remove("mic-active");
+        const isSpeaking = !!state?.mic && !track.muted && avg > ACTIVE_SPEAKER_THRESHOLD;
+        if (isSpeaking && !localIsSpeaking) {
+            wrapper.classList.add("mic-active");
+            if (activeSpeakerReturnTimer) {
+                clearTimeout(activeSpeakerReturnTimer);
+                activeSpeakerReturnTimer = null;
+            }
+            if (activeSpeakerId !== userId) setActiveSpeaker(userId);
+        } else {
+            wrapper.classList.remove("mic-active");
+            if (activeSpeakerId === userId && !localIsSpeaking) scheduleLocalPreviewRestore();
+        }
 
         if (!state?.mic) {
             bars.forEach(bar => { bar.style.height = "4px"; });

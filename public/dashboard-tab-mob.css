@@ -413,7 +413,7 @@ body.account-panel-open #accountPanelOverlay {
         border-radius: 0 !important;
     }
 
-    
+
 
     .topbarLeft,
     .topbarTitle {
@@ -543,22 +543,21 @@ body.account-panel-open #accountPanelOverlay {
     }
 
     .video-grid .video-box,
-    .video-grid > .video-box {
+    .video-grid>.video-box {
         flex: 0 0 clamp(130px, 42vw, 190px);
+        border-radius: 15px;
         width: auto;
         height: 100%;
         min-width: 0;
         min-height: 0;
         aspect-ratio: auto;
         scroll-snap-align: start;
-        border-radius: 8px;
     }
 
     #localBox.local-video-box {
         position: relative;
         display: block;
         flex: 1 1 auto;
-        width: calc(100% - 16px);
         max-width: none;
         min-width: 0;
         min-height: 110px;
@@ -566,7 +565,6 @@ body.account-panel-open #accountPanelOverlay {
         aspect-ratio: auto;
         margin: 0 8px;
         overflow: hidden;
-        border-radius: 10px;
         background: #050b16;
     }
 
@@ -717,6 +715,7 @@ body.account-panel-open #accountPanelOverlay {
 
 /* ---------- Accessibility ---------- */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
