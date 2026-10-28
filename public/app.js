@@ -1217,7 +1217,7 @@ function updateMeetingButtons(active) {
         endBtn.style.display = "none";
         return;
     }
-    endBtn.style.display = active ? "block" : "none";
+    endBtn.style.display = active ? "flex" : "none";
 }
 
 function setupMicLevel() {

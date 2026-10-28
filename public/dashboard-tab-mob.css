@@ -90,6 +90,7 @@ body {
 }
 
 @media (max-width: 1100px) {
+
     html,
     body {
         width: 100%;
@@ -193,33 +194,55 @@ body {
         position: fixed !important;
         inset: 0 auto 0 0 !important;
         z-index: 1001 !important;
+
         display: flex !important;
         flex-direction: column !important;
+
         width: min(300px, calc(100vw - 42px)) !important;
         height: 100vh !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
         min-height: 0 !important;
+
         margin: 0 !important;
         padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+
         overflow-x: hidden !important;
         overflow-y: auto !important;
         overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+
         border-radius: 0 14px 14px 0;
-        transform: translateX(-105%) !important;
+        background: var(--mf-bg-deep);
+
+        /* Closed state */
+        transform: translate3d(-100%, 0, 0) !important;
         visibility: hidden !important;
         opacity: 1 !important;
         pointer-events: none !important;
-        box-shadow: 16px 0 45px rgba(0, 0, 0, 0.38);
-        transition: transform 0.22s ease, visibility 0.22s ease !important;
+
+        /* Reduce expensive rendering */
+        box-shadow: 8px 0 20px rgba(0, 0, 0, 0.22);
+
+        /* Animate only the transform */
+        transition:
+            transform 0.22s ease-out,
+            visibility 0s linear 0.22s !important;
+
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 
-    .leftCont.show,
-    .leftCont.open,
-    body.sidebar-open .leftCont {
-        transform: translateX(0) !important;
+    /* Open state */
+    .leftCont.show {
+        transform: translate3d(0, 0, 0) !important;
         visibility: visible !important;
         pointer-events: auto !important;
+
+        transition:
+            transform 0.22s ease-out,
+            visibility 0s linear 0s !important;
     }
 
     #menuBtn {
@@ -238,7 +261,7 @@ body {
         inset: 0 !important;
         z-index: 1000 !important;
         display: none;
-        background: rgba(3, 7, 18, 0.62);
+        /* background: rgba(3, 7, 18, 0.62); */
     }
 
     body.sidebar-open #overlay,
@@ -311,7 +334,7 @@ body {
         height: auto;
         min-width: 0;
         min-height: 0;
-        padding: 4px !important;
+        padding: 0px !important;
         gap: 0 !important;
         overflow: hidden;
         border-radius: 0 !important;
@@ -418,7 +441,7 @@ body {
         display: none;
     }
 
-    .video-grid > *,
+    .video-grid>*,
     .video-grid .video-box {
         position: relative;
         display: block;
@@ -615,10 +638,6 @@ body {
         display: none !important;
     }
 
-    .meetingContent {
-        padding: 3px !important;
-    }
-
     .meetingLeftView {
         gap: 4px;
     }
@@ -640,7 +659,7 @@ body {
     #localBox.local-video-box {
         grid-column: 1;
         grid-row: 1;
-        border-radius: 10px;
+        border-radius: 0px;
     }
 
     .video-grid {
@@ -652,7 +671,7 @@ body {
         gap: 6px;
     }
 
-    .video-grid > *,
+    .video-grid>*,
     .video-grid .video-box {
         flex-basis: clamp(112px, 31vw, 145px);
         width: clamp(112px, 31vw, 145px);
@@ -757,7 +776,7 @@ body {
         scrollbar-width: thin;
     }
 
-    .video-grid > *,
+    .video-grid>*,
     .video-grid .video-box {
         flex: 0 0 auto;
         width: 100%;
@@ -824,7 +843,7 @@ body {
         overflow-y: hidden !important;
     }
 
-    .video-grid > *,
+    .video-grid>*,
     .video-grid .video-box {
         flex: 0 0 clamp(140px, 22vw, 185px);
         width: clamp(140px, 22vw, 185px);
@@ -868,7 +887,7 @@ body {
         overflow-y: auto !important;
     }
 
-    .video-grid > *,
+    .video-grid>*,
     .video-grid .video-box {
         flex: 0 0 auto;
         width: 100%;
@@ -902,9 +921,31 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .leftCont,
     #accountSection.sidebarSection,
     .viewAccountSectionBtn {
         transition: none !important;
+    }
+}
+
+
+/* Hide remote video grid when it has no video tiles */
+@media (max-width: 1100px) {
+    .videos-container:not(:has(.video-grid .video-box)) {
+        grid-template-rows: minmax(0, 1fr) !important;
+    }
+
+    .videos-container:not(:has(.video-grid .video-box)) .video-grid {
+        display: none !important;
+    }
+
+    .videos-container:not(:has(.video-grid .video-box)) #localBox.local-video-box {
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0;
+        min-height: 0;
     }
 }

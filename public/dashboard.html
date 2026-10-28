@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <div id="overlay" onclick="toggleSidebar()"></div>
+
     <div id="accountPanelOverlay" onclick="toggleAccountSection(false)"></div>
     <div class="app">
         <div class="centCont">
@@ -55,6 +55,8 @@
                     <i class="fa-solid fa-right-from-bracket"></i><span>Sign out</span>
                 </button>
             </aside>
+
+            <div id="overlay" onclick="toggleSidebar()"></div>
 
             <!-- MAIN CONTENT -->
             <main class="rightCont" id="meetingWorkspace">
@@ -150,7 +152,9 @@
                                     <span>Switch Camera</span>
                                 </button>
 
-                                <button id="endBtn" onclick="endMeeting()">
+                                <button id="endBtn" onclick="endMeeting()" title="End Meeting"
+                                    aria-label="End Meeting">
+                                    <i class="fa-solid fa-phone-slash"></i>
                                     <span>End Meeting</span>
                                 </button>
                             </div>
