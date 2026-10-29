@@ -20,7 +20,9 @@
 
 <body>
 
-    <div id="accountPanelOverlay" onclick="toggleAccountSection(false)"></div>
+    <div id="overlay" onclick="toggleSidebar()"></div>
+    <div id="accountPanelOverlay" aria-hidden="true" onclick="toggleAccountSection(false)"></div>
+
     <div class="app">
         <div class="centCont">
             <!-- LEFT SIDEBAR: keep existing IDs used by app.js -->
@@ -56,8 +58,6 @@
                 </button>
             </aside>
 
-            <div id="overlay" onclick="toggleSidebar()"></div>
-
             <!-- MAIN CONTENT -->
             <main class="rightCont" id="meetingWorkspace">
                 <header class="topbar">
@@ -74,12 +74,6 @@
                     </div>
 
                     <div class="topbarRight">
-                        <button type="button" id="viewAccountSectionBtn" class="viewAccountSectionBtn"
-                            aria-label="View employees panel" aria-controls="accountSection" aria-expanded="false"
-                            title="View employees" onclick="toggleAccountSection()">
-                            <i class="fa-solid fa-users"></i>
-                        </button>
-
                         <span class="meetingStatus">
                             <span class="statusDot"></span> Ready to connect
                         </span>
@@ -101,8 +95,15 @@
                                 <h2 class="mr">Meeting room</h2>
                                 <p class="par">Connect face-to-face with your team.</p>
                             </div>
-                            <div id="meetingTimer" class="meeting-timer" style="display:none;"><i
-                                    class="fa-regular fa-clock"></i><span>00:00:00</span></div>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
+                                <div id="meetingTimer" class="meeting-timer" style="display:none;"><i
+                                        class="fa-regular fa-clock"></i><span>00:00:00</span></div>
+                                <button type="button" id="viewAccountSectionBtn" class="viewAccountSectionBtn"
+                                    aria-label="View employees panel" aria-controls="accountSection"
+                                    aria-expanded="false" title="View employees" onclick="toggleAccountSection()">
+                                    <i class="fa-solid fa-users"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="videos-container">
@@ -152,8 +153,7 @@
                                     <span>Switch Camera</span>
                                 </button>
 
-                                <button id="endBtn" onclick="endMeeting()" title="End Meeting"
-                                    aria-label="End Meeting">
+                                <button id="endBtn" onclick="endMeeting()" title="End Meeting" aria-label="End Meeting">
                                     <i class="fa-solid fa-phone-slash"></i>
                                     <span>End Meeting</span>
                                 </button>

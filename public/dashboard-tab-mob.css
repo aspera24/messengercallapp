@@ -72,16 +72,16 @@ body {
     width: 38px;
     height: 38px;
     color: #e9e4ff;
-    background: rgba(138, 63, 252, 0.16);
-    border: 1px solid rgba(167, 111, 255, 0.34);
-    border-radius: 10px;
+    background: var(--mf-bg-transp);
+    border: 1px solid var(--mf-btn-border);
+    border-radius: 100px;
     cursor: pointer;
     transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
 .viewAccountSectionBtn:hover {
-    background: rgba(138, 63, 252, 0.28);
-    border-color: rgba(167, 111, 255, 0.65);
+    background: var(--mf-bg-deep);
+    border-color: var(--mf-gray);
 }
 
 .viewAccountSectionBtn:active,
@@ -180,6 +180,11 @@ body {
         gap: 6px;
     }
 
+    .meetingIcon {
+        width: 36px;
+        height: 36px;
+    }
+
     .topbarTitle {
         min-width: 0;
     }
@@ -259,65 +264,111 @@ body {
     #overlay {
         position: fixed !important;
         inset: 0 !important;
-        z-index: 1000 !important;
-        display: none;
-        /* background: rgba(3, 7, 18, 0.62); */
+        z-index: 1002 !important;
+
+        display: block !important;
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transition:
+            opacity 0.22s ease,
+            visibility 0s linear 0.22s;
     }
 
     body.sidebar-open #overlay,
     #overlay.show,
     #overlay.open,
     #overlay.active {
-        display: block !important;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+
+        transition:
+            opacity 0.22s ease,
+            visibility 0s linear 0s;
     }
 
     #accountPanelOverlay {
-        position: fixed;
-        inset: 0;
-        z-index: 1002;
-        display: none;
-        background: rgba(3, 7, 18, 0.62);
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1002 !important;
+
+        display: block !important;
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transition:
+            opacity 0.22s ease,
+            visibility 0s linear 0.22s;
     }
 
     body.account-panel-open #accountPanelOverlay {
-        display: block;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+
+        transition:
+            opacity 0.22s ease,
+            visibility 0s linear 0s;
     }
 
     #accountSection.sidebarSection {
         position: fixed !important;
-        top: max(8px, env(safe-area-inset-top)) !important;
-        right: 8px !important;
-        bottom: max(8px, env(safe-area-inset-bottom)) !important;
+
+        top: max(0px, env(safe-area-inset-top)) !important;
+        right: 0 !important;
+        bottom: max(0px, env(safe-area-inset-bottom)) !important;
         left: auto !important;
+
         z-index: 1003 !important;
+
         display: flex !important;
         flex-direction: column !important;
-        width: min(400px, calc(100vw - 16px)) !important;
+
+        width: min(400px, calc(100vw - 42px)) !important;
         height: auto !important;
+
         max-width: none !important;
         max-height: none !important;
         min-width: 0 !important;
         min-height: 0 !important;
+
         margin: 0 !important;
         padding: 12px !important;
+
         overflow-x: hidden !important;
         overflow-y: auto !important;
-        overscroll-behavior: contain;
-        background: var(--mf-mobile-surface, #26262f) !important;
-        border: 1px solid rgba(167, 111, 255, 0.25) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-        transform: translateX(calc(100% + 20px)) !important;
+
+        background: var(--mf-bg-deep) !important;
+
+        border-radius: 14px 0 0 14px !important;
+        box-shadow: -8px 0 25px rgba(0, 0, 0, 0.3);
+
+        transform: translate3d(100%, 0, 0) !important;
+
         visibility: hidden !important;
-        opacity: 1 !important;
         pointer-events: none !important;
-        transition: transform 0.22s ease, visibility 0.22s ease !important;
+
+        transition:
+            transform 0.22s ease-out,
+            visibility 0s linear 0.22s !important;
+
+        will-change: transform;
     }
 
     body.account-panel-open #accountSection.sidebarSection {
-        transform: translateX(0) !important;
+        transform: translate3d(0, 0, 0) !important;
+
         visibility: visible !important;
         pointer-events: auto !important;
+
+        transition:
+            transform 0.22s ease-out,
+            visibility 0s linear 0s !important;
     }
 
     #viewAccountSectionBtn,
@@ -502,13 +553,14 @@ body {
         margin: 0;
         padding: 5px;
         overflow: visible;
-        background: rgba(30, 30, 36, 0.92);
+        bottom: max(40px, env(safe-area-inset-bottom));
         border: 1px solid rgba(255, 255, 255, 0.09);
         border-radius: 16px;
+        background: var(--mf-bg-deep);
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
         transform: translateX(-50%);
-        -webkit-backdrop-filter: blur(12px);
-        backdrop-filter: blur(12px);
+        /* -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px); */
     }
 
     .controls {
@@ -534,17 +586,8 @@ body {
         padding: 5px;
         gap: 4px;
         border-radius: 10px;
-        font-size: 10px;
+        /* font-size: 10px; */
         white-space: nowrap;
-    }
-
-    .controls button i {
-        display: grid;
-        place-items: center;
-        flex: 0 0 25px;
-        width: 25px;
-        height: 25px;
-        font-size: 13px;
     }
 
     .controls button span {
@@ -652,7 +695,7 @@ body {
 
     .videos-container {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr) clamp(120px, 12dvh, 100px);
+        grid-template-rows: clamp(120px, 12dvh, 200px) minmax(0, 1fr);
         gap: 5px;
     }
 
@@ -669,18 +712,19 @@ body {
         width: 100%;
         height: 100% !important;
         gap: 6px;
+        padding: 4px;
     }
 
     .video-grid>*,
     .video-grid .video-box {
-        flex-basis: clamp(112px, 31vw, 145px);
-        width: clamp(112px, 31vw, 145px);
-        min-width: clamp(112px, 31vw, 145px);
-        max-width: clamp(112px, 31vw, 145px);
+        flex: 0 0 clamp(185px, 22vw, 185px);
+        width: clamp(185px, 22vw, 185px);
+        min-width: clamp(185px, 22vw, 185px);
+        max-width: clamp(185px, 22vw, 185px);
     }
 
     .controlCont {
-        bottom: max(103px, env(safe-area-inset-bottom));
+        bottom: max(40px, env(safe-area-inset-bottom));
         padding: 4px;
         border-radius: 13px;
     }
@@ -695,13 +739,6 @@ body {
         padding: 4px;
     }
 
-    .controls button i {
-        flex-basis: 24px;
-        width: 24px;
-        height: 24px;
-        font-size: 12px;
-    }
-
     .form-grid {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -712,6 +749,11 @@ body {
         min-height: 34px;
         padding-top: max(2px, env(safe-area-inset-top));
         padding-bottom: 2px;
+    }
+
+    .meetingIcon {
+        width: 30px;
+        height: 30px;
     }
 
     .topbarTitle h1 {
@@ -725,13 +767,6 @@ body {
     .meetingHeading small,
     .meetingHeading .subtitle {
         display: none !important;
-    }
-
-    #menuBtn,
-    .viewAccountSectionBtn {
-        flex-basis: 30px;
-        width: 30px;
-        height: 30px;
     }
 
     .meetingContent {
@@ -787,31 +822,6 @@ body {
         aspect-ratio: 4 / 3;
     }
 
-    /* .controlCont {
-        left: auto;
-        right: 8px;
-        bottom: max(5px, env(safe-area-inset-bottom));
-        padding: 3px;
-        border-radius: 11px;
-        transform: none;
-    } */
-
-    .controls {
-        gap: 3px;
-    }
-
-    .controls button {
-        min-width: 32px;
-        min-height: 32px;
-        padding: 3px;
-    }
-
-    .controls button i {
-        flex-basis: 23px;
-        width: 23px;
-        height: 23px;
-        font-size: 11px;
-    }
 }
 
 @media (min-width: 601px) and (max-width: 1100px) and (orientation: portrait) {
@@ -845,17 +855,14 @@ body {
 
     .video-grid>*,
     .video-grid .video-box {
-        flex: 0 0 clamp(140px, 22vw, 185px);
-        width: clamp(140px, 22vw, 185px);
-        min-width: clamp(140px, 22vw, 185px);
-        max-width: clamp(140px, 22vw, 185px);
+        flex: 0 0 clamp(185px, 22vw, 185px);
+        width: clamp(185px, 22vw, 185px);
+        min-width: clamp(185px, 22vw, 185px);
+        max-width: clamp(185px, 22vw, 185px);
         height: 100%;
         aspect-ratio: auto;
     }
 
-    .controlCont {
-        bottom: max(8px, env(safe-area-inset-bottom));
-    }
 }
 
 @media (min-width: 601px) and (max-width: 1100px) and (orientation: landscape) {
@@ -894,7 +901,31 @@ body {
         min-width: 0;
         max-width: none;
         height: auto;
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 4 / 2.6;
+    }
+}
+
+
+@media (min-width: 0px) and (max-width: 1100px) and (orientation: portrait) {
+
+    .videos-container {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .video-grid {
+        grid-column: 1;
+        grid-row: 1;
+        flex-direction: row;
+        height: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+    }
+
+    #localBox.local-video-box {
+        grid-column: 1;
+        grid-row: 2;
     }
 }
 
@@ -915,9 +946,6 @@ body {
         gap: 2px;
     }
 
-    .controlCont {
-        bottom: max(3px, env(safe-area-inset-bottom));
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1960,7 +1960,7 @@ function setActiveSpeaker(userId = null) {
             video.muted = true;
             video.autoplay = true;
             video.playsInline = true;
-            video.play().catch(() => {});
+            video.play().catch(() => { });
             window.setTimeout(() => video.classList.remove("speaker-switching"), 120);
         }
     });
@@ -2161,9 +2161,10 @@ async function setupRemoteMicLevel(userId, remoteStream) {
    FLOATING EMPLOYEE PANEL
 ========================================== */
 
-function toggleAccountSection(force) {
+window.toggleAccountSection = function (force) {
     const panel = document.getElementById("accountSection");
     const button = document.getElementById("viewAccountSectionBtn");
+    const accountPanelOverlay = document.getElementById("accountPanelOverlay");
 
     if (!panel || !button) return;
 
@@ -2172,12 +2173,10 @@ function toggleAccountSection(force) {
             ? force
             : !document.body.classList.contains("account-panel-open");
 
-    document.body.classList.toggle(
-        "account-panel-open",
-        shouldOpen
-    );
+    document.body.classList.toggle("account-panel-open", shouldOpen);
 
     button.setAttribute("aria-expanded", String(shouldOpen));
+    button.setAttribute("aria-controls", "accountSection");
 
     button.setAttribute(
         "aria-label",
@@ -2187,16 +2186,13 @@ function toggleAccountSection(force) {
     button.innerHTML = shouldOpen
         ? '<i class="fa-solid fa-xmark"></i>'
         : '<i class="fa-solid fa-users"></i>';
+
+    if (accountPanelOverlay) {
+        accountPanelOverlay.setAttribute("aria-hidden", String(!shouldOpen));
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    const button = document.getElementById("viewAccountSectionBtn");
-
-    if (button) {
-        button.addEventListener("click", () => {
-            toggleAccountSection();
-        });
-    }
 
     // Close the floating panel using Escape.
     document.addEventListener("keydown", event => {
@@ -2211,6 +2207,13 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleAccountSection(false);
         }
     });
+
+    // Close the employee panel when the overlay is clicked.
+    document.getElementById("accountPanelOverlay")
+        ?.addEventListener("click", () => {
+            toggleAccountSection(false);
+        });
+
 });
 
 
