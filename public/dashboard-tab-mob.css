@@ -294,7 +294,7 @@ body {
         position: fixed !important;
         inset: 0 !important;
         z-index: 1002 !important;
-
+        background: var(--mf-overlay);
         display: block !important;
 
         opacity: 0;
@@ -329,7 +329,7 @@ body {
         display: flex !important;
         flex-direction: column !important;
 
-        width: min(400px, calc(100vw - 42px)) !important;
+        width: min(340px, calc(100vw - 42px)) !important;
         height: auto !important;
 
         max-width: none !important;
@@ -344,10 +344,7 @@ body {
         overflow-y: auto !important;
 
         background: var(--mf-bg-deep) !important;
-
         border-radius: 14px 0 0 14px !important;
-        box-shadow: -8px 0 25px rgba(0, 0, 0, 0.3);
-
         transform: translate3d(100%, 0, 0) !important;
 
         visibility: hidden !important;
@@ -374,7 +371,11 @@ body {
     #viewAccountSectionBtn,
     .viewAccountSectionBtn {
         position: relative;
-        z-index: 1004 !important;
+        z-index: 1003 !important;
+        display: flex;
+        font-size: 12px;
+        justify-content: center;
+        align-items: center;
     }
 
     .meetingContent {
@@ -496,11 +497,12 @@ body {
     .video-grid .video-box {
         position: relative;
         display: block;
-        flex: 0 0 var(--mf-remote-width);
+        /* flex: 0 0 var(--mf-remote-width);
         width: var(--mf-remote-width);
         min-width: var(--mf-remote-width);
-        max-width: var(--mf-remote-width);
+        max-width: var(--mf-remote-width); */
         height: 100%;
+        min-width: 200px;
         min-height: 0;
         aspect-ratio: auto;
         overflow: hidden;
@@ -522,21 +524,6 @@ body {
         display: contents;
     }
 
-    #localBox .video-status,
-    #localBox .tag {
-        bottom: 7px;
-        padding: 5px 7px;
-        font-size: 10px;
-    }
-
-    #localBox .video-status {
-        left: 7px;
-    }
-
-    #localBox .tag {
-        right: 7px;
-    }
-
     .controlCont {
         position: fixed !important;
         left: 50%;
@@ -551,11 +538,10 @@ body {
         min-height: 0;
         height: auto;
         margin: 0;
-        padding: 5px;
         overflow: visible;
         bottom: max(40px, env(safe-area-inset-bottom));
         border: 1px solid rgba(255, 255, 255, 0.09);
-        border-radius: 16px;
+        border-radius: 150px;
         background: var(--mf-bg-deep);
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
         transform: translateX(-50%);
@@ -705,7 +691,7 @@ body {
         border-radius: 0px;
     }
 
-    .video-grid {
+    /* .video-grid {
         grid-column: 1;
         grid-row: 2;
         flex-direction: row;
@@ -713,21 +699,15 @@ body {
         height: 100% !important;
         gap: 6px;
         padding: 4px;
-    }
+    } */
 
-    .video-grid>*,
+    /* .video-grid>*,
     .video-grid .video-box {
         flex: 0 0 clamp(185px, 22vw, 185px);
         width: clamp(185px, 22vw, 185px);
         min-width: clamp(185px, 22vw, 185px);
         max-width: clamp(185px, 22vw, 185px);
-    }
-
-    .controlCont {
-        bottom: max(40px, env(safe-area-inset-bottom));
-        padding: 4px;
-        border-radius: 13px;
-    }
+    } */
 
     .controls {
         gap: 3px;
@@ -813,7 +793,6 @@ body {
 
     .video-grid>*,
     .video-grid .video-box {
-        flex: 0 0 auto;
         width: 100%;
         min-width: 0;
         max-width: none;
@@ -853,14 +832,51 @@ body {
         overflow-y: hidden !important;
     }
 
+    #videos,
+    .remote-videos {
+        align-items: stretch;
+
+        grid-column: 2;
+        grid-row: 1;
+
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+
+        padding-right: 6px;
+        gap: 10px;
+
+        overflow-x: hidden;
+        overflow-y: auto;
+
+        scroll-behavior: smooth;
+        overscroll-behavior-y: contain;
+
+        box-sizing: border-box;
+        scrollbar-width: thin;
+        scrollbar-color: var(--mf-border) transparent;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .video-grid>*,
     .video-grid .video-box {
-        flex: 0 0 clamp(185px, 22vw, 185px);
+        /* flex: 0 0 clamp(185px, 22vw, 185px);
         width: clamp(185px, 22vw, 185px);
         min-width: clamp(185px, 22vw, 185px);
         max-width: clamp(185px, 22vw, 185px);
         height: 100%;
-        aspect-ratio: auto;
+        aspect-ratio: auto; */
+        flex: 1 1 auto;
+
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+
+        height: auto;
+        aspect-ratio: 16 / 9;
+
+        border-radius: 15px;
     }
 
 }
@@ -896,7 +912,6 @@ body {
 
     .video-grid>*,
     .video-grid .video-box {
-        flex: 0 0 auto;
         width: 100%;
         min-width: 0;
         max-width: none;

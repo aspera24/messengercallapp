@@ -807,10 +807,19 @@ io.on("connection", (socket) => {
 
     });
 
-    socket.on("media-status", ({ camera, mic }) => {
+    socket.on("media-status", (data = {}) => {
 
         const user = socket.data.user;
         if (!user) return;
+
+        const { camera, mic } = data;
+
+        if (
+            typeof camera !== "boolean" ||
+            typeof mic !== "boolean"
+        ) {
+            return;
+        }
 
         userMediaState[user.token] = {
             camera,
@@ -823,6 +832,156 @@ io.on("connection", (socket) => {
             mic
         });
     });
+
+    // =========================================
+    // LOAD SAVED CAMERA / MIC PREFERENCES
+    // =========================================
+    socket.on("get-media-status", () => {
+
+        const user = socket.data.user;
+        if (!user) return;
+
+        db.query(
+            `
+            SELECT
+                camera_enabled,
+                mic_enabled,
+                camera_facing_mode
+            FROM user_controls
+            WHERE user_id = ?
+            LIMIT 1
+            `,
+            [user.id],
+            (err, rows) => {
+
+                if (err) {
+                    console.error("GET MEDIA PREFERENCES ERROR:", err);
+
+                    // Fallback defaults
+                    return socket.emit("media-status-loaded", {
+                        camera: true,
+                        mic: true,
+                        cameraFacingMode: "user"
+                    });
+                }
+
+                const preferences = rows.length
+                    ? {
+                        camera: !!rows[0].camera_enabled,
+                        mic: !!rows[0].mic_enabled,
+                        cameraFacingMode:
+                            rows[0].camera_facing_mode === "environment"
+                                ? "environment"
+                                : "user"
+                    }
+                    : {
+                        camera: true,
+                        mic: true,
+                        cameraFacingMode: "user"
+                    };
+
+                // Keep the in-memory state aligned with saved preferences
+                userMediaState[user.token] = {
+                    camera: preferences.camera,
+                    mic: preferences.mic
+                };
+
+                socket.emit("media-status-loaded", preferences);
+
+                console.log(
+                    "MEDIA PREFERENCES LOADED:",
+                    user.token,
+                    preferences
+                );
+            }
+        );
+    });
+
+
+    // =========================================
+    // SAVE CAMERA / MIC PREFERENCES
+    // =========================================
+    socket.on("save-media-preferences", (data = {}) => {
+
+        const user = socket.data.user;
+        if (!user) return;
+
+        const camera = data.camera;
+        const mic = data.mic;
+
+        const cameraFacingMode =
+            data.cameraFacingMode === "environment"
+                ? "environment"
+                : "user";
+
+        // Validate values
+        if (
+            typeof camera !== "boolean" ||
+            typeof mic !== "boolean"
+        ) {
+            console.warn(
+                "Invalid media preferences received:",
+                user.token,
+                data
+            );
+            return;
+        }
+
+        db.query(
+            `
+            INSERT INTO user_controls
+            (
+                user_id,
+                camera_enabled,
+                mic_enabled,
+                camera_facing_mode
+            )
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                camera_enabled = VALUES(camera_enabled),
+                mic_enabled = VALUES(mic_enabled),
+                camera_facing_mode = VALUES(camera_facing_mode)
+            `,
+            [
+                user.id,
+                camera ? 1 : 0,
+                mic ? 1 : 0,
+                cameraFacingMode
+            ],
+            (err) => {
+
+                if (err) {
+                    console.error(
+                        "SAVE MEDIA PREFERENCES ERROR:",
+                        err
+                    );
+                    socket.emit("media-preferences-save-failed");
+                    return;
+                }
+
+                // Keep memory state updated too
+                userMediaState[user.token] = {
+                    camera,
+                    mic
+                };
+
+                socket.emit("media-preferences-saved");
+
+                console.log(
+                    "MEDIA PREFERENCES SAVED:",
+                    user.token,
+                    {
+                        camera,
+                        mic,
+                        cameraFacingMode
+                    }
+                );
+            }
+        );
+    });
+
+
+
 
     // CREATE ROOM
     socket.on("create-room", ({ participants = [] }) => {
@@ -998,14 +1157,34 @@ io.on("connection", (socket) => {
     }
 
     // START MEETING
-    socket.on("start-meeting", ({ roomId, adminToken }) => {
+    socket.on("start-meeting", ({ roomId }) => {
 
+        const user = socket.data.user;
+
+        if (!user || user.acc_type !== "admin") return;
         if (!roomId) return;
 
+        const existingMeeting =
+            activeMeeting?.roomId === roomId
+                ? activeMeeting
+                : null;
+
+        const room = rooms[roomId];
+
+        if (!room) return;
+
         activeMeeting = {
+            ...existingMeeting,
             roomId,
-            adminToken,
-            startedAt: Date.now()
+            adminToken: user.token,
+            participants:
+                existingMeeting?.participants ||
+                room.participants ||
+                [user.token],
+            timerStarted:
+                existingMeeting?.timerStarted ?? false,
+            startedAt:
+                existingMeeting?.startedAt || Date.now()
         };
 
         startMeetingBroadcast(roomId);
@@ -1592,11 +1771,11 @@ io.on("connection", (socket) => {
 
         }
 
-        if (peerSocketMap[user.token] === socket.id) {
+        if (user && peerSocketMap[user.token] === socket.id) {
 
             setTimeout(() => {
 
-                if (peerSocketMap[user.token] === socket.id) {
+                if (user && peerSocketMap[user.token] === socket.id) {
                     delete peerSocketMap[user.token];
                 }
 

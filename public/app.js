@@ -35,6 +35,15 @@ let localIsSpeaking = false;
 const ACTIVE_SPEAKER_HOLD_MS = 1200;
 const ACTIVE_SPEAKER_THRESHOLD = 10;
 
+// Saved camera/microphone preferences from the server
+let savedMediaStatus = {
+    camera: false,
+    mic: false,
+    cameraFacingMode: "user"
+};
+
+let mediaStatusLoaded = false;
+
 function setCallAllLoading(loading) {
     const btn = document.getElementById("callAllBtn");
     if (!btn) return;
@@ -79,18 +88,13 @@ document.getElementById("profile").addEventListener("click", function () {
 
 socket.on("connect", async () => {
     console.log("Socket connected:", socket.id);
+
     await loadCurrentUser();
+
     loadMissedCalls();
 
-    if (roomId && currentUser) {
-        socket.emit("join-room", { roomId });
-        if (videoTrack && audioTrack) {
-            socket.emit("media-status", {
-                camera: videoTrack.enabled,
-                mic: audioTrack.enabled
-            });
-        }
-    }
+    // Retrieve saved camera and microphone preferences
+    socket.emit("get-media-status");
 });
 
 socket.io.on("reconnect", () => { console.log("Socket reconnected."); });
@@ -304,15 +308,6 @@ function initUser(data) {
     currentUser = data.user;
     myId = currentUser.token;
 
-    setTimeout(() => {
-        if (videoTrack && audioTrack) {
-            socket.emit("media-status", {
-                camera: videoTrack.enabled,
-                mic: audioTrack.enabled
-            });
-        }
-    }, 1000);
-
     setupUI();
 }
 
@@ -336,18 +331,32 @@ function setupUI() {
 }
 
 window.onload = async () => {
+    // Wait for saved media settings, but don't wait forever
+    if (!mediaStatusLoaded) {
+        await new Promise(resolve => {
+            const startedAt = Date.now();
+
+            const checkStatus = setInterval(() => {
+                if (mediaStatusLoaded || Date.now() - startedAt >= 5000) {
+                    clearInterval(checkStatus);
+                    resolve();
+                }
+            }, 50);
+        });
+    }
+
     const ready = await ensureMediaReady();
+
     if (!ready) {
-        console.log("Media initialization failed.");
+        console.log("[MEDIA] Media initialization failed.");
         return;
     }
+
     if (audioContext?.state === "suspended") {
         await audioContext.resume();
     }
-    socket.emit("media-status", {
-        camera: videoTrack?.enabled ?? false,
-        mic: audioTrack?.enabled ?? false
-    });
+
+    applySavedMediaStatus();
 };
 
 let currentFacingMode = "user";
@@ -525,6 +534,17 @@ async function ensureMediaReady(attempt = 0) {
 
         videoTrack = stream.getVideoTracks()[0];
         audioTrack = stream.getAudioTracks()[0];
+        await detectCameraType(videoTrack);
+        updateCameraMirror();
+
+        // Apply saved database status after the tracks are ready
+        if (mediaStatusLoaded) {
+            applySavedMediaStatus();
+        } else {
+            // Until the server provides the saved status,
+            // use the current default state.
+            updateMediaStatus();
+        }
 
         console.log("[CAMERA SETTINGS]", videoTrack.getSettings());
 
@@ -569,6 +589,8 @@ async function switchCamera() {
     const oldCameraStream = cameraStream;
     const oldAudioTrack =
         stream?.getAudioTracks?.()[0] || audioTrack;
+
+    const oldVideoEnabled = videoTrack?.enabled ?? savedMediaStatus.camera;
 
     const previousFacingMode = currentFacingMode;
 
@@ -769,6 +791,9 @@ async function switchCamera() {
             throw new Error("No video track from new camera");
         }
 
+        // Preserve the previous ON/OFF state when switching cameras
+        finalVideoTrack.enabled = oldVideoEnabled;
+
         for (const peerId in peers) {
             const peer = peers[peerId];
 
@@ -820,6 +845,8 @@ async function switchCamera() {
 
         videoTrack = finalVideoTrack;
         audioTrack = oldAudioTrack || null;
+        await detectCameraType(videoTrack);
+        updateCameraMirror();
 
         // filteredStream = newFilteredStream;
         // filteredVideoTrack = finalVideoTrack;
@@ -863,7 +890,10 @@ async function switchCamera() {
         }
 
         updateCameraMirror();
+        // Save the selected camera and preserve current ON/OFF states
+        saveMediaPreferences();
 
+        // Update live meeting status
         if (socket.connected) {
             socket.emit("media-status", {
                 camera: !!videoTrack?.enabled,
@@ -1102,13 +1132,83 @@ async function switchCamera() {
 
 window.switchCamera = switchCamera;
 
+let activeCameraType = "external";
+
+async function detectCameraType(track) {
+    if (!track) {
+        activeCameraType = "external";
+        return activeCameraType;
+    }
+
+    const settings = track.getSettings();
+    const facingMode = settings.facingMode;
+
+    // Most reliable way to identify mobile front/rear cameras
+    if (facingMode === "user") {
+        activeCameraType = "front";
+        return activeCameraType;
+    }
+
+    if (facingMode === "environment") {
+        activeCameraType = "rear";
+        return activeCameraType;
+    }
+
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+
+        const selectedDevice = devices.find(
+            device =>
+                device.kind === "videoinput" &&
+                device.deviceId === settings.deviceId
+        );
+
+        const label = selectedDevice?.label || track.label || "";
+
+        if (/\b(front|user|facetime|selfie)\b/i.test(label)) {
+            activeCameraType = "front";
+        } else if (/\b(back|rear|environment|world)\b/i.test(label)) {
+            activeCameraType = "rear";
+        } else {
+            // External webcam or unidentified camera
+            activeCameraType = "external";
+        }
+    } catch (error) {
+        console.warn("[CAMERA] Could not identify camera:", error);
+        activeCameraType = "external";
+    }
+
+    console.log("[CAMERA TYPE]", {
+        type: activeCameraType,
+        facingMode,
+        deviceId: settings.deviceId,
+        label: track.label
+    });
+
+    return activeCameraType;
+}
+
 function updateCameraMirror() {
-    const isFrontCamera = currentFacingMode === "user";
-    const videos = [localVideo, document.getElementById("localPreview")];
+    const isFrontCamera = activeCameraType === "front";
+
+    const videos = [
+        localVideo,
+        document.getElementById("localPreview")
+    ];
+
     videos.forEach(video => {
         if (!video) return;
-        video.classList.remove("camera-user", "camera-environment");
-        video.classList.add(isFrontCamera ? "camera-user" : "camera-environment");
+
+        video.classList.remove(
+            "camera-user",
+            "camera-environment"
+        );
+
+        video.classList.add(
+            isFrontCamera
+                ? "camera-user"
+                : "camera-environment"
+        );
     });
 }
 
@@ -1138,31 +1238,26 @@ function stopLocalMediaBecauseOffline() {
     const micIcon = document.querySelector("#micBtn i");
     if (camIcon) camIcon.className = "fa-solid fa-video-slash";
     if (micIcon) micIcon.className = "fa-solid fa-microphone-slash";
-
-    if (socket.connected) {
-        socket.emit("media-status", { camera: false, mic: false });
-    }
 }
 
 async function restoreLocalMediaAfterOnline() {
     if (!navigator.onLine || !mediaStoppedBecauseOffline || restoringMedia) return;
+
     restoringMedia = true;
 
     try {
         const ready = await ensureMediaReady();
-        if (!ready) return;
-        if (videoTrack) videoTrack.enabled = true;
-        if (audioTrack) audioTrack.enabled = true;
 
+        if (!ready) return;
+
+        // ensureMediaReady already applies saved preferences
         mediaStoppedBecauseOffline = false;
+
         updateMediaStatus();
 
-        if (socket.connected) {
-            socket.emit("media-status", { camera: videoTrack.enabled, mic: audioTrack.enabled });
-        }
     } catch (err) {
         console.error(err);
-    } {
+    } finally {
         restoringMedia = false;
     }
 }
@@ -1370,14 +1465,16 @@ socket.on("meeting-ended", ({ joinedUsers }) => {
     }
 
     setTimeout(async () => {
-        await ensureMediaReady();
-        if (videoTrack) videoTrack.enabled = true;
-        if (audioTrack) audioTrack.enabled = true;
+        const ready = await ensureMediaReady();
 
-        updateMediaStatus();
-        socket.emit("media-status", { camera: true, mic: true });
+        if (!ready) return;
 
-        if (audioContext?.state === "suspended") await audioContext.resume();
+        // Keep the user's saved camera/mic preferences
+        applySavedMediaStatus();
+
+        if (audioContext?.state === "suspended") {
+            await audioContext.resume();
+        }
     }, 1000);
 
     joinedUsers.forEach(token => {
@@ -1465,6 +1562,24 @@ socket.on("user-joined-room", (user) => {
 socket.on("media-status-changed", ({ userId, camera, mic }) => {
     userMediaStates[userId] = { camera, mic };
     updateRemoteStatus(userId);
+});
+
+socket.on("media-status-loaded", (data = {}) => {
+    savedMediaStatus = {
+        camera: Boolean(Number(data.camera ?? 1)),
+        mic: Boolean(Number(data.mic ?? 1)),
+        cameraFacingMode: data.cameraFacingMode || "user"
+    };
+
+    currentFacingMode = savedMediaStatus.cameraFacingMode;
+
+    mediaStatusLoaded = true;
+
+    console.log("[MEDIA] Loaded saved preferences:", savedMediaStatus);
+
+    if (videoTrack && audioTrack) {
+        applySavedMediaStatus();
+    }
 });
 
 socket.on("existing-users", (users) => {
@@ -1869,8 +1984,8 @@ socket.on("removed-from-meeting", () => {
     setTimeout(async () => {
         await ensureMediaReady();
         if (audioContext?.state === "suspended") await audioContext.resume();
-        if (videoTrack) videoTrack.enabled = true;
-        if (audioTrack) audioTrack.enabled = true;
+        // if (videoTrack) videoTrack.enabled = true;
+        // if (audioTrack) audioTrack.enabled = true;
 
         updateMediaStatus();
         socket.emit("media-status", { camera: true, mic: true });
@@ -1999,12 +2114,16 @@ function addRemoteVideo(userId, stream) {
         loading.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Connecting...</span>`;
 
         const video = document.createElement("video");
+
         video.id = userId;
         video.autoplay = true;
         video.playsInline = true;
         video.muted = false;
         video.volume = 0.7;
+
         video.controls = false;
+        video.disablePictureInPicture = true;
+        video.controlsList = "nodownload nofullscreen noremoteplayback";
 
         const tag = document.createElement("span");
         tag.className = "tag";
@@ -2228,7 +2347,11 @@ function toggleCamera() {
     );
 
     videoTrack.enabled = !videoTrack.enabled;
+    savedMediaStatus.camera = videoTrack.enabled;
 
+    saveMediaPreferences();
+
+    // Send the latest state to the backend
     socket.emit("media-status", {
         camera: videoTrack.enabled,
         mic: !!audioTrack?.enabled
@@ -2238,9 +2361,25 @@ function toggleCamera() {
 }
 
 function toggleMic() {
-    playSound(audioTrack.enabled ? sounds.micOn : sounds.micOff);
+    if (!audioTrack) return;
+
+    playSound(
+        audioTrack.enabled
+            ? sounds.micOff
+            : sounds.micOn
+    );
+
     audioTrack.enabled = !audioTrack.enabled;
-    socket.emit("media-status", { camera: videoTrack.enabled, mic: audioTrack.enabled });
+    savedMediaStatus.mic = audioTrack.enabled;
+
+    saveMediaPreferences();
+
+    // Send the latest state to the backend
+    socket.emit("media-status", {
+        camera: !!videoTrack?.enabled,
+        mic: audioTrack.enabled
+    });
+
     updateMediaStatus();
 }
 
@@ -2261,6 +2400,38 @@ function updateMediaStatus() {
                 ? "fa-solid fa-microphone"
                 : "fa-solid fa-microphone-slash";
     }
+}
+
+function applySavedMediaStatus() {
+    if (!videoTrack || !audioTrack) {
+        return;
+    }
+
+    // Apply saved ON/OFF values to the actual media tracks
+    videoTrack.enabled = savedMediaStatus.camera;
+    audioTrack.enabled = savedMediaStatus.mic;
+
+    // Update camera and microphone button icons
+    updateMediaStatus();
+
+    console.log("[MEDIA] Applied saved status:", {
+        camera: videoTrack.enabled ? 1 : 0,
+        mic: audioTrack.enabled ? 1 : 0
+    });
+}
+
+function saveMediaPreferences() {
+    if (!socket.connected || !mediaStatusLoaded) return;
+
+    savedMediaStatus = {
+        camera: !!videoTrack?.enabled,
+        mic: !!audioTrack?.enabled,
+        cameraFacingMode: currentFacingMode
+    };
+
+    socket.emit("save-media-preferences", savedMediaStatus);
+
+    console.log("[MEDIA] Saving preferences:", savedMediaStatus);
 }
 
 function updateRemoteStatus(userId) {

@@ -16,8 +16,9 @@
     --mf-bg-transp: #ffffff0f;
     --mf-muted: #bbbbbb;
     --mf-border: #ffffff38;
+    --mf-overlay: rgba(0, 0, 0, 0.281);
     --mf-gray: #838383;
-    --mf-red: #ff4e16;
+    --mf-red: #ff9a16;
     --mf-sidebar-width: 300px;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -218,14 +219,24 @@ a {
     display: flex;
     align-items: center;
     height: 50px;
+    width: 100%;
+}
+
+.dt-search {
+    width: 100%;
+    display: flex;
+    align-items: center;
 }
 
 .dt-layout-end input {
     margin-left: 5px;
     background: transparent;
     border: 2px solid rgba(108, 163, 235, .19);
-    border-radius: 6px;
+    border-radius: 50px;
     outline: none;
+    width: 100%;
+    color: var(--mf-control);
+    padding: 8px 15px;
 }
 
 .sectionHeading {
@@ -298,7 +309,6 @@ a {
     flex: 1 1 auto;
     min-width: 0;
     min-height: 0;
-    padding: 10px;
     overflow: auto;
     /* border: 1px solid rgba(108, 163, 235, .19); */
     /* border-radius: 10px; */
@@ -330,9 +340,16 @@ a {
     overflow-wrap: anywhere;
 }
 
+#userTable tr:hover {
+    background: var(--mf-bg-transp);
+}
+
 #userTable td:last-of-type .actionCont {
     display: flex;
     align-items: center;
+    padding: 7px 12px;
+    /* background: var(--mf-bg-transp); */
+    border-radius: 50px;
 }
 
 #userTable .dt-layout-row,
@@ -355,6 +372,26 @@ a {
 
 #userTable button {
     cursor: pointer;
+    background: transparent;
+    padding: 0;
+    border: none;
+    outline: none;
+}
+
+#userTable button i {
+    font-size: 16px;
+}
+
+#userTable .reqBtn i {
+    color: var(--mf-control);
+}
+
+#userTable .deleteBtn i {
+    color: var(--mf-gray);
+}
+
+#userTable .deleteBtn:hover i {
+    color: var(--mf-red);
 }
 
 .sidebarMissedCalls {
@@ -622,6 +659,11 @@ a {
     font-variant-numeric: tabular-nums;
 }
 
+#viewAccountSectionBtn,
+.viewAccountSectionBtn {
+    display: none;
+}
+
 .meetingLeftView {
     position: relative;
     display: flex;
@@ -705,7 +747,6 @@ a {
 .video-box {
     position: relative;
     isolation: isolate;
-    flex: 0 0 auto;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -738,6 +779,16 @@ a {
     border-radius: 15px;
 }
 
+#local.camera-user,
+#localPreview.camera-user {
+    transform: scaleX(-1);
+}
+
+#local.camera-environment,
+#localPreview.camera-environment {
+    transform: scaleX(1);
+}
+
 .video-box video {
     position: absolute;
     inset: 0;
@@ -754,7 +805,6 @@ a {
     background: transparent;
 }
 
-.video-box .tag,
 .video-box .video-status {
     position: absolute;
     z-index: 2;
@@ -774,12 +824,19 @@ a {
     white-space: nowrap;
 }
 
-.video-box .tag {
+.video-box .video-status {
     right: 10px;
 }
 
-.video-box .video-status {
-    left: 10px;
+.video-box .tag {
+    position: absolute;
+    background: white;
+    color: var(--mf-bg-deep);
+    bottom: 4px;
+    right: 4px;
+    font-size: clamp(10px, 1vw, 16px);
+    padding: 7px;
+    border-radius: 7px;
 }
 
 .video-loading {
@@ -804,9 +861,9 @@ a {
 .mic-level {
     position: absolute;
     z-index: 30;
-    right: 12px;
+    left: 12px;
     bottom: 12px;
-    display: none;
+    display: flex;
     align-items: end;
     gap: 3px;
     height: 16px;
@@ -815,7 +872,7 @@ a {
 .mic-level .bar {
     width: 3px;
     height: 7px;
-    background: var(--mf-gray);
+    background: var(--mf-control);
     border-radius: 3px;
 }
 
@@ -823,6 +880,23 @@ a {
 .mic-level .bar:nth-child(4) {
     height: 13px;
 }
+
+.remove-user-btn {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    border-radius: 50px;
+    border: none;
+    background: white;
+    color: var(--mf-bg-deep);
+    cursor: pointer;
+}
+
+.remove-user-btn:hover {
+    background: var(--mf-red);
+    color: white;
+}
+
 
 .controlCont {
     position: sticky;

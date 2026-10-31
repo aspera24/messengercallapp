@@ -19,10 +19,6 @@
 </head>
 
 <body>
-
-    <div id="overlay" onclick="toggleSidebar()"></div>
-    <div id="accountPanelOverlay" aria-hidden="true" onclick="toggleAccountSection(false)"></div>
-
     <div class="app">
         <div class="centCont">
             <!-- LEFT SIDEBAR: keep existing IDs used by app.js -->
@@ -112,10 +108,21 @@
                                         class="fa-solid fa-video fa-beat-fade"></i><span>Connecting
                                         camera...</span>
                                 </div>
-                                <video id="local" class="camera-user" autoplay muted playsinline></video>
-                                <div class="video-status" id="localStatus"><i class="fa-solid fa-user"></i><span
-                                        id="statusText">Camera Off</span></div>
-                                <span class="tag">You</span>
+                                <video id="local" class="camera-user" 
+                                    autoplay 
+                                    muted 
+                                    playsinlineautoplay
+                                    muted
+                                    playsinline
+                                    disablepictureinpicture
+                                    controlslist="nodownload nofullscreen noremoteplayback">
+                                </video>
+                                <div class="video-status" id="localStatus">
+                                    <i class="fa-solid fa-user"></i>
+                                    <!-- <span id="statusText">Camera Off</span> -->
+                                    <span>You</span>
+                                </div>
+
 
                                 <div class="mic-level" aria-hidden="true">
                                     <div class="bar"></div>
@@ -130,8 +137,6 @@
                                 <div id="videos" class="remote-videos"></div>
                             </div>
                         </div>
-
-
 
                         <div class="controlCont">
                             <div class="controls">
@@ -153,7 +158,8 @@
                                     <span>Switch Camera</span>
                                 </button>
 
-                                <button id="endBtn" onclick="endMeeting()" title="End Meeting" aria-label="End Meeting">
+                                <button style="display: none;" id="endBtn" onclick="endMeeting()" title="End Meeting"
+                                    aria-label="End Meeting">
                                     <i class="fa-solid fa-phone-slash"></i>
                                     <span>End Meeting</span>
                                 </button>
@@ -213,7 +219,12 @@
                 </section>
             </main>
         </div>
+
+        <div id="overlay" onclick="toggleSidebar()"></div>
+        <div id="accountPanelOverlay" aria-hidden="true" onclick="toggleAccountSection(false)"></div>
     </div>
+
+
 
     <!-- Meeting invitation modal -->
     <div id="meetingRequestModal" class="meeting-modal">

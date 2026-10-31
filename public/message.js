@@ -146,13 +146,13 @@ async function loadUsers() {
                                 '${data.firstname}',
                                 '${data.lastname}'
                             )"
-                        >
+                            >
 
                             <div class="onlineStatus">
                                 ${data.online
                             ? '<span class="onlineDot"></span>'
                             : ""
-                        }
+                        }       
                             </div>
 
 
@@ -165,9 +165,9 @@ async function loadUsers() {
                             </div>
 
 
-                            <span>
+                            <p class="empName">
                                 ${data.firstname} ${data.lastname}
-                            </span>
+                            </p>
 
                         </div>
                     `;
@@ -231,7 +231,8 @@ async function loadUsers() {
             [10, 15, 25, 50, "All"]
         ],
 
-        responsive: true,
+        responsive: false,
+        autoWidth: false,
         searching: true,
         ordering: true,
         info: true,
@@ -242,11 +243,14 @@ async function loadUsers() {
             ? [
                 {
                     targets: 0,
-                    width: "100%"
+                    width: "auto",
+                    orderable: true
                 },
                 {
                     targets: 1,
-                    width: "10px"
+                    width: "76px",
+                    orderable: false,
+                    searchable: false
                 }
             ]
             : [
@@ -255,7 +259,6 @@ async function loadUsers() {
                     width: "100%"
                 }
             ],
-
         language: {
             paginate: {
                 previous: "Prev",
