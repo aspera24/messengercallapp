@@ -515,10 +515,9 @@ a {
     place-items: center;
     width: 38px;
     height: 38px;
-    color: #d6e8ff;
-    background: #102c56;
-    border: 1px solid var(--mf-border);
-    border-radius: 10px;
+    color: var(--mf-text);
+    background: transparent;
+    border: none;
     cursor: pointer;
 }
 
@@ -628,7 +627,6 @@ a {
     justify-content: space-between;
     flex-wrap: wrap;
     flex: 0 0 auto;
-    gap: 12px;
 }
 
 .meetingHeading h2 {
