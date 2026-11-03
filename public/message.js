@@ -165,9 +165,12 @@ async function loadUsers() {
                             </div>
 
 
-                            <p class="empName">
-                                ${data.firstname} ${data.lastname}
-                            </p>
+                            <div style="display: flex; flex-direction: column; min-width: 0;">
+                                <p class="userName">
+                                    ${data.firstname} ${data.lastname}
+                                </p>
+                                <p class="userAddress">Local Address</p>
+                            </div>
 
                         </div>
                     `;

@@ -24,9 +24,9 @@
             <!-- LEFT SIDEBAR: keep existing IDs used by app.js -->
             <aside class="leftCont" aria-label="Main sidebar">
                 <div class="leftBrand">
-                    <div class="brandMark"><span>MF</span></div>
+                    <div class="brandMark"><span><i class="fa-solid fa-video"></i></span></div>
                     <div class="brandCopy">
-                        <strong>MeetFlow</strong>
+                        <span class="sysName">LetsMtg</span>
                         <small>Connect · Collaborate · Get Things Done</small>
                     </div>
                 </div>
@@ -46,7 +46,7 @@
 
                 <div class="sidebarFooter">
                     <div class="footerBrandMark">MF</div>
-                    <div><strong>MeetFlow</strong><small>Better meetings. Stronger teams.</small></div>
+                    <div><span class="sysName">LetsMtg</span><small>Better meetings. Stronger teams.</small></div>
                 </div>
 
                 <button title="Sign out" class="logoutBtn" id="logoutBtn" onclick="logout()">
@@ -61,9 +61,9 @@
                         <button id="menuBtn" onclick="toggleSidebar()" aria-label="Toggle sidebar"><i
                                 class="fa-solid fa-bars"></i></button>
                         <div class="topbarTitle">
-                            <span class="meetingIcon"><i class="fa-solid fa-video"></i></span>
+                            <!-- <span class="meetingIcon"><i class="fa-solid fa-video"></i></span> -->
                             <div>
-                                <h1>Team Meeting</h1>
+                                <h1 class="par">Team Meeting</h1>
                                 <p>MeetFlow workspace <span class="topbarDot"></span> Live collaboration</p>
                             </div>
                         </div>
@@ -88,7 +88,7 @@
                         <div class="meetingHeading">
                             <div class="topLabel">
                                 <span class="eyebrow">VIDEO CONFERENCE</span>
-                                <h2 class="mr">Meeting room</h2>
+                                <h2 class="mr">Mtg Room</h2>
                                 <p class="par">Connect face-to-face with your team.</p>
                             </div>
                             <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
@@ -108,19 +108,14 @@
                                         class="fa-solid fa-video fa-beat-fade"></i><span>Connecting
                                         camera...</span>
                                 </div>
-                                <video id="local" class="camera-user" 
-                                    autoplay 
-                                    muted 
-                                    playsinlineautoplay
-                                    muted
-                                    playsinline
-                                    disablepictureinpicture
+                                <video id="local" class="camera-user" autoplay muted playsinlineautoplay muted
+                                    playsinline disablepictureinpicture
                                     controlslist="nodownload nofullscreen noremoteplayback">
                                 </video>
                                 <div class="video-status" id="localStatus">
                                     <i class="fa-solid fa-user"></i>
                                     <!-- <span id="statusText">Camera Off</span> -->
-                                    <span>You</span>
+                                    <span id="localStatusText">You</span>
                                 </div>
 
 
@@ -150,6 +145,12 @@
                                     aria-label="Toggle Microphone">
                                     <i class="fa-solid fa-microphone"></i>
                                     <span>Mute</span>
+                                </button>
+
+                                <button type="button" id="autoSpeakerSwitchBtn" onclick="toggleAutoSpeakerSwitch()"
+                                    aria-pressed="true" title="Auto Speaker: Enabled">
+                                    <i class="fa-solid fa-users-viewfinder"></i>
+                                    <span>Auto Speaker: ON</span>
                                 </button>
 
                                 <button id="switchCameraBtn" type="button" onclick="switchCamera()"

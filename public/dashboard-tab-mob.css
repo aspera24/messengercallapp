@@ -707,6 +707,7 @@ body {
         font-size: 10px;
         flex: 0 0 30px;
         background: var(--mf-bg-deep);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
     }
 
     .videos-container {
@@ -742,6 +743,11 @@ body {
 
     .form-grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+    
+    #profile {
+        width: 30px;
+        height: 30px;
     }
 }
 

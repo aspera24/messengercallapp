@@ -29,9 +29,15 @@ let lastLocalMicUpdate = 0;
 let remoteLastUpdates = {};
 
 // Active-speaker visual switching only. Remote audio playback/peer connections stay untouched.
+// Active speaker settings
 let activeSpeakerId = null;
 let activeSpeakerReturnTimer = null;
 let localIsSpeaking = false;
+
+// Automatic switching ON by default
+let autoSpeakerSwitchEnabled =
+    localStorage.getItem("meetflow_auto_speaker_switch") !== "false";
+
 const ACTIVE_SPEAKER_HOLD_MS = 1200;
 const ACTIVE_SPEAKER_THRESHOLD = 10;
 
@@ -1340,7 +1346,16 @@ function updateMicLevel(now = 0) {
     const bars = document.querySelectorAll("#localBox .mic-level .bar");
     const localMicEnabled = !!audioTrack?.enabled && !audioTrack?.muted;
     const wasLocalSpeaking = localIsSpeaking;
-    localIsSpeaking = localMicEnabled && avg > ACTIVE_SPEAKER_THRESHOLD;
+    // Hysteresis: higher threshold to start speaking,
+    // lower threshold to stop, para dili sige'g balik-balik.
+    if (!localMicEnabled) {
+        localIsSpeaking = false;
+    }
+    else if (!localIsSpeaking && avg >= 30) {
+        localIsSpeaking = true;
+    } else if (localIsSpeaking && avg <= 12) {
+        localIsSpeaking = false;
+    }
 
     if (localIsSpeaking) {
         box?.classList.add("mic-active");
@@ -2058,15 +2073,20 @@ function setActiveSpeaker(userId = null) {
     const nextVideo = userId ? document.getElementById(userId) : null;
     const nextStream = nextVideo?.srcObject || null;
 
-    // Never switch to a remote participant while our own mic detects speech.
+    // Do not switch if the feature is disabled.
+    if (userId && !autoSpeakerSwitchEnabled) return;
+
+    // Do not switch if our own mic detects speech.
     if (userId && localIsSpeaking) return;
+
+    // Do not show remote video when our local camera is OFF.
+    if (userId && !videoTrack?.enabled) return;
 
     // Always restore the original local camera stream when userId is null.
     const targetStream = nextStream || stream;
     if (!targetStream) return;
 
     // The main #local video is the video shown inside #localBox. Keep the small
-    // preview in sync too, but mute both so this visual switch cannot duplicate audio.
     [mainVideo, smallPreview].forEach(video => {
         if (!video) return;
         if (video.srcObject !== targetStream) {
@@ -2090,6 +2110,51 @@ function setActiveSpeaker(userId = null) {
             ? (peerNames[activeSpeakerId] || activeSpeakerId)
             : tag.dataset.originalLabel;
     }
+
+    // Update local video status name
+    const statusText = document.getElementById("localStatusText");
+
+    if (statusText) {
+        statusText.textContent = activeSpeakerId
+            ? (peerNames[activeSpeakerId] || activeSpeakerId)
+            : "You";
+    }
+}
+
+function toggleAutoSpeakerSwitch() {
+    autoSpeakerSwitchEnabled = !autoSpeakerSwitchEnabled;
+
+    localStorage.setItem(
+        "meetflow_auto_speaker_switch",
+        String(autoSpeakerSwitchEnabled)
+    );
+
+    updateAutoSpeakerSwitchButton();
+
+    // When disabled, immediately restore the local camera/placeholder.
+    if (!autoSpeakerSwitchEnabled) {
+        clearTimeout(activeSpeakerReturnTimer);
+        activeSpeakerReturnTimer = null;
+        setActiveSpeaker(null);
+    }
+}
+
+function updateAutoSpeakerSwitchButton() {
+    const btn = document.getElementById("autoSpeakerSwitchBtn");
+    if (!btn) return;
+
+    btn.title = autoSpeakerSwitchEnabled
+        ? "Auto Speaker: Enabled"
+        : "Auto Speaker: Disabled";
+
+    btn.setAttribute(
+        "aria-pressed",
+        String(autoSpeakerSwitchEnabled)
+    );
+
+    btn.innerHTML = autoSpeakerSwitchEnabled
+        ? '<i class="fa-solid fa-users-viewfinder"></i><span>Auto Speaker: ON</span>'
+        : '<i class="fa-solid fa-user-slash"></i><span>Auto Speaker: OFF</span>';
 }
 
 function scheduleLocalPreviewRestore() {
@@ -2243,20 +2308,38 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         }
 
         analyser.getByteFrequencyData(dataArray);
-        let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        const state = userMediaStates[userId] || { mic: true, camera: true };
 
-        const isSpeaking = !!state?.mic && !track.muted && avg > ACTIVE_SPEAKER_THRESHOLD;
+        let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+        const state = userMediaStates[userId];
+
+        const remoteMicOff =
+            state?.mic === false ||
+            state?.mic === 0 ||
+            state?.mic === "0";
+
+        const isSpeaking =
+            !remoteMicOff &&
+            !track.muted &&
+            avg >= 18;
+
         if (isSpeaking && !localIsSpeaking) {
             wrapper.classList.add("mic-active");
+
             if (activeSpeakerReturnTimer) {
                 clearTimeout(activeSpeakerReturnTimer);
                 activeSpeakerReturnTimer = null;
             }
-            if (activeSpeakerId !== userId) setActiveSpeaker(userId);
+
+            if (activeSpeakerId !== userId) {
+                setActiveSpeaker(userId);
+            }
         } else {
             wrapper.classList.remove("mic-active");
-            if (activeSpeakerId === userId && !localIsSpeaking) scheduleLocalPreviewRestore();
+
+            if (activeSpeakerId === userId && !localIsSpeaking) {
+                scheduleLocalPreviewRestore();
+            }
         }
 
         if (!state?.mic) {
@@ -2333,6 +2416,8 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleAccountSection(false);
         });
 
+
+    updateAutoSpeakerSwitchButton();
 });
 
 
@@ -2348,6 +2433,14 @@ function toggleCamera() {
 
     videoTrack.enabled = !videoTrack.enabled;
     savedMediaStatus.camera = videoTrack.enabled;
+
+    // Restore local preview when the camera is turned OFF.
+    if (!videoTrack.enabled) {
+        clearTimeout(activeSpeakerReturnTimer);
+        activeSpeakerReturnTimer = null;
+
+        setActiveSpeaker(null);
+    }
 
     saveMediaPreferences();
 

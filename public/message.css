@@ -537,12 +537,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 30px;
-    width: 30px;
-    height: 30px;
+    flex: 0 0 45px;
+    width: 45px;
+    height: 45px;
     overflow: visible;
     background: #3a3a3a;
-    border: 1px solid white;
+    border: 2px solid rgb(192, 192, 192);
     border-radius: 50%;
 }
 
@@ -551,9 +551,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 35px;
-    height: 35px;
-    overflow: hidden;
     background: rgb(53, 53, 53);
     border-radius: 50%;
 }
@@ -594,8 +591,23 @@
     line-height: 1;
 }
 
-.employeeName .empName {
-    flex: 1 1 0;
+.employeeName .userName {
+    /* flex: 1 1 0; */
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: clamp(12px, 2vh, 30px);
+    font-weight: normal;
+    color: var(--mf-muted);
+}
+
+.userAddress {
+    font-size: clamp(8px, 1.5vh, 20px);
+    color: var(--mf-gray);
+    margin: 0;
+    font-family: 'LeeHaus';
     min-width: 0;
     margin: 0;
     overflow: hidden;
@@ -637,25 +649,15 @@
     cursor: pointer;
 }
 
-
-/* Keep profile picture visible */
-#userTable .employeeName .prof {
-    position: relative;
-    flex: 0 0 30px;
-    width: 30px;
-    height: 30px;
-    overflow: visible;
-    border-radius: 50%;
-}
-
 /* Only the name should shrink */
-#userTable .employeeName .empName {
-    flex: 1 1 0;
+#userTable .employeeName .userName {
+    /* flex: 1 1 0; */
     min-width: 0;
     margin: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    font-family: 'LeeHaus';
 }
 
 /* Keep action buttons side by side */
