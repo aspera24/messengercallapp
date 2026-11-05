@@ -37,6 +37,8 @@
     --mf-overlay: rgba(0, 0, 0, 0.281);
     --mf-gray: #838383;
     --mf-red: #ff9a16;
+    --mf-chat-sender: #ffffff;
+    --mf-chat-receiver: #272727;
     --mf-sidebar-width: 300px;
     font-family: 'Century Gothic', sans-serif;
 }
@@ -193,9 +195,9 @@ a {
     width: 100%;
     min-height: 46px;
     padding: 0 14px;
-    color: #c6d8f4;
+    color: var(--mf-text);
     text-align: left;
-    background: transparent;
+    background: var(--mf-btn-transp);
     border: 1px solid transparent;
     border-radius: 11px;
     cursor: pointer;
@@ -204,7 +206,7 @@ a {
 
 .sideNavItem i {
     width: 19px;
-    color: var(--mf-bg);
+    color: var(--mf-text);
     text-align: center;
     font-size: 16px;
 }
@@ -215,12 +217,16 @@ a {
 }
 
 .sideNavItem:hover {
-    background: rgba(28, 91, 170, .22);
+    border-color: var(--mf-btn-border);
 }
 
 .sideNavItem.active {
     color: var(--mf-bg-deep);
     background: var(--mf-btn);
+}
+
+.sideNavItem.active>i {
+    color: var(--mf-bg-deep);
 }
 
 .sidebarSection {
@@ -244,6 +250,11 @@ a {
     align-items: center;
     height: 50px;
     width: 100%;
+}
+
+.dt-paging nav {
+    display: flex;
+    gap: 5px;
 }
 
 .dt-search {
@@ -330,8 +341,8 @@ a {
     color: var(--mf-bg);
     border-radius: 9px;
     cursor: pointer;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: bolder;
 }
 
 .sidebarActions #callAllBtn {
@@ -374,7 +385,7 @@ a {
 }
 
 #userTable tr:hover {
-    background: var(--mf-bg-transp);
+    background: var(--mf-bg);
 }
 
 #userTable td:last-of-type .actionCont {
@@ -427,10 +438,24 @@ a {
     color: var(--mf-red);
 }
 
+.dt-info {
+    font-size: 10px;
+    color: var(--mf-gray);
+}
+
+.previous,
+.next {
+    padding: 6px 14px;
+    border: 1px solid var(--mf-btn-border);
+    border-radius: 100px;
+    background: transparent;
+    font-size: 12px;
+    color: var(--mf-text);
+    cursor: pointer;
+}
+
 .sidebarMissedCalls {
-    margin-top: 17px;
     padding: 13px;
-    background: var(--mf-bg-transp);
     border: 1px solid var(--mf-border);
     border-radius: 12px;
 }
@@ -501,12 +526,12 @@ a {
     border: 1px solid var(--mf-border);
     border-radius: 10px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .logoutBtn:hover {
     color: white;
-    background: #163766;
+    background: var(--mf-bg);
 }
 
 .rightCont {
@@ -598,7 +623,7 @@ a {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--mf-gray);
+    color: var(--mf-red);
     font-size: 11px;
     font-weight: 700;
     white-space: nowrap;
@@ -607,15 +632,13 @@ a {
 .statusDot {
     width: 7px;
     height: 7px;
-    background: var(--mf-gray);
+    background: var(--mf-red);
     border-radius: 50%;
-    box-shadow: 0 0 12px rgba(40, 224, 173, .35);
 }
 
 .profileCont {
     display: flex;
     align-items: center;
-    gap: 11px;
     background: var(--mf-bg-deep);
     border-radius: 100px;
     padding: 2px;
@@ -635,9 +658,19 @@ a {
     white-space: nowrap;
 }
 
+#hasProfile {
+    display: none;
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border: 1px solid var(--mf-border);
+    border-radius: 50%;
+}
+
 #profile {
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 36px;
     height: 36px;
     color: #c4ddff;
@@ -922,6 +955,12 @@ a {
     position: absolute;
     top: 2px;
     left: 2px;
+    padding: 5px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border-radius: 50px;
     border: none;
     background: white;
@@ -1005,13 +1044,15 @@ a {
 
 .meeting-modal {
     position: fixed;
-    z-index: 100;
+    z-index: 1001;
     inset: 0;
     display: none;
     align-items: center;
     justify-content: center;
     padding: 18px;
-    background: rgba(1, 8, 20, .76);
+    background: var(--mf-overlay);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .meeting-modal[style*="display: block"],
@@ -1024,10 +1065,9 @@ a {
     width: min(100%, 480px);
     padding: 25px;
     color: var(--mf-text);
-    background: #0a2042;
+    background: var(--mf-bg-deep);
     border: 1px solid var(--mf-border);
     border-radius: 17px;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, .4);
 }
 
 .meeting-modal-content h3 {
@@ -1040,7 +1080,7 @@ a {
 
 .meeting-modal-content h3 i,
 .employee-icon {
-    color: #4aafff;
+    color: var(--mf-text);
 }
 
 .meeting-modal-content p,
@@ -1062,7 +1102,7 @@ a {
 .employee-actions button {
     min-height: 39px;
     padding: 0 15px;
-    color: white;
+    color: var(--mf-bg-deep);
     background: #15345e;
     border: 1px solid var(--mf-border);
     border-radius: 9px;
@@ -1073,7 +1113,7 @@ a {
 
 #acceptMeetingBtn,
 .save-btn {
-    background: linear-gradient(120deg, #138cff, #075ad5) !important;
+    background: var(--mf-btn) !important;
     border-color: transparent !important;
 }
 

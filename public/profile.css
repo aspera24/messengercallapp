@@ -1,33 +1,45 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    scrollbar-width: thin;
-    scrollbar-color: #6d6d6d transparent !important;
+:root {
+    color-scheme: dark;
+    --mf-bg: #272727;
+    --mf-bg-deep: #171b14;
+    --mf-panel: #0a1d3d;
+    --mf-panel-2: #0e2851;
+    --mf-blue: #ffffff;
+    --mf-blue-bright: #ffffff;
+    --mf-blue-soft: #173e79;
+    --mf-control: #62b6ff;
+    --mf-text: #ffffff;
+    --mf-btn: #ffffff;
+    --mf-logo: #ffffff;
+    --mf-btn-transp: #ffffff0f;
+    --mf-btn-border: #ffffff38;
+    --mf-bg-transp: #ffffff0f;
+    --mf-muted: #bbbbbb;
+    --mf-border: #ffffff38;
+    --mf-overlay: rgba(0, 0, 0, 0.281);
+    --mf-gray: #838383;
+    --mf-red: #ff9a16;
+    --mf-chat-sender: #ffffff;
+    --mf-chat-receiver: #272727;
+    --mf-sidebar-width: 300px;
+    font-family: 'Century Gothic', sans-serif;
 }
 
-
-@font-face {
-    font-family: "CenturyGothicLocal";
-    src: url("/fonts/centurygothic.ttf") format("truetype");
-    font-weight: normal;
-    font-style: normal;
-}
-
-
-body {
-    color: #f8fafc;
-    overflow-y: auto;
-    font-family: "CenturyGothicLocal", sans-serif;
-    background: #1d1d1d;
+.settingsView {
+    display: none;
+    flex: 1 1 auto;
+    overflow: hidden;
 }
 
 .profilePage {
-    max-width: 900px;
     margin: 50px auto;
     padding: 20px;
-    max-width: 1000px;
     margin: 0 auto;
+    background: var(--mf-bg-deep);
+    border-radius: 15px;
+    overflow: hidden;
+    overflow-y: auto;
+    width: 100%;
 }
 
 .profileHeader {
@@ -46,20 +58,28 @@ body {
 
 .profileGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 }
 
 .profileCard {
-    background: #272727;
-    border: 1px solid #303030;
+    background: transparent;
+    border: 1px solid var(--mf-border);
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
 }
 
+.first {
+    grid-column: 2 / 3;
+}
+
+.second {
+    grid-column: 2 / 3;
+}
+
 .profileCard.full {
-    grid-column: 1 / -1;
+    grid-column: 2 / 3;
 }
 
 .profileCard h2 {
@@ -72,7 +92,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 13px 0;
-    border-bottom: 1px solid #575757;
+    border-bottom: 1px solid var(--mf-border);
     gap: 20px;
 }
 
@@ -81,7 +101,7 @@ body {
 }
 
 .infoLabel {
-    color: #6b7280;
+    color: var(--mf-gray);
     font-size: 14px;
 }
 
@@ -105,17 +125,17 @@ body {
 .formGroup input {
     width: 100%;
     padding: 11px 12px;
-    border: 1px solid #474747;
+    border: 1px solid var(--mf-border);
     border-radius: 8px;
     outline: none;
-    background: #272727;
+    background: var(--mf-bg-deep);
     font-size: 14px;
-    color: rgb(165, 165, 165);
+    color: var(--mf-text);
     transition: border-color 0.2s;
 }
 
 .formGroup input:focus {
-    border-color: #2563eb;
+    border-color: var(--mf-control);
 }
 
 .passwordWrapper {
@@ -176,12 +196,12 @@ button {
 }
 
 .primaryBtn {
-    background: #2563eb;
-    color: white;
+    background: var(--mf-btn-transp);
+    color: var(--mf-control);
 }
 
 .primaryBtn:hover {
-    background: #1d4ed8;
+    color: var(--mf-red);
 }
 
 .secondaryBtn {
@@ -242,7 +262,7 @@ button {
 
     .infoValue {
         text-align: left;
-        
+
     }
 }
 

@@ -10,7 +10,7 @@
     max-width: calc(100vw - 32px);
     max-height: calc(100dvh - 32px);
     overflow: hidden;
-    background: rgba(0, 0, 0, .267);
+    background: var(--mf-bg-deep);
     border-radius: 14px;
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
@@ -94,7 +94,7 @@
     gap: 12px;
     padding: 0 15px;
     color: #fff;
-    background: #0b2851;
+    background: var(--mf-bg);
     border-bottom: 1px solid var(--mf-border);
 }
 
@@ -164,6 +164,14 @@
     font-size: 10px;
 }
 
+#messageUserStatus[data-status="online"] {
+    color: var(--mf-control);
+}
+
+#messageUserStatus[data-status="offline"] {
+    color: var(--mf-gray);
+}
+
 .rightBtns {
     display: flex;
     align-items: center;
@@ -216,7 +224,7 @@
     overflow-y: auto;
     overflow-anchor: none;
     overscroll-behavior: contain;
-    background: #071a35;
+    background: var(--mf-bg-deep);
 }
 
 .messageEmpty {
@@ -242,7 +250,7 @@
     gap: 8px;
     min-height: 65px;
     padding: 10px;
-    background: #0a2245;
+    background: var(--mf-bg);
     border-top: 1px solid var(--mf-border);
 }
 
@@ -267,7 +275,7 @@
 
 .messageInput textarea:focus,
 #messageText:focus {
-    border-color: #168bff;
+    border-color: var(--mf-border);
 }
 
 #sendMessageBtn {
@@ -277,8 +285,8 @@
     justify-content: center;
     width: 42px;
     height: 42px;
-    color: white;
-    background: #2563eb;
+    color: var(--mf-bg);
+    background: var(--mf-btn);
     border: 0;
     border-radius: 50%;
     cursor: pointer;
@@ -362,14 +370,14 @@
 }
 
 .chatMessageWrapper.sent .chatMessage {
-    color: white;
-    background: #2563eb;
+    color: var(--mf-bg-deep);
+    background: var(--mf-chat-sender);
     border-bottom-right-radius: 4px;
 }
 
 .chatMessageWrapper.received .chatMessage {
-    color: #222;
-    background: white;
+    color: var(--mf-text);
+    background: var(--mf-chat-receiver);
     border-bottom-left-radius: 4px;
 }
 
@@ -542,7 +550,6 @@
     height: 45px;
     overflow: visible;
     background: #3a3a3a;
-    border: 2px solid rgb(192, 192, 192);
     border-radius: 50%;
 }
 
@@ -641,7 +648,6 @@
 #userTable .employeeName {
     display: flex;
     align-items: center;
-    gap: 8px;
     width: 100%;
     min-width: 0;
     padding: 5px;
@@ -680,4 +686,33 @@
     height: 28px;
     padding: 0;
     box-sizing: border-box;
+}
+
+
+.missed-item {
+    width: 100%;
+    display: flex;
+    padding: 8px 0px;
+}
+
+.missed-item .left {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+}
+
+.missed-item .right {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.missed-item .right .notify-text {
+    font-size: 14px;
+    color: var(--mf-text);
+}
+
+.missed-item .right .time {
+    font-size: 12px;
+    color: var(--mf-gray);
 }

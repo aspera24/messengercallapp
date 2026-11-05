@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/dashboard.css">
     <link rel="stylesheet" href="/message.css">
     <link rel="stylesheet" href="/dashboard-tab-mob.css">
+    <link rel="stylesheet" href="/profile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" href="data:,">
 
@@ -31,13 +32,19 @@
                     </div>
                 </div>
 
+                <!-- Sidebar Menus -->
                 <nav class="sideNav" aria-label="Dashboard navigation">
-                    <a class="sideNavItem active" href="#meetingWorkspace">
-                        <i class="fa-solid fa-video"></i><span>Meeting</span>
+                    <a class="sideNavItem active" href="#meetingWorkspace" id="meetingNavLink">
+                        <i class="fa-solid fa-video"></i>
+                        <span>Meeting</span>
+                    </a>
+                    <a class="sideNavItem" href="#settings" id="settingsNavLink">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
                     </a>
                 </nav>
 
-                <section id="missedCallContainer" class="missedCallContainer sidebarMissedCalls">
+                <section style="display: none;" id="missedCallContainer" class="missedCallContainer sidebarMissedCalls">
                     <div class="title"><i class="fa-solid fa-phone-slash"></i><span>Missed Calls</span></div>
                     <div id="missedCallList">
                         <div class="empty">No missed calls.</div>
@@ -77,7 +84,13 @@
                         <!-- Keep your existing profileCont here -->
                         <span class="profileCont">
                             <h3 id="uname"></h3>
-                            <i id="profile" class="fa-solid fa-user" title="Profile" role="button" tabindex="0"></i>
+
+                            <div id="profileCont">
+                                <img id="hasProfile" alt="Profile Picture">
+
+                                <i id="profile" class="fa-solid fa-user" title="Profile" role="button" tabindex="0">
+                                </i>
+                            </div>
                         </span>
                     </div>
 
@@ -138,25 +151,25 @@
                                 <button id="camBtn" onclick="toggleCamera()" title="Toggle Camera"
                                     aria-label="Toggle Camera">
                                     <i class="fa-solid fa-video"></i>
-                                    <span>Stop Video</span>
+                                    <span>Camera</span>
                                 </button>
 
                                 <button id="micBtn" onclick="toggleMic()" title="Toggle Microphone"
                                     aria-label="Toggle Microphone">
                                     <i class="fa-solid fa-microphone"></i>
-                                    <span>Mute</span>
+                                    <span>Microphone</span>
                                 </button>
 
                                 <button type="button" id="autoSpeakerSwitchBtn" onclick="toggleAutoSpeakerSwitch()"
                                     aria-pressed="true" title="Auto Speaker: Enabled">
                                     <i class="fa-solid fa-users-viewfinder"></i>
-                                    <span>Auto Speaker: ON</span>
+                                    <span>A-S: OFF</span>
                                 </button>
 
                                 <button id="switchCameraBtn" type="button" onclick="switchCamera()"
                                     title="Switch Camera" aria-label="Switch Camera">
                                     <i class="fa-solid fa-camera-rotate"></i>
-                                    <span>Switch Camera</span>
+                                    <span>S-Camera</span>
                                 </button>
 
                                 <button style="display: none;" id="endBtn" onclick="endMeeting()" title="End Meeting"
@@ -192,6 +205,219 @@
                         </div>
                     </div>
 
+                    <div id="settingsView" style="display: none;">
+                        <main class="profilePage">
+
+                            <div class="profileHeader">
+                                <h1>Profile Information</h1>
+                                <p>Manage your account information and security.</p>
+                            </div>
+
+                            <div id="message" class="message"></div>
+
+                            <div class="profileGrid">
+
+                                <!-- PROFILE PICTURE -->
+                                <section class="profileCard profilePictureCard">
+
+                                    <h2>Profile Picture</h2>
+
+                                    <div class="profilePictureContent">
+
+                                        <div class="profilePicturePreview">
+                                            <img id="profilePicturePreview"
+                                                alt="Profile Picture">
+                                        </div>
+
+                                        <div class="profilePictureActions">
+
+                                            <label for="profilePictureInput" class="primaryBtn uploadPictureBtn">
+                                                <i class="fa-solid fa-camera"></i>
+                                                Choose Photo
+                                            </label>
+
+                                            <input type="file" id="profilePictureInput"
+                                                accept="image/jpeg,image/png,image/webp" hidden>
+
+                                            <button type="button" class="secondaryBtn" id="removeProfilePictureBtn">
+                                                <i class="fa-solid fa-trash"></i>
+                                                Remove Photo
+                                            </button>
+
+                                            <small>
+                                                JPG, PNG or WEBP. Maximum recommended size: 2 MB.
+                                            </small>
+
+                                        </div>
+
+                                    </div>
+
+                                </section>
+
+
+                                <!-- ACCOUNT INFORMATION -->
+                                <section class="profileCard first">
+
+                                    <h2>Account Information</h2>
+
+                                    <div class="infoRow">
+                                        <span class="infoLabel">First Name</span>
+                                        <span class="infoValue" id="displayFirstName">Loading...</span>
+                                    </div>
+
+                                    <div class="infoRow">
+                                        <span class="infoLabel">Last Name</span>
+                                        <span class="infoValue" id="displayLastName">Loading...</span>
+                                    </div>
+
+                                    <div class="infoRow">
+                                        <span class="infoLabel">Username</span>
+                                        <span class="infoValue" id="displayUsername">Loading...</span>
+                                    </div>
+
+                                    <div class="infoRow">
+                                        <span class="infoLabel">Account Created</span>
+                                        <span class="infoValue" id="displayCreatedAt">Loading...</span>
+                                    </div>
+
+                                </section>
+
+
+                                <!-- EDIT PROFILE -->
+                                <section class="profileCard second">
+
+                                    <h2>Edit Profile</h2>
+
+                                    <form id="profileForm">
+
+                                        <div class="formGroup">
+                                            <label for="firstName">
+                                                First Name
+                                            </label>
+
+                                            <input type="text" id="firstName" autocomplete="given-name" required>
+                                        </div>
+
+                                        <div class="formGroup">
+                                            <label for="lastName">
+                                                Last Name
+                                            </label>
+
+                                            <input type="text" id="lastName" autocomplete="family-name" required>
+                                        </div>
+
+                                        <div class="formGroup">
+                                            <label for="username">
+                                                Username
+                                            </label>
+
+                                            <input type="text" id="username" autocomplete="username" required>
+                                        </div>
+
+                                        <div class="buttonRow">
+
+                                            <button type="submit" class="primaryBtn" id="saveProfileBtn">
+                                                Save Changes
+                                            </button>
+
+                                        </div>
+
+                                    </form>
+
+                                </section>
+
+
+                                <!-- CHANGE PASSWORD -->
+                                <section class="profileCard full">
+
+                                    <h2>Change Password</h2>
+
+                                    <form id="passwordForm">
+
+                                        <div class="profileGrid">
+
+                                            <div class="formGroup">
+
+                                                <label for="currentPassword">
+                                                    Current Password
+                                                </label>
+
+                                                <div class="passwordWrapper">
+
+                                                    <input type="password" id="currentPassword"
+                                                        autocomplete="current-password" required>
+
+                                                    <button type="button" class="togglePassword"
+                                                        data-target="currentPassword" aria-label="Show password">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </button>
+
+                                                </div>
+
+                                            </div>
+
+                                            <div class="formGroup">
+
+                                                <label for="newPassword">
+                                                    New Password
+                                                </label>
+
+                                                <div class="passwordWrapper">
+
+                                                    <input type="password" id="newPassword" autocomplete="new-password"
+                                                        required>
+
+                                                    <button type="button" class="togglePassword"
+                                                        data-target="newPassword" aria-label="Show password">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </button>
+
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <div class="formGroup">
+
+                                            <label for="confirmPassword">
+                                                Confirm New Password
+                                            </label>
+
+                                            <div class="passwordWrapper">
+
+                                                <input type="password" id="confirmPassword" autocomplete="new-password"
+                                                    required>
+
+                                                <button type="button" class="togglePassword"
+                                                    data-target="confirmPassword" aria-label="Show password">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <div class="buttonRow">
+
+                                            <button type="submit" class="primaryBtn" id="changePasswordBtn">
+                                                Change Password
+                                            </button>
+
+                                        </div>
+
+                                    </form>
+
+                                </section>
+
+                            </div>
+
+                        </main>
+
+
+                    </div>
                 </section>
 
                 <!-- Existing chat container and IDs are preserved for message.js. -->
@@ -278,6 +504,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
     <script src="/lut.js" defer></script>
+    <script src="/profile.js" defer></script>
     <script src="/app.js" defer></script>
     <script src="/message.js" defer></script>
 </body>

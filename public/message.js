@@ -295,6 +295,7 @@ socket.on("user-online", ({ token }) => {
 
         if (status) {
             status.textContent = "Online";
+            status.dataset.status = "online"
         }
     }
 
@@ -327,6 +328,7 @@ socket.on("user-offline", ({ token }) => {
 
         if (status) {
             status.textContent = "Offline";
+            status.dataset.status = "offline"
         }
     }
 

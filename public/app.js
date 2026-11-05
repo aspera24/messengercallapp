@@ -88,9 +88,6 @@ function stopSound(audio) {
     audio.currentTime = 0;
 }
 
-document.getElementById("profile").addEventListener("click", function () {
-    window.location.href = "/profile-info";
-});
 
 socket.on("connect", async () => {
     console.log("Socket connected:", socket.id);
@@ -106,22 +103,52 @@ socket.on("connect", async () => {
 socket.io.on("reconnect", () => { console.log("Socket reconnected."); });
 socket.io.on("reconnect_attempt", () => { console.log("Trying to reconnect..."); });
 
+
 async function loadCurrentUser() {
     try {
-        const res = await fetch("/me", { credentials: "include" });
+
+        const res = await fetch("/me", {
+            credentials: "include"
+        });
+
         if (!res.ok) {
             location.href = "/auth";
             return;
         }
+
         const data = await res.json();
+
         initUser(data);
+
         socket.emit("check-active-meeting");
-        document.getElementById("uname").textContent = `Hi, ${currentUser.firstname}`;
+
+        document.getElementById("uname").textContent =
+            `Hi, ${currentUser.firstname}`;
+
+        const profileImg = document.getElementById("hasProfile");
+        const profileIcon = document.getElementById("profile");
+
+        // LOAD AUTHENTICATED USER PROFILE PICTURE
+        profileImg.src = `/profile/picture?v=${Date.now()}`;
+
+        profileImg.onload = () => {
+            profileImg.style.display = "block";
+            profileIcon.style.display = "none";
+        };
+
+        profileImg.onerror = () => {
+            profileImg.style.display = "none";
+            profileIcon.style.display = "flex";
+        };
+
     } catch (err) {
+
         console.error(err);
         location.href = "/auth";
+
     }
 }
+
 
 let missedCallCursor = null;
 let missedCallHasMore = true;
@@ -185,7 +212,7 @@ async function loadMissedCalls(reset = false) {
             innerDiv.innerHTML = `
                 <div class="left"><i class="fa-solid fa-phone-volume"></i></div>
                 <div class="right">
-                    <div>You missed a call from <span class="name">${call.firstname}</span></div>
+                    <div class="notify-text">You missed a call from <span class="name">${call.firstname}</span></div>
                     <div class="time">${new Date(call.created_at).toLocaleString()}</div>
                 </div>
             `;
@@ -327,6 +354,7 @@ function setupUI() {
         if (addEmpBtn) addEmpBtn.style.display = "none";
         if (actionsHeader) actionsHeader.style.display = "none";
         loadUsers();
+        document.getElementById("missedCallContainer").style.display = "block";
     } else {
         if (addEmpBtn) addEmpBtn.style.display = "";
         if (actionsHeader) actionsHeader.style.display = "";
@@ -2153,8 +2181,8 @@ function updateAutoSpeakerSwitchButton() {
     );
 
     btn.innerHTML = autoSpeakerSwitchEnabled
-        ? '<i class="fa-solid fa-users-viewfinder"></i><span>Auto Speaker: ON</span>'
-        : '<i class="fa-solid fa-user-slash"></i><span>Auto Speaker: OFF</span>';
+        ? '<i class="fa-solid fa-users-viewfinder"></i><span>A-S: ON</span>'
+        : '<i class="fa-solid fa-user-slash"></i><span>A-S: OFF</span>';
 }
 
 function scheduleLocalPreviewRestore() {
@@ -2637,4 +2665,64 @@ socket.on("request-error", ({ token, message }) => {
     }
 
     if (deleteBtn) deleteBtn.disabled = false;
+});
+
+
+
+
+
+
+const meetingNavLink = document.getElementById("meetingNavLink");
+const settingsNavLink = document.getElementById("settingsNavLink");
+const meetingWorkspace = document.getElementById("meetingWorkspace");
+const settingsView = document.getElementById("settingsView");
+
+// const topbar = meetingWorkspace.querySelector(".topbar");
+const meetingLeftView = meetingWorkspace.querySelector(".meetingLeftView");
+const accountSection = document.getElementById("accountSection");
+const topbar = document.querySelector(".topbar");
+
+function showPage(page) {
+
+    const isSettings = page === "settings";
+    const isMobile = window.innerWidth <= 600;
+
+
+    // MEETING CONTENT
+    // topbar.style.display = isSettings ? "none" : "";
+    meetingLeftView.style.display = isSettings ? "none" : "";
+    accountSection.style.display = isSettings ? "none" : "";
+    topbar.style.position = isSettings && isMobile ? "fixed" : "";
+    topbar.style.top = isSettings && isMobile ? "0" : "";
+    topbar.style.right = isSettings && isMobile ? "0" : "";
+
+    // SETTINGS CONTENT
+    settingsView.style.display = isSettings ? "flex" : "none";
+    settingsView.style.flex = isSettings ? "1 1 auto" : "";
+    settingsView.style.overflow = isSettings ? "hidden" : "";
+    settingsView.style.gridColumn = isSettings ? "1 / 3" : "";
+
+    // SIDEBAR ACTIVE STATE
+    meetingNavLink.classList.toggle("active", !isSettings);
+    settingsNavLink.classList.toggle("active", isSettings);
+}
+
+
+// MEETING NAVIGATION
+meetingNavLink.addEventListener("click", (e) => {
+
+    e.preventDefault();
+
+    showPage("meeting");
+
+});
+
+
+// SETTINGS NAVIGATION
+settingsNavLink.addEventListener("click", (e) => {
+
+    e.preventDefault();
+
+    showPage("settings");
+
 });
