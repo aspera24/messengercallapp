@@ -52,7 +52,7 @@
                 </section>
 
                 <div class="sidebarFooter">
-                    <div class="footerBrandMark">MF</div>
+                    <div class="footerBrandMark"><i class="fa-solid fa-video"></i></div>
                     <div><span class="sysName">LetsMtg</span><small>Better meetings. Stronger teams.</small></div>
                 </div>
 
@@ -77,6 +77,18 @@
                     </div>
 
                     <div class="topbarRight">
+                        <div class="networkStatus" id="networkStatus" title="Checking network connection">
+
+                            <i class="fa-solid fa-wifi" id="networkIcon"></i>
+
+                            <div class="networkInfo">
+                                <span id="networkQuality">Checking...</span>
+                                <small id="networkSpeed">↓ -- Mbps · ↑ -- Mbps</small>
+                                <small id="networkPing">Ping: -- ms</small>
+                            </div>
+
+                        </div>
+                        
                         <span class="meetingStatus">
                             <span class="statusDot"></span> Ready to connect
                         </span>
@@ -225,8 +237,7 @@
                                     <div class="profilePictureContent">
 
                                         <div class="profilePicturePreview">
-                                            <img id="profilePicturePreview"
-                                                alt="Profile Picture">
+                                            <img id="profilePicturePreview" alt="Profile Picture">
                                         </div>
 
                                         <div class="profilePictureActions">

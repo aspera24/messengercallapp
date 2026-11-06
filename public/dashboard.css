@@ -619,6 +619,59 @@ a {
     gap: clamp(12px, 2vw, 28px);
 }
 
+.networkStatus {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 11px;
+    background: var(--mf-bg-deep);
+    min-width: 0;
+}
+
+#networkIcon {
+    font-size: 17px;
+    color: #999;
+}
+
+.networkInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+#networkQuality {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--mf-text);
+}
+
+#networkSpeed,
+#networkPing {
+    font-size: 9px;
+    color: var(--mf-muted);
+    white-space: nowrap;
+}
+
+.networkStatus.excellent #networkIcon,
+.networkStatus.excellent #networkQuality {
+    color: #34c759;
+}
+
+.networkStatus.good #networkIcon,
+.networkStatus.good #networkQuality {
+    color: #30b0ff;
+}
+
+.networkStatus.poor #networkIcon,
+.networkStatus.poor #networkQuality {
+    color: #ff9f0a;
+}
+
+.networkStatus.bad #networkIcon,
+.networkStatus.bad #networkQuality {
+    color: #ff453a;
+}
+
 .meetingStatus {
     display: flex;
     align-items: center;
