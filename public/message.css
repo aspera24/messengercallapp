@@ -1,3 +1,30 @@
+:root {
+    color-scheme: dark;
+    --mf-bg: #272727;
+    --mf-bg-deep: #171b14;
+    --mf-panel: #0a1d3d;
+    --mf-panel-2: #0e2851;
+    --mf-blue: #ffffff;
+    --mf-blue-bright: #ffffff;
+    --mf-blue-soft: #173e79;
+    --mf-control: #62b6ff;
+    --mf-text: #ffffff;
+    --mf-btn: #ffffff;
+    --mf-logo: #ffffff;
+    --mf-btn-transp: #ffffff0f;
+    --mf-btn-border: #ffffff38;
+    --mf-bg-transp: #ffffff0f;
+    --mf-muted: #bbbbbb;
+    --mf-border: #ffffff38;
+    --mf-overlay: rgba(0, 0, 0, 0.281);
+    --mf-gray: #838383;
+    --mf-red: #ff9a16;
+    --mf-chat-sender: #ffffff;
+    --mf-chat-receiver: #272727;
+    --mf-sidebar-width: 300px;
+    font-family: 'Century Gothic', sans-serif;
+}
+
 .messageContainer {
     position: absolute;
     z-index: 20;
@@ -12,6 +39,7 @@
     overflow: hidden;
     background: var(--mf-bg-deep);
     border-radius: 14px;
+    border: 1px solid var(--mf-border);
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
     transform-origin: 100% 100%;
@@ -293,7 +321,7 @@
 }
 
 #sendMessageBtn:hover {
-    background: #1d4ed8;
+    background: var(--mf-muted);
 }
 
 .chatMessageWrapper {

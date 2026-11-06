@@ -11,6 +11,16 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'Lakmus';
+    src: url('./fonts/lakmus.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'LeeHaus';
+    src: url('./fonts/leehaus.ttf') format('truetype');
+}
+
 :root {
     color-scheme: dark;
     --mf-bg: #272727;
@@ -103,6 +113,9 @@ h2 {
     text-align: center;
     font-size: 28px;
     margin-bottom: 8px;
+    font-family: 'Lakmus';
+    font-weight: normal;
+    letter-spacing: 1px;
 }
 
 .subtitle {
