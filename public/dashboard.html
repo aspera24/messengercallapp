@@ -77,19 +77,39 @@
                     </div>
 
                     <div class="topbarRight">
-                        <div class="networkStatus" id="networkStatus" title="Checking network connection">
+                        <div class="networkStatus" id="networkStatus" title="Checking internet connection">
 
                             <i class="fa-solid fa-wifi" id="networkIcon"></i>
 
                             <div class="networkInfo">
+
                                 <span id="networkQuality">Checking...</span>
-                                <small id="networkSpeed">↓ -- Mbps · ↑ -- Mbps</small>
-                                <small id="networkPing">Ping: -- ms</small>
+
+                                <small id="networkConnectionStatus" style="display: none;">
+                                    Internet: Checking...
+                                </small>
+
+                                <small id="networkSpeed">
+                                    ↓ -- Mbps · ↑ -- Mbps
+                                </small>
+
+                                <small id="networkPing" style="display: none;">
+                                    Ping: -- ms
+                                </small>
+
+                                <small id="networkDetails">
+                                    Jitter: -- ms · Loss: --%
+                                </small>
+
+                                <small id="meetflowServerStatus" style="display: none;">
+                                    MeetFlow: Checking...
+                                </small>
+
                             </div>
 
                         </div>
-                        
-                        <span class="meetingStatus">
+
+                        <span class="meetingStatus"  style="display: none;">
                             <span class="statusDot"></span> Ready to connect
                         </span>
 

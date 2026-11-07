@@ -623,8 +623,6 @@ a {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 7px 11px;
-    background: var(--mf-bg-deep);
     min-width: 0;
 }
 
@@ -637,6 +635,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 3px;
+    min-width: 0;
 }
 
 #networkQuality {
@@ -646,7 +645,9 @@ a {
 }
 
 #networkSpeed,
-#networkPing {
+#networkPing,
+#networkDetails,
+#meetflowServerStatus {
     font-size: 9px;
     color: var(--mf-muted);
     white-space: nowrap;
@@ -662,14 +663,38 @@ a {
     color: #30b0ff;
 }
 
-.networkStatus.poor #networkIcon,
-.networkStatus.poor #networkQuality {
+.networkStatus.fair #networkIcon,
+.networkStatus.fair #networkQuality {
     color: #ff9f0a;
 }
 
-.networkStatus.bad #networkIcon,
-.networkStatus.bad #networkQuality {
+.networkStatus.poor #networkIcon,
+.networkStatus.poor #networkQuality {
     color: #ff453a;
+}
+
+.networkStatus.offline #networkIcon,
+.networkStatus.offline #networkQuality {
+    color: #ff453a;
+}
+
+@media (max-width: 600px) {
+
+    .networkStatus {
+        gap: 6px;
+        padding: 6px 8px;
+    }
+
+    #networkIcon {
+        font-size: 15px;
+    }
+
+    #networkSpeed,
+    #networkPing,
+    #networkDetails,
+    #meetflowServerStatus {
+        font-size: 8px;
+    }
 }
 
 .meetingStatus {

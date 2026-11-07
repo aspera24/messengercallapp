@@ -1735,35 +1735,779 @@ function createPeer(userId) {
     return peer;
 }
 
-// Adaptive WebRTC Quality 
+
+// ==========================================
+// INDEPENDENT INTERNET NETWORK MONITOR
+// ==========================================
+
+const networkMonitor = {
+    endpoint: "https://www.cloudflare.com/cdn-cgi/trace",
+    interval: 5000,
+    samples: [],
+    running: false,
+    maxSamples: 10
+};
+
+
+// ==========================================
+// INTERNET SPEED TEST SETTINGS
+// ==========================================
+
+const internetSpeedTest = {
+    running: false,
+    download: null,
+    upload: null,
+    interval: 60000
+};
+
+
+// ==========================================
+// HTTP CONNECTIVITY CHECK
+// ==========================================
+
+async function checkInternetConnection() {
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, 5000);
+
+    const start = performance.now();
+
+    try {
+
+        await fetch(
+            `${networkMonitor.endpoint}?_=${Date.now()}`,
+            {
+                method: "GET",
+                mode: "no-cors",
+                cache: "no-store",
+                credentials: "omit",
+                signal: controller.signal
+            }
+        );
+
+        return {
+            online: true,
+            ping: performance.now() - start,
+            timestamp: Date.now()
+        };
+
+    } catch (error) {
+
+        return {
+            online: false,
+            ping: null,
+            timestamp: Date.now()
+        };
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+}
+
+
+// ==========================================
+// MEETFLOW SERVER CONNECTION CHECK
+// ==========================================
+
+async function checkMeetFlowServer() {
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, 5000);
+
+    try {
+
+        const response = await fetch(
+            `/me?_=${Date.now()}`,
+            {
+                method: "GET",
+                credentials: "include",
+                cache: "no-store",
+                signal: controller.signal
+            }
+        );
+
+        // Any HTTP response means the server is reachable.
+        // This includes 401 Unauthorized.
+
+        return {
+            online: true,
+            status: response.status
+        };
+
+    } catch (error) {
+
+        return {
+            online: false,
+            status: null
+        };
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+}
+
+
+// ==========================================
+// NETWORK QUALITY CALCULATION
+// ==========================================
+
+function calculateNetworkQuality(ping, jitter, packetLoss) {
+
+    if (
+        ping > 350 ||
+        jitter > 60 ||
+        packetLoss >= 7
+    ) {
+
+        return {
+            label: "Poor",
+            className: "poor"
+        };
+
+    }
+
+    if (
+        ping > 200 ||
+        jitter > 35 ||
+        packetLoss >= 3
+    ) {
+
+        return {
+            label: "Fair",
+            className: "fair"
+        };
+
+    }
+
+    if (
+        ping > 100 ||
+        jitter > 20 ||
+        packetLoss >= 1
+    ) {
+
+        return {
+            label: "Good",
+            className: "good"
+        };
+
+    }
+
+    return {
+        label: "Excellent",
+        className: "excellent"
+    };
+
+}
+
+
+// ==========================================
+// UPDATE NETWORK UI
+// ==========================================
+
+function renderNetworkStatus(internet, server) {
+
+    const container = document.getElementById("networkStatus");
+    const icon = document.getElementById("networkIcon");
+
+    const qualityElement = document.getElementById("networkQuality");
+    const connectionElement = document.getElementById("networkConnectionStatus");
+    const pingElement = document.getElementById("networkPing");
+    const detailsElement = document.getElementById("networkDetails");
+    const serverElement = document.getElementById("meetflowServerStatus");
+
+    if (!container) return;
+
+
+    // INTERNET STATUS
+
+    if (connectionElement) {
+
+        connectionElement.textContent =
+            `Internet: ${internet ? "Connected" : "Unavailable"}`;
+
+    }
+
+
+    // MEETFLOW SERVER STATUS
+
+    if (serverElement) {
+
+        serverElement.textContent =
+            `MeetFlow: ${server ? "Online" : "Unreachable"}`;
+
+    }
+
+
+    // INTERNET UNAVAILABLE
+
+    if (!internet) {
+
+        container.classList.remove(
+            "excellent",
+            "good",
+            "fair",
+            "poor"
+        );
+
+        container.classList.add("offline");
+
+        if (qualityElement) {
+            qualityElement.textContent = "Offline";
+        }
+
+        if (pingElement) {
+            pingElement.textContent = "Ping: -- ms";
+        }
+
+        if (detailsElement) {
+            detailsElement.textContent = "Jitter: -- ms · Loss: --%";
+        }
+
+        if (icon) {
+            icon.className = "fa-solid fa-wifi";
+        }
+
+        container.title =
+            "Internet: Unavailable\n" +
+            `MeetFlow: ${server ? "Online" : "Unreachable"}`;
+
+        return;
+
+    }
+
+
+    container.classList.remove("offline");
+
+
+    // GET SUCCESSFUL PING SAMPLES
+
+    const samples = networkMonitor.samples;
+
+    const validSamples = samples.filter(
+        sample => sample.online && typeof sample.ping === "number"
+    );
+
+    if (!validSamples.length) return;
+
+
+    // AVERAGE PING
+
+    const averagePing =
+        validSamples.reduce(
+            (total, sample) => total + sample.ping,
+            0
+        ) / validSamples.length;
+
+
+    // JITTER
+    // Average difference between consecutive successful checks.
+
+    let differences = [];
+
+    for (let i = 1; i < samples.length; i++) {
+
+        const previous = samples[i - 1];
+        const current = samples[i];
+
+        if (previous.online && current.online) {
+
+            differences.push(
+                Math.abs(current.ping - previous.ping)
+            );
+
+        }
+
+    }
+
+    const jitter = differences.length
+        ? differences.reduce((a, b) => a + b, 0) / differences.length
+        : 0;
+
+
+    // PACKET LOSS
+
+    const failedChecks = samples.filter(
+        sample => !sample.online
+    ).length;
+
+    const packetLoss =
+        samples.length
+            ? (failedChecks / samples.length) * 100
+            : 0;
+
+
+    // QUALITY
+
+    const quality = calculateNetworkQuality(
+        averagePing,
+        jitter,
+        packetLoss
+    );
+
+
+    container.classList.remove(
+        "excellent",
+        "good",
+        "fair",
+        "poor"
+    );
+
+    container.classList.add(quality.className);
+
+
+    if (qualityElement) {
+        qualityElement.textContent = quality.label;
+    }
+
+    if (pingElement) {
+        pingElement.textContent =
+            `Ping: ${averagePing.toFixed(0)} ms`;
+    }
+
+    if (detailsElement) {
+        detailsElement.textContent =
+            `Jitter: ${jitter.toFixed(1)} ms · Loss: ${packetLoss.toFixed(1)}%`;
+    }
+
+    if (icon) {
+        icon.className = "fa-solid fa-wifi";
+    }
+
+
+    // TOOLTIP
+
+    container.title =
+        `Internet: Connected\n` +
+        `MeetFlow: ${server ? "Online" : "Unreachable"}\n` +
+        `Ping: ${averagePing.toFixed(1)} ms\n` +
+        `Jitter: ${jitter.toFixed(1)} ms\n` +
+        `Packet Loss: ${packetLoss.toFixed(1)}%`;
+
+}
+
+
+// ==========================================
+// INTERNET DOWNLOAD SPEED TEST
+// ==========================================
+
+async function measureDownloadSpeed() {
+
+    const bytes = 2_000_000;
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, 15000);
+
+    try {
+
+        const start = performance.now();
+
+        const response = await fetch(
+            `https://speed.cloudflare.com/__down?bytes=${bytes}&_=${Date.now()}`,
+            {
+                method: "GET",
+                cache: "no-store",
+                signal: controller.signal
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Download test failed");
+        }
+
+        const data = await response.arrayBuffer();
+
+        const elapsed =
+            (performance.now() - start) / 1000;
+
+        if (elapsed <= 0 || !data.byteLength) {
+            throw new Error("Invalid download measurement");
+        }
+
+        return (
+            (data.byteLength * 8) /
+            elapsed /
+            1_000_000
+        );
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+}
+
+
+// ==========================================
+// INTERNET UPLOAD SPEED TEST
+// ==========================================
+
+async function measureUploadSpeed() {
+
+    const bytes = 512_000;
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, 15000);
+
+    try {
+
+        const data = new Uint8Array(bytes);
+
+        // Generate random data in chunks.
+
+        for (let i = 0; i < data.length; i += 65536) {
+
+            crypto.getRandomValues(
+                data.subarray(
+                    i,
+                    Math.min(i + 65536, data.length)
+                )
+            );
+
+        }
+
+        const start = performance.now();
+
+        const response = await fetch(
+            `https://speed.cloudflare.com/__up?bytes=${bytes}&_=${Date.now()}`,
+            {
+                method: "POST",
+                body: data,
+                cache: "no-store",
+                signal: controller.signal
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Upload test failed");
+        }
+
+        await response.arrayBuffer();
+
+        const elapsed =
+            (performance.now() - start) / 1000;
+
+        if (elapsed <= 0) {
+            throw new Error("Invalid upload measurement");
+        }
+
+        return (
+            (bytes * 8) /
+            elapsed /
+            1_000_000
+        );
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+}
+
+
+// ==========================================
+// UPDATE SPEED UI
+// ==========================================
+
+function updateInternetSpeedUI() {
+
+    const element = document.getElementById("networkSpeed");
+
+    if (!element) return;
+
+    const download =
+        internetSpeedTest.download === null
+            ? "--"
+            : internetSpeedTest.download.toFixed(2);
+
+    const upload =
+        internetSpeedTest.upload === null
+            ? "--"
+            : internetSpeedTest.upload.toFixed(2);
+
+    element.textContent =
+        `↓ ${download} Mbps · ↑ ${upload} Mbps`;
+
+}
+
+
+// ==========================================
+// RUN INTERNET SPEED TEST
+// ==========================================
+
+async function runInternetSpeedTest() {
+
+    if (
+        internetSpeedTest.running ||
+        !navigator.onLine
+    ) return;
+
+    internetSpeedTest.running = true;
+
+    try {
+
+        // DOWNLOAD TEST
+
+        internetSpeedTest.download =
+            await measureDownloadSpeed();
+
+        updateInternetSpeedUI();
+
+
+        // Stop if browser detects offline.
+
+        if (!navigator.onLine) {
+            throw new Error("Internet connection lost");
+        }
+
+
+        // UPLOAD TEST
+
+        internetSpeedTest.upload =
+            await measureUploadSpeed();
+
+        updateInternetSpeedUI();
+
+    } catch (error) {
+
+        console.warn("Internet speed test failed:", error);
+
+        // Preserve previous successful measurement.
+        // Do not replace it with fake zero values.
+
+        updateInternetSpeedUI();
+
+    } finally {
+
+        internetSpeedTest.running = false;
+
+    }
+
+}
+
+
+// ==========================================
+// MAIN NETWORK MONITOR
+// ==========================================
+
+async function runNetworkMonitor() {
+
+    if (networkMonitor.running) return;
+
+    networkMonitor.running = true;
+
+    try {
+
+        let internetResult;
+        let serverResult;
+
+
+        // QUICK BROWSER OFFLINE CHECK
+
+        if (!navigator.onLine) {
+
+            internetResult = {
+                online: false,
+                ping: null,
+                timestamp: Date.now()
+            };
+
+            serverResult = await checkMeetFlowServer();
+
+        } else {
+
+            // CHECK INTERNET AND MEETFLOW SERVER IN PARALLEL
+
+            [internetResult, serverResult] = await Promise.all([
+                checkInternetConnection(),
+                checkMeetFlowServer()
+            ]);
+
+        }
+
+
+        // SAVE CONNECTIVITY SAMPLE
+
+        networkMonitor.samples.push(internetResult);
+
+        if (
+            networkMonitor.samples.length >
+            networkMonitor.maxSamples
+        ) {
+
+            networkMonitor.samples.shift();
+
+        }
+
+
+        // UPDATE UI
+
+        renderNetworkStatus(
+            internetResult.online,
+            serverResult.online
+        );
+
+    } catch (error) {
+
+        console.error("Network monitor error:", error);
+
+    } finally {
+
+        networkMonitor.running = false;
+
+    }
+
+}
+
+
+// ==========================================
+// START NETWORK MONITOR
+// ==========================================
+
+// Initial connectivity check
+
+runNetworkMonitor();
+
+// Check every 5 seconds
+
+setInterval(
+    runNetworkMonitor,
+    networkMonitor.interval
+);
+
+
+// ==========================================
+// START INTERNET SPEED TEST
+// ==========================================
+
+// Initial speed test
+
+runInternetSpeedTest();
+
+// Repeat every 60 seconds
+
+setInterval(
+    runInternetSpeedTest,
+    internetSpeedTest.interval
+);
+
+
+// ==========================================
+// BROWSER NETWORK EVENTS
+// ==========================================
+
+window.addEventListener("online", () => {
+
+    runNetworkMonitor();
+    runInternetSpeedTest();
+
+});
+
+window.addEventListener("offline", () => {
+
+    runNetworkMonitor();
+
+});
+
+
+// ==========================================
+// ADAPTIVE WEBRTC VIDEO QUALITY
+// Only active during meetings
+// ==========================================
+
 setInterval(async () => {
+
     for (const peer of Object.values(peers)) {
+
+        if (
+            !peer ||
+            peer.connectionState === "closed"
+        ) continue;
+
         try {
+
             const stats = await peer.getStats();
 
+            let selectedPair = null;
+
             stats.forEach(report => {
-                if (report.type === "candidate-pair" && report.state === "succeeded") {
 
-                    const sender = peer.getSenders().find(s => s.track?.kind === "video");
-                    if (!sender) return;
+                if (
+                    report.type === "candidate-pair" &&
+                    report.state === "succeeded"
+                ) {
 
-                    const params = sender.getParameters();
-                    if (!params.encodings?.length) return;
-
-                    if (report.currentRoundTripTime > 0.35) {
-                        params.encodings[0].maxBitrate = 450000;
-                        params.encodings[0].maxFramerate = 30;
-                    } else {
-                        params.encodings[0].maxBitrate = 800000;
-                        params.encodings[0].maxFramerate = 30;
+                    if (report.selected === true) {
+                        selectedPair = report;
+                    } else if (
+                        !selectedPair &&
+                        report.nominated === true
+                    ) {
+                        selectedPair = report;
                     }
 
-                    sender.setParameters(params).catch(() => { });
                 }
+
             });
-        } catch (e) { }
+
+            if (!selectedPair) continue;
+
+            const sender = peer.getSenders().find(
+                s => s.track?.kind === "video"
+            );
+
+            if (!sender) continue;
+
+            const params = sender.getParameters();
+
+            if (!params.encodings?.length) continue;
+
+            const targetBitrate =
+                selectedPair.currentRoundTripTime > 0.35
+                    ? 450000
+                    : 800000;
+
+            if (
+                params.encodings[0].maxBitrate !== targetBitrate ||
+                params.encodings[0].maxFramerate !== 30
+            ) {
+
+                params.encodings[0].maxBitrate = targetBitrate;
+                params.encodings[0].maxFramerate = 30;
+
+                await sender.setParameters(params);
+
+            }
+
+        } catch (error) {
+
+            console.warn("Adaptive quality error:", error);
+
+        }
+
     }
+
 }, 3000);
+
 
 socket.on("offer", async ({ offer, from, firstname }) => {
     let peer = peers[from] || createPeer(from);

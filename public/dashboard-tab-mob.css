@@ -662,6 +662,10 @@ body {
         line-height: 1.2;
     }
 
+    .networkStatus {
+        display: none;
+    }
+
     .topbarTitle p,
     .meetingStatus,
     .meetingHeading .eyebrow,
@@ -678,7 +682,7 @@ body {
     .meetingHeading {
         position: absolute;
         display: flex;
-        top: 50px;
+        top: 60px;
         right: 6px;
         z-index: 1;
         background: transparent;
@@ -702,8 +706,8 @@ body {
     #viewAccountSectionBtn,
     .viewAccountSectionBtn {
         border: none;
-        width: 30px;
-        height: 30px;
+        /* width: 30px;
+        height: 30px; */
         font-size: 10px;
         flex: 0 0 30px;
         background: var(--mf-bg-deep);
