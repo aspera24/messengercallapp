@@ -28,7 +28,7 @@
     --mf-control: #62b6ff;
     --mf-text: #ffffff;
     --mf-btn: #ffffff;
-    --mf-logo: #ffffff;
+    --mf-logo: #62b6ff;
     --mf-btn-transp: #ffffff0f;
     --mf-btn-border: #ffffff38;
     --mf-bg-transp: #ffffff0f;
@@ -147,7 +147,7 @@ a {
     color: #1f1d1d;
     font-weight: 850;
     letter-spacing: -2px;
-    background: linear-gradient(135deg, var(--mf-logo), var(--mf-bg-deep));
+    background: linear-gradient(135deg, var(--mf-logo), var(--mf-logo));
     box-shadow: 0 7px 22px var(--mf-btn-transp);
 }
 
@@ -156,6 +156,7 @@ a {
     font-size: 24px;
     letter-spacing: 1px;
     font-weight: 100 !important;
+    color: var(--mf-control);
 }
 
 .brandMark {
@@ -222,7 +223,7 @@ a {
 
 .sideNavItem.active {
     color: var(--mf-bg-deep);
-    background: var(--mf-btn);
+    background: var(--mf-control);
 }
 
 .sideNavItem.active>i {
@@ -308,18 +309,18 @@ a {
 #addEmp {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     color: var(--mf-text);
     background: transparent;
     border: 2px solid var(--mf-btn-border);
-    border-radius: 10px;
+    border-radius: 100px;
     cursor: pointer;
 }
 
 #addEmp:hover {
-    color: white;
-    background: var(--mf-blue);
+    color: var(--mf-bg-deep);
+    background: var(--mf-text);
 }
 
 .sidebarActions {
@@ -785,6 +786,7 @@ a {
     line-height: 1.25;
     letter-spacing: -.5px;
     overflow-wrap: anywhere;
+    color: var(--mf-control);
 }
 
 .meetingHeading p {
@@ -1212,9 +1214,10 @@ a {
     place-items: center;
     width: 45px;
     height: 45px;
-    background: #102f5c;
-    border-radius: 12px;
+    background: linear-gradient(135deg, var(--mf-text), var(--mf-bg-deep));
+    border-radius: 100px;
     font-size: 19px;
+    color: var(--mf-bg-deep);
 }
 
 .employee-header h2 {
@@ -1241,7 +1244,7 @@ a {
 }
 
 .form-group label {
-    color: #c3d6f2;
+    color: var(--mf-text);
     font-size: 11px;
     font-weight: 700;
 }
@@ -1252,7 +1255,7 @@ a {
     height: 40px;
     padding: 0 11px;
     color: white;
-    background: #061832;
+    background: var(--mf-bg-deep);
     border: 1px solid var(--mf-border);
     border-radius: 8px;
     outline: none;
@@ -1260,7 +1263,7 @@ a {
 }
 
 .form-group input:focus {
-    border-color: var(--mf-blue-bright);
+    border-color: var(--mf-gray);
 }
 
 .password-field {
