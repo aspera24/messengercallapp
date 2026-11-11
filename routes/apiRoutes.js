@@ -387,6 +387,7 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
         }
     });
 
+
     router.get("/users", authMiddleware, (req, res) => {
 
         const currentUser = req.user;
@@ -399,17 +400,14 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
         let targetAccType;
 
-        // Admin → fetch employees
         if (currentUser.acc_type === "admin") {
             targetAccType = "employee";
         }
 
-        // Employee → fetch admins
         else if (currentUser.acc_type === "employee") {
             targetAccType = "admin";
         }
 
-        // Unknown account type
         else {
             return res.status(403).json({
                 error: "Invalid account type"
@@ -420,15 +418,26 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
         db.query(
             `
         SELECT
-            token,
-            firstname,
-            lastname,
-            acc_type
-        FROM users
-        WHERE acc_type = ?
-        AND is_active = 1
+            u.id,
+            u.token,
+            u.firstname,
+            u.lastname,
+            u.acc_type,
+
+            ua.place AS address
+
+        FROM users u
+
+        LEFT JOIN user_address ua
+            ON ua.user_id = u.id
+
+        WHERE u.acc_type = ?
+        AND u.is_active = 1
+
+        ORDER BY ua.date_added DESC
         `,
             [targetAccType],
+
             (err, result) => {
 
                 if (err) {
@@ -444,13 +453,17 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
                 }
 
-
                 const users = result.map(user => ({
-                    ...user,
-                    joined: !!joinedUsersInMeeting[user.token],
-                    online: Boolean(onlineUsers[user.token])
-                }));
 
+                    ...user,
+
+                    address: user.address || "No address provided",
+
+                    joined: !!joinedUsersInMeeting[user.token],
+
+                    online: Boolean(onlineUsers[user.token])
+
+                }));
 
                 res.json(users);
 
@@ -458,6 +471,7 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
         );
 
     });
+
 
     router.post("/add-employee", authMiddleware, (req, res) => {
 
@@ -721,7 +735,15 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                 firstname,
                 lastname,
                 username,
-                created_at
+                created_at,
+
+                (
+                    SELECT place
+                    FROM user_address
+                    WHERE user_id = users.id
+                    ORDER BY date_added DESC, id DESC
+                    LIMIT 1
+                ) AS address
 
             FROM users
 
@@ -770,6 +792,8 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
                     username: user.username,
 
+                    address: user.address || "",
+
                     created_at: user.created_at
 
                 });
@@ -795,7 +819,8 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
         let {
             first_name,
             last_name,
-            username
+            username,
+            address
         } = req.body;
 
 
@@ -816,6 +841,11 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
         username =
             typeof username === "string"
                 ? username.trim()
+                : "";
+
+        address =
+            typeof address === "string"
+                ? address.trim()
                 : "";
 
 
@@ -867,6 +897,15 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
             return res.status(400).json({
                 message: "Username is too long."
+            });
+
+        }
+
+
+        if (address.length > 500) {
+
+            return res.status(400).json({
+                message: "Address is too long."
             });
 
         }
@@ -967,14 +1006,125 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                         }
 
 
-                        res.json({
+                        // =========================
+                        // SAVE USER ADDRESS
+                        // =========================
 
-                            success: true,
+                        db.query(
+                            `
+    SELECT id
 
-                            message:
-                                "Profile updated successfully."
+    FROM user_address
 
-                        });
+    WHERE user_id = ?
+
+    ORDER BY date_added DESC, id DESC
+
+    LIMIT 1
+    `,
+                            [userId],
+
+                            (err, addressRows) => {
+
+                                if (err) {
+
+                                    console.error(
+                                        "CHECK USER ADDRESS ERROR:",
+                                        err
+                                    );
+
+                                    return res.status(500).json({
+                                        message: "Profile updated but failed to save address."
+                                    });
+
+                                }
+
+
+                                // Existing address → UPDATE
+                                if (addressRows.length > 0) {
+
+                                    db.query(
+                                        `
+                UPDATE user_address
+
+                SET
+                    place = ?,
+                    date_added = NOW()
+
+                WHERE id = ?
+                `,
+                                        [
+                                            address,
+                                            addressRows[0].id
+                                        ],
+
+                                        (err) => {
+
+                                            if (err) {
+
+                                                console.error(
+                                                    "UPDATE ADDRESS ERROR:",
+                                                    err
+                                                );
+
+                                                return res.status(500).json({
+                                                    message: "Profile updated but failed to save address."
+                                                });
+
+                                            }
+
+                                            res.json({
+                                                success: true,
+                                                message: "Profile updated successfully."
+                                            });
+
+                                        }
+                                    );
+
+                                }
+
+                                // No existing address → INSERT
+                                else {
+
+                                    db.query(
+                                        `
+                INSERT INTO user_address
+                    (user_id, place, date_added)
+
+                VALUES (?, ?, NOW())
+                `,
+                                        [
+                                            userId,
+                                            address
+                                        ],
+
+                                        (err) => {
+
+                                            if (err) {
+
+                                                console.error(
+                                                    "INSERT ADDRESS ERROR:",
+                                                    err
+                                                );
+
+                                                return res.status(500).json({
+                                                    message: "Profile updated but failed to save address."
+                                                });
+
+                                            }
+
+                                            res.json({
+                                                success: true,
+                                                message: "Profile updated successfully."
+                                            });
+
+                                        }
+                                    );
+
+                                }
+
+                            }
+                        );
 
                     }
                 );

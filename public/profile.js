@@ -373,6 +373,9 @@ async function loadProfile() {
         document.getElementById("username").value =
             data.username || "";
 
+        document.getElementById("userAddress").value =
+            data.address || "";
+
 
     } catch (error) {
 
@@ -426,7 +429,10 @@ document
                         document.getElementById("lastName").value.trim(),
 
                     username:
-                        document.getElementById("username").value.trim()
+                        document.getElementById("username").value.trim(),
+
+                    address:
+                        document.getElementById("userAddress").value.trim()
 
                 })
 

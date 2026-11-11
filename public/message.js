@@ -169,7 +169,9 @@ async function loadUsers() {
                                 <p class="userName">
                                     ${data.firstname} ${data.lastname}
                                 </p>
-                                <p class="userAddress">Local Address</p>
+                                <p class="userAddress">
+                                    ${data.address || "No address provided"}
+                                </p>
                             </div>
 
                         </div>
