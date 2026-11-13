@@ -979,7 +979,7 @@ a {
     width: 100%;
     height: auto;
     max-width: none;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 16 / 16;
     border-radius: 15px;
 }
 
