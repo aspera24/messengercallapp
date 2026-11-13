@@ -1009,6 +1009,12 @@ a {
     transform: scaleX(1);
 }
 
+.camera-switch-disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
 .video-box video {
     position: absolute;
     inset: 0;

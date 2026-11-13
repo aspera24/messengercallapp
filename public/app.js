@@ -397,6 +397,42 @@ let currentFacingMode = "user";
 let cameraStream = null;
 let switchingCamera = false;
 
+// ==========================================
+// MOBILE CAMERA SWITCH SUPPORT
+// ==========================================
+
+const isMobileDevice =
+    navigator.userAgentData?.mobile === true ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+let activeCameraType = "external";
+
+function updateCameraSwitchButton() {
+
+    const buttons = document.querySelectorAll(
+        '#switchCameraBtn, #switchCamBtn, [onclick*="switchCamera"]'
+    );
+
+    const canSwitch =
+        isMobileDevice &&
+        (activeCameraType === "front" ||
+            activeCameraType === "rear");
+
+    buttons.forEach(btn => {
+
+        btn.disabled = !canSwitch || switchingCamera;
+
+        btn.title = !isMobileDevice
+            ? "Camera switching is only available on mobile"
+            : !canSwitch
+                ? "Camera switching unavailable for this camera"
+                : "Switch front/rear camera";
+
+        btn.classList.toggle("camera-switch-disabled", !canSwitch);
+
+    });
+}
+
 // async function buildFilteredCameraStream(rawCameraStream) {
 //     try {
 //         const result =
@@ -603,28 +639,28 @@ async function ensureMediaReady(attempt = 0) {
 
 
 async function switchCamera() {
-    if (switchingCamera) {
-        console.warn("[CAMERA] Switch already in progress");
+
+    // MOBILE ONLY
+    if (!isMobileDevice) {
+        console.warn("[CAMERA] Switching is only available on mobile.");
         return false;
     }
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-        console.error("[CAMERA] getUserMedia is not supported");
+    // Only front/rear cameras are supported.
+    if (!["front", "rear"].includes(activeCameraType)) {
+        console.warn("[CAMERA] External camera detected. Switching disabled.");
         return false;
     }
 
-    if (!navigator.onLine) {
-        console.warn("[CAMERA] Device is offline");
+    // Prevent rapid clicking / overlapping requests.
+    if (switchingCamera) return false;
+
+    if (!navigator.mediaDevices?.getUserMedia || !navigator.onLine) {
         return false;
     }
 
     switchingCamera = true;
-
-    const oldCameraStream = cameraStream;
-    const oldAudioTrack =
-        stream?.getAudioTracks?.()[0] || audioTrack;
-
-    const oldVideoEnabled = videoTrack?.enabled ?? savedMediaStatus.camera;
+    updateCameraSwitchButton();
 
     const previousFacingMode = currentFacingMode;
 
@@ -633,340 +669,180 @@ async function switchCamera() {
             ? "environment"
             : "user";
 
-    console.log("[CAMERA] Switching to:", targetFacingMode);
+    const oldCameraStream = cameraStream;
+    const oldVideoTrack = videoTrack;
+    const oldAudioTrack = audioTrack;
+
+    const oldVideoEnabled =
+        oldVideoTrack?.enabled ?? savedMediaStatus.camera;
 
     let newCameraStream = null;
 
-    try {
-        /*
-         * IMPORTANT FOR PHONES:
-         * Stop the active camera BEFORE opening the next camera.
-         */
-        const streamsToStop = [];
+    console.log("[CAMERA] Switching:", {
+        from: previousFacingMode,
+        to: targetFacingMode
+    });
 
+    try {
+
+        /*
+         * Release the current mobile camera.
+         * Keep the microphone running.
+         */
         if (oldCameraStream) {
-            streamsToStop.push(oldCameraStream);
+            oldCameraStream.getVideoTracks().forEach(track => {
+                track.stop();
+            });
         }
 
-        // const stoppedTracks = new Set();
-
-        streamsToStop.forEach(activeStream => {
-            activeStream.getVideoTracks().forEach(track => {
-                try {
-                    track.stop();
-                } catch (error) {
-                    console.warn(
-                        "[CAMERA] Could not stop old camera:",
-                        error
-                    );
-                }
-            });
-        });
-
         cameraStream = null;
-        videoTrack = null;
+
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         /*
-         * Small delay helps some Android phones release the camera.
+         * Request the EXACT opposite camera.
+         * No arbitrary device index selection.
          */
-        await new Promise(resolve => setTimeout(resolve, 250));
+        newCameraStream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: {
+                        exact: targetFacingMode
+                    },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    frameRate: { ideal: 30 }
+                },
+                audio: false
+            });
+
+        const newVideoTrack =
+            newCameraStream.getVideoTracks()[0];
+
+        if (!newVideoTrack) {
+            throw new Error("No video track received.");
+        }
+
+        // Preserve camera ON/OFF state.
+        newVideoTrack.enabled = oldVideoEnabled;
 
         /*
-         * Get available camera devices.
-         * enumerateDevices can identify front/back camera.
+         * Verify the actual camera.
          */
-        let devices = [];
+        const actualFacingMode =
+            newVideoTrack.getSettings().facingMode;
 
-        try {
-            devices = await navigator.mediaDevices.enumerateDevices();
-        } catch (deviceError) {
-            console.warn(
-                "[CAMERA] enumerateDevices failed:",
-                deviceError
+        if (
+            actualFacingMode &&
+            actualFacingMode !== targetFacingMode
+        ) {
+            throw new Error(
+                `Wrong camera returned: ${actualFacingMode}`
             );
         }
 
-        const videoDevices = devices.filter(
-            device => device.kind === "videoinput"
-        );
-
-        let selectedDevice = null;
-
         /*
-         * If there are at least 2 cameras, choose the other camera.
-         */
-        if (videoDevices.length >= 2) {
-            if (previousFacingMode === "user") {
-                selectedDevice =
-                    videoDevices.find(device =>
-                        /back|rear|environment|world/i.test(
-                            device.label
-                        )
-                    ) || videoDevices[1];
-            } else {
-                selectedDevice =
-                    videoDevices.find(device =>
-                        /front|user|facetime/i.test(
-                            device.label
-                        )
-                    ) || videoDevices[0];
-            }
-        }
-
-        /*
-         * First try using deviceId.
-         * This is more reliable than facingMode on many phones.
-         */
-        if (selectedDevice?.deviceId) {
-            try {
-                console.log(
-                    "[CAMERA] Opening selected device:",
-                    selectedDevice.label || selectedDevice.deviceId
-                );
-
-                newCameraStream =
-                    await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            deviceId: {
-                                exact: selectedDevice.deviceId
-                            },
-                            width: {
-                                ideal: 1920
-                            },
-                            height: {
-                                ideal: 1080
-                            },
-                            frameRate: {
-                                ideal: 30
-                            }
-                        },
-                        audio: false
-                    });
-            } catch (deviceError) {
-                console.warn(
-                    "[CAMERA] deviceId attempt failed:",
-                    deviceError.name
-                );
-            }
-        }
-
-        /*
-         * Second attempt: facingMode.
-         * No exact constraint here.
-         */
-        if (!newCameraStream) {
-            try {
-                newCameraStream =
-                    await navigator.mediaDevices.getUserMedia({
-
-                        video: {
-                            facingMode: {
-                                ideal: targetFacingMode
-                            },
-                            width: {
-                                ideal: 1920
-                            },
-                            height: {
-                                ideal: 1080
-                            },
-                            frameRate: {
-                                ideal: 30
-                            }
-                        },
-                        audio: false
-                    });
-            } catch (facingError) {
-                console.warn(
-                    "[CAMERA] facingMode attempt failed:",
-                    facingError.name
-                );
-            }
-        }
-
-        /*
-         * Final fallback:
-         * No resolution, FPS, or facingMode restrictions.
-         */
-        if (!newCameraStream) {
-            newCameraStream =
-                await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: false
-                });
-        }
-
-        const rawVideoTrack =
-            newCameraStream.getVideoTracks()[0];
-
-        if (!rawVideoTrack) {
-            throw new Error("No video track from new camera");
-        }
-
-
-        // let newFilteredStream;
-
-        // try {
-        //     newFilteredStream =
-        //         await buildFilteredCameraStream(newCameraStream);
-        // } catch (filterError) {
-        //     console.warn(
-        //         "[CAMERA] Filter failed on new camera:",
-        //         filterError
-        //     );
-
-        //     newFilteredStream = new MediaStream();
-        //     newFilteredStream.addTrack(rawVideoTrack);
-        // }
-
-        const finalVideoTrack =
-            newCameraStream.getVideoTracks()[0];
-
-        if (!finalVideoTrack) {
-            throw new Error("No video track from new camera");
-        }
-
-        // Preserve the previous ON/OFF state when switching cameras
-        finalVideoTrack.enabled = oldVideoEnabled;
-
-        for (const peerId in peers) {
-            const peer = peers[peerId];
-
-            if (!peer) continue;
-
-            const sender = peer
-                .getSenders()
-                .find(sender =>
-                    sender.track &&
-                    sender.track.kind === "video"
-                );
-
-            if (sender) {
-                try {
-                    await sender.replaceTrack(finalVideoTrack);
-
-                    console.log(
-                        "[CAMERA] Track replaced for:",
-                        peerId
-                    );
-                } catch (replaceError) {
-                    console.warn(
-                        "[CAMERA] replaceTrack failed:",
-                        peerId,
-                        replaceError
-                    );
-                }
-            }
-        }
-
-        /*
-         * Rebuild local stream while preserving microphone.
+         * Rebuild local stream.
+         * Preserve the original microphone.
          */
         const newLocalStream = new MediaStream();
 
-        newLocalStream.addTrack(finalVideoTrack);
+        newLocalStream.addTrack(newVideoTrack);
 
-        if (oldAudioTrack) {
+        if (oldAudioTrack?.readyState === "live") {
             newLocalStream.addTrack(oldAudioTrack);
         }
 
         /*
-         * Update variables.
+         * Replace video track on all WebRTC peers.
+         */
+        for (const peerId in peers) {
+
+            const peer = peers[peerId];
+            if (!peer) continue;
+
+            const sender = peer.getSenders().find(
+                sender => sender.track?.kind === "video"
+            );
+
+            if (sender) {
+                await sender.replaceTrack(newVideoTrack);
+            }
+        }
+
+        /*
+         * Update camera state ONLY after success.
          */
         currentFacingMode = targetFacingMode;
 
         cameraStream = newCameraStream;
         stream = newLocalStream;
 
-        videoTrack = finalVideoTrack;
-        audioTrack = oldAudioTrack || null;
-        await detectCameraType(videoTrack);
-        updateCameraMirror();
+        videoTrack = newVideoTrack;
+        audioTrack = oldAudioTrack;
 
-        // filteredStream = newFilteredStream;
-        // filteredVideoTrack = finalVideoTrack;
+        await detectCameraType(newVideoTrack);
+
+        updateCameraMirror();
 
         /*
          * Update local video.
          */
-        if (localVideo) {
-            localVideo.srcObject = newLocalStream;
-            localVideo.muted = true;
-            localVideo.autoplay = true;
-            localVideo.playsInline = true;
+        [localVideo, document.getElementById("localPreview")]
+            .forEach(video => {
 
-            try {
-                await localVideo.play();
-            } catch (playError) {
-                console.warn(
-                    "[CAMERA] localVideo.play failed:",
-                    playError
-                );
-            }
-        }
+                if (!video) return;
 
-        const localPreview =
-            document.getElementById("localPreview");
+                video.srcObject = newLocalStream;
+                video.muted = true;
+                video.autoplay = true;
+                video.playsInline = true;
 
-        if (localPreview) {
-            localPreview.srcObject = newLocalStream;
-            localPreview.muted = true;
-            localPreview.autoplay = true;
-            localPreview.playsInline = true;
+                video.play().catch(() => { });
+            });
 
-            try {
-                await localPreview.play();
-            } catch (playError) {
-                console.warn(
-                    "[CAMERA] localPreview.play failed:",
-                    playError
-                );
-            }
-        }
-
-        updateCameraMirror();
-        // Save the selected camera and preserve current ON/OFF states
+        /*
+         * Save actual selected camera.
+         */
         saveMediaPreferences();
 
-        // Update live meeting status
-        if (socket.connected) {
-            socket.emit("media-status", {
-                camera: !!videoTrack?.enabled,
-                mic: !!audioTrack?.enabled
-            });
-        }
+        socket.emit("media-status", {
+            camera: !!videoTrack.enabled,
+            mic: !!audioTrack?.enabled
+        });
 
-        console.log(
-            "[CAMERA] Successfully switched to:",
-            currentFacingMode
-        );
+        console.log("[CAMERA] Successfully switched:", {
+            facingMode: currentFacingMode,
+            cameraType: activeCameraType
+        });
 
         return true;
 
     } catch (error) {
+
         console.error(
             "[CAMERA] Switch failed:",
             error.name,
             error.message
         );
 
+        // Stop unsuccessful new camera.
+        newCameraStream?.getTracks().forEach(track => track.stop());
 
+        /*
+         * Restore the previous camera.
+         */
         try {
 
             const restoredStream =
                 await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: {
-                            ideal: previousFacingMode
+                            exact: previousFacingMode
                         },
-                        width: {
-                            ideal: 1920
-                        },
-                        height: {
-                            ideal: 1080
-                        },
-                        frameRate: {
-                            ideal: 30
-                        }
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        frameRate: { ideal: 30 }
                     },
                     audio: false
                 });
@@ -975,240 +851,129 @@ async function switchCamera() {
                 restoredStream.getVideoTracks()[0];
 
             if (!restoredVideoTrack) {
-                throw new Error(
-                    "No restored video track"
-                );
+                throw new Error("Could not restore previous camera.");
             }
 
-            /*
-             * IMPORTANT:
-             * Rebuild the filter/LUT pipeline after restoring.
-             * Do NOT send the raw restoredVideoTrack directly.
-             */
-            let restoredFilteredStream;
+            restoredVideoTrack.enabled = oldVideoEnabled;
 
-            try {
-                restoredFilteredStream =
-                    await buildFilteredCameraStream(
-                        restoredStream
-                    );
-            } catch (filterError) {
-                console.warn(
-                    "[CAMERA] Filter restore failed, using raw camera:",
-                    filterError
-                );
+            const restoredLocalStream = new MediaStream();
 
-                restoredFilteredStream =
-                    new MediaStream();
+            restoredLocalStream.addTrack(restoredVideoTrack);
 
-                restoredFilteredStream.addTrack(
-                    restoredVideoTrack
-                );
+            if (oldAudioTrack?.readyState === "live") {
+                restoredLocalStream.addTrack(oldAudioTrack);
             }
 
-            const restoredFilteredVideoTrack =
-                restoredFilteredStream.getVideoTracks()[0];
-
-            if (!restoredFilteredVideoTrack) {
-                throw new Error(
-                    "No restored filtered video track"
-                );
-            }
-
-            /*
-             * Rebuild local stream while preserving microphone.
-             */
-            const restoredLocalStream =
-                new MediaStream();
-
-            restoredLocalStream.addTrack(
-                restoredFilteredVideoTrack
-            );
-
-            if (oldAudioTrack) {
-                restoredLocalStream.addTrack(
-                    oldAudioTrack
-                );
-            }
-
-            /*
-             * Replace video track on all peers.
-             */
             for (const peerId in peers) {
-                const peer = peers[peerId];
 
+                const peer = peers[peerId];
                 if (!peer) continue;
 
-                const sender = peer
-                    .getSenders()
-                    .find(sender =>
-                        sender.track &&
-                        sender.track.kind === "video"
-                    );
+                const sender = peer.getSenders().find(
+                    sender => sender.track?.kind === "video"
+                );
 
                 if (sender) {
-                    try {
-                        await sender.replaceTrack(
-                            restoredFilteredVideoTrack
-                        );
-
-                        console.log(
-                            "[CAMERA] Restored track replaced for:",
-                            peerId
-                        );
-
-                    } catch (restoreError) {
-                        console.warn(
-                            "[CAMERA] Restore replaceTrack failed:",
-                            peerId,
-                            restoreError
-                        );
-                    }
+                    await sender.replaceTrack(restoredVideoTrack);
                 }
             }
 
-            /*
-             * Restore camera/filter state.
-             */
             currentFacingMode = previousFacingMode;
 
             cameraStream = restoredStream;
+            stream = restoredLocalStream;
 
-            filteredStream =
-                restoredFilteredStream;
+            videoTrack = restoredVideoTrack;
+            audioTrack = oldAudioTrack;
 
-            filteredVideoTrack =
-                restoredFilteredVideoTrack;
-
-            stream =
-                restoredLocalStream;
-
-            videoTrack =
-                restoredFilteredVideoTrack;
-
-            audioTrack =
-                oldAudioTrack || null;
-
-            /*
-             * Update local video.
-             */
-            if (localVideo) {
-                localVideo.srcObject =
-                    restoredLocalStream;
-
-                localVideo.muted = true;
-                localVideo.autoplay = true;
-                localVideo.playsInline = true;
-
-                try {
-                    await localVideo.play();
-                } catch (playError) {
-                    console.warn(
-                        "[CAMERA] Restored localVideo.play failed:",
-                        playError
-                    );
-                }
-            }
-
-            /*
-             * Update local preview.
-             */
-            const localPreview =
-                document.getElementById("localPreview");
-
-            if (localPreview) {
-                localPreview.srcObject =
-                    restoredLocalStream;
-
-                localPreview.muted = true;
-                localPreview.autoplay = true;
-                localPreview.playsInline = true;
-
-                try {
-                    await localPreview.play();
-                } catch (playError) {
-                    console.warn(
-                        "[CAMERA] Restored localPreview.play failed:",
-                        playError
-                    );
-                }
-            }
+            await detectCameraType(restoredVideoTrack);
 
             updateCameraMirror();
 
-            /*
-             * Inform server of restored media state.
-             */
-            if (socket.connected) {
-                socket.emit("media-status", {
-                    camera: !!videoTrack?.enabled,
-                    mic: !!audioTrack?.enabled
-                });
-            }
+            [localVideo, document.getElementById("localPreview")]
+                .forEach(video => {
 
-            console.warn(
-                "[CAMERA] Previous camera restored"
-            );
+                    if (!video) return;
+
+                    video.srcObject = restoredLocalStream;
+                    video.play().catch(() => { });
+                });
+
+            console.warn("[CAMERA] Previous camera restored.");
 
         } catch (restoreError) {
+
             console.error(
-                "[CAMERA] Could not restore previous camera:",
+                "[CAMERA] Restoration failed:",
                 restoreError
             );
+
         }
 
         return false;
 
     } finally {
+
         switchingCamera = false;
+        updateCameraSwitchButton();
+
     }
 }
 
 window.switchCamera = switchCamera;
 
-let activeCameraType = "external";
 
 async function detectCameraType(track) {
-    if (!track) {
+
+    if (!track || !isMobileDevice) {
         activeCameraType = "external";
+        updateCameraSwitchButton();
         return activeCameraType;
     }
 
     const settings = track.getSettings();
-    const facingMode = settings.facingMode;
 
-    // Most reliable way to identify mobile front/rear cameras
-    if (facingMode === "user") {
-        activeCameraType = "front";
-        return activeCameraType;
-    }
+    let facingMode = settings.facingMode;
 
-    if (facingMode === "environment") {
-        activeCameraType = "rear";
-        return activeCameraType;
-    }
+    // Use actual camera label if facingMode is unavailable.
+    if (!facingMode) {
 
-    try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
+        try {
 
-        const selectedDevice = devices.find(
-            device =>
+            const devices =
+                await navigator.mediaDevices.enumerateDevices();
+
+            const device = devices.find(device =>
                 device.kind === "videoinput" &&
                 device.deviceId === settings.deviceId
-        );
+            );
 
-        const label = selectedDevice?.label || track.label || "";
+            const label = device?.label || track.label || "";
 
-        if (/\b(front|user|facetime|selfie)\b/i.test(label)) {
-            activeCameraType = "front";
-        } else if (/\b(back|rear|environment|world)\b/i.test(label)) {
-            activeCameraType = "rear";
-        } else {
-            // External webcam or unidentified camera
-            activeCameraType = "external";
+            if (/\b(front|user|facetime|selfie)\b/i.test(label)) {
+                facingMode = "user";
+            }
+
+            else if (/\b(back|rear|environment|world)\b/i.test(label)) {
+                facingMode = "environment";
+            }
+
+        } catch (error) {
+            console.warn("[CAMERA] Detection failed:", error);
         }
-    } catch (error) {
-        console.warn("[CAMERA] Could not identify camera:", error);
+    }
+
+    if (facingMode === "user") {
+        activeCameraType = "front";
+        currentFacingMode = "user";
+    }
+
+    else if (facingMode === "environment") {
+        activeCameraType = "rear";
+        currentFacingMode = "environment";
+    }
+
+    else {
         activeCameraType = "external";
     }
 
@@ -1218,6 +983,8 @@ async function detectCameraType(track) {
         deviceId: settings.deviceId,
         label: track.label
     });
+
+    updateCameraSwitchButton();
 
     return activeCameraType;
 }
