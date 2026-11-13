@@ -696,7 +696,7 @@ body {
         display: none;
     }
 
-    .meeting-timer {
+    .meeting-timer, #personCount {
         border: none;
         padding: 6px 10px;
         font-size: 11px;

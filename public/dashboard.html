@@ -27,7 +27,7 @@
                 <div class="leftBrand">
                     <div class="brandMark"><span><i class="fa-solid fa-video"></i></span></div>
                     <div class="brandCopy">
-                        <span class="sysName">LetsMtg</span>
+                        <span class="sysName">MeetFlow</span>
                         <small>Connect · Collaborate · Get Things Done</small>
                     </div>
                 </div>
@@ -136,6 +136,17 @@
                                 <p class="par">Connect face-to-face with your team.</p>
                             </div>
                             <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
+                                <div id="personCount" title="No. of Participants" onclick="togglePersonList()">
+                                    <i class="fa-solid fa-user"></i>
+
+                                    <span class="participantCount">0</span>
+
+                                    <div id="participantNames" class="participantNames">
+                                        <marquee behavior="scroll" direction="left" scrollamount="3">
+                                            <span></span>
+                                        </marquee>
+                                    </div>
+                                </div>
                                 <div id="meetingTimer" class="meeting-timer" style="display:none;"><i
                                         class="fa-regular fa-clock"></i><span>00:00:00</span></div>
                                 <button type="button" id="viewAccountSectionBtn" class="viewAccountSectionBtn"

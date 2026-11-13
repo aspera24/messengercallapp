@@ -261,6 +261,10 @@ function endMeeting(roomId) {
             console.error(err);
         });
 
+    io.to(roomId).emit("person-count-updated", {
+        count: 0
+    });
+
     Object.keys(joinedUsersInMeeting).forEach(token => {
         delete joinedUsersInMeeting[token];
     });
@@ -280,6 +284,23 @@ function endMeeting(roomId) {
     activeMeeting = null;
 }
 
+function broadcastPersonCount(roomId) {
+
+    if (!activeMeeting || activeMeeting.roomId !== roomId) {
+        return;
+    }
+
+    const adminToken = activeMeeting.adminToken;
+
+    const count = activeMeeting.participants.filter(
+        token => token !== adminToken
+    ).length;
+
+    io.to(roomId).emit("person-count-updated", {
+        count
+    });
+
+}
 
 io.on("connection", (socket) => {
 
@@ -1214,6 +1235,8 @@ io.on("connection", (socket) => {
         peerSocketMap[user.token] = socket.id;
         socket.data.roomId = roomId;
 
+        broadcastPersonCount(roomId);
+
         let roomSockets = [];
 
         try {
@@ -1389,6 +1412,10 @@ io.on("connection", (socket) => {
 
                 targetSocket.leave(roomId);
                 targetSocket.emit("removed-from-meeting");
+
+                targetSocket.emit("person-count-updated", {
+                    count: 0
+                });
             });
 
             delete joinedUsersInMeeting[userId];
@@ -1416,6 +1443,8 @@ io.on("connection", (socket) => {
             );
 
         }
+
+        broadcastPersonCount(roomId);
 
         io.to(roomId).emit("user-disconnected", userId);
 

@@ -95,7 +95,7 @@
     font-weight: 600;
 }
 
-.formGroup input {
+.formGroup input, .formGroup textarea {
     width: 100%;
     padding: 11px 12px;
     border: 1px solid var(--mf-border);
@@ -107,7 +107,7 @@
     transition: border-color 0.2s;
 }
 
-.formGroup input:focus {
+.formGroup input:focus, .formGroup textarea:focus {
     border-color: var(--mf-control);
 }
 
@@ -174,7 +174,7 @@ button {
 }
 
 .primaryBtn:hover {
-    color: var(--mf-red);
+    color: var(--mf-orange);
 }
 
 .secondaryBtn {

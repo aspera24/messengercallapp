@@ -417,25 +417,25 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
         db.query(
             `
-        SELECT
-            u.id,
-            u.token,
-            u.firstname,
-            u.lastname,
-            u.acc_type,
+            SELECT
+                u.id,
+                u.token,
+                u.firstname,
+                u.lastname,
+                u.acc_type,
 
-            ua.place AS address
+                ua.place AS address
 
-        FROM users u
+            FROM users u
 
-        LEFT JOIN user_address ua
-            ON ua.user_id = u.id
+            LEFT JOIN user_address ua
+                ON ua.user_id = u.id
 
-        WHERE u.acc_type = ?
-        AND u.is_active = 1
+            WHERE u.acc_type = ?
+            AND u.is_active = 1
 
-        ORDER BY ua.date_added DESC
-        `,
+            ORDER BY ua.date_added DESC
+            `,
             [targetAccType],
 
             (err, result) => {
@@ -453,15 +453,30 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
                 }
 
+                const joinedEmployeeCount = Object.keys(joinedUsersInMeeting)
+                    .filter(token =>
+                        onlineUsers[token]?.user?.acc_type === "employee"
+                    ).length;
+
+                const currentUserJoined =
+                    !!joinedUsersInMeeting[currentUser.token];
+
+                const personCount =
+                    currentUser.acc_type === "employee" && !currentUserJoined
+                        ? 0
+                        : joinedEmployeeCount;
+
                 const users = result.map(user => ({
 
                     ...user,
 
-                    address: user.address || "No address provided",
+                    address: user.address || "",
 
                     joined: !!joinedUsersInMeeting[user.token],
 
-                    online: Boolean(onlineUsers[user.token])
+                    online: Boolean(onlineUsers[user.token]),
+
+                    personCount
 
                 }));
 

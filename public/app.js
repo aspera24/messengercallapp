@@ -2964,7 +2964,11 @@ function addRemoteVideo(userId, stream) {
 
         const tag = document.createElement("span");
         tag.className = "tag";
-        tag.innerText = peerNames[userId] || userId;
+
+
+        const userName = document.createElement("span");
+        userName.className = "userName";
+        userName.innerText = peerNames[userId] || userId;
 
         const micLevel = document.createElement("div");
         micLevel.className = "mic-level userlevel";
@@ -2978,13 +2982,15 @@ function addRemoteVideo(userId, stream) {
         wrapper.appendChild(loading);
         wrapper.appendChild(video);
         wrapper.appendChild(tag);
+        wrapper.appendChild(userName);
         wrapper.appendChild(status);
         wrapper.appendChild(micLevel);
         document.getElementById("videos").appendChild(wrapper);
     }
 
     const tag = wrapper.querySelector(".tag");
-    if (peerNames[userId]) tag.innerText = peerNames[userId];
+    const userName = wrapper.querySelector(".userName");
+    if (peerNames[userId]) userName.innerText = peerNames[userId];
 
     const remoteVideo = document.getElementById(userId);
     const remoteLoader = document.getElementById("loading-" + userId);
@@ -3011,16 +3017,26 @@ function addRemoteVideo(userId, stream) {
         }
     }
 
+    // ALWAYS SHOW NAME TAG FOR ALL USERS
+    if (userName.parentElement !== tag) {
+        tag.appendChild(userName);
+    }
+
+    // REMOVE BUTTON: ADMIN ONLY
     if (currentUser.acc_type === "admin" && !wrapper.querySelector(".remove-user-btn")) {
+
         const removeBtn = document.createElement("button");
+
         removeBtn.className = "remove-user-btn";
         removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+
         removeBtn.onclick = () => {
             if (confirm("Remove this user?")) {
                 socket.emit("remove-user", { roomId, userId });
             }
         };
-        wrapper.appendChild(removeBtn);
+
+        tag.appendChild(removeBtn);
     }
 
     updateRemoteStatus(userId);

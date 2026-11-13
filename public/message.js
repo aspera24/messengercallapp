@@ -170,7 +170,7 @@ async function loadUsers() {
                                     ${data.firstname} ${data.lastname}
                                 </p>
                                 <p class="userAddress">
-                                    ${data.address || "No address provided"}
+                                    ${data.address ? `Based in ${data.address}` : "No address provided"}
                                 </p>
                             </div>
 
@@ -194,7 +194,11 @@ async function loadUsers() {
                         return "";
                     }
 
+
+
                     return `
+                         ${data.joined ? "" : ""}
+
                         <div class="actionCont">
 
                             <button
@@ -273,7 +277,70 @@ async function loadUsers() {
 
     });
 
+    // INITIAL COUNT
+    updatePersonCount();
+
+    // AUTOMATIC UPDATE WHEN TABLE CHANGES
+    table.on("draw", function () {
+        updatePersonCount();
+    });
 }
+
+let socketPersonCount = null;
+
+function updatePersonCount() {
+
+    if (!table) return;
+
+    const users = table.rows().data().toArray();
+
+    const count = socketPersonCount !== null
+        ? socketPersonCount
+        : (
+            users.length
+                ? Number(users[0].personCount) || 0
+                : 0
+        );
+
+    const countElement = document.querySelector(
+        "#personCount .participantCount"
+    );
+
+    const namesElement = document.querySelector(
+        "#participantNames marquee span"
+    );
+
+    if (!countElement || !namesElement) return;
+
+    countElement.textContent = count;
+
+    const participants = users.filter(user => user.joined);
+
+    const names = participants.map(user => user.firstname);
+
+    if (currentUser?.acc_type === "admin" && count > 0) {
+        names.unshift("You");
+    }
+
+    namesElement.textContent = names.join(" • ");
+}
+
+function togglePersonList() {
+
+    const element = document.querySelector("#personCount");
+
+    if (!element) return;
+
+    element.classList.toggle("expanded");
+}
+
+socket.on("person-count-updated", ({ count }) => {
+
+    socketPersonCount = Number(count) || 0;
+
+    updatePersonCount();
+
+});
 
 socket.on("user-online", ({ token }) => {
 

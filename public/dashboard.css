@@ -36,7 +36,8 @@
     --mf-border: #ffffff38;
     --mf-overlay: rgba(0, 0, 0, 0.281);
     --mf-gray: #838383;
-    --mf-red: #ff9a16;
+    --mf-orange: #ff9a16;
+    --mf-green: #34c759;
     --mf-chat-sender: #ffffff;
     --mf-chat-receiver: #272727;
     --mf-sidebar-width: 300px;
@@ -152,7 +153,7 @@ a {
 }
 
 .sysName {
-    font-family: 'Lakmus', sans-serif;
+    font-family: 'LeeHaus', sans-serif;
     font-size: 24px;
     letter-spacing: 1px;
     font-weight: 100 !important;
@@ -241,9 +242,7 @@ a {
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: 0 0 0 20px;
     overscroll-behavior: contain;
-    border-left: 2px solid var(--mf-btn-transp);
 }
 
 .dt-layout-end {
@@ -291,7 +290,7 @@ a {
 }
 
 .mr {
-    font-family: 'Lakmus';
+    font-family: 'LeeHaus';
     font-weight: lighter;
     letter-spacing: 1px !important;
 }
@@ -436,7 +435,7 @@ a {
 }
 
 #userTable .deleteBtn:hover i {
-    color: var(--mf-red);
+    color: var(--mf-orange);
 }
 
 .dt-info {
@@ -599,6 +598,7 @@ a {
     margin: 0;
     font-size: 16px;
     font-weight: 750;
+    letter-spacing: 1px;
 }
 
 .topbarTitle p {
@@ -612,7 +612,7 @@ a {
     width: 4px;
     height: 4px;
     margin: 0 5px 2px;
-    background: #2de2b0;
+    background: var(--mf-green);
     border-radius: 50%;
 }
 
@@ -661,12 +661,12 @@ a {
 
 .networkStatus.good #networkIcon,
 .networkStatus.good #networkQuality {
-    color: #30b0ff;
+    color: var(--mf-control);
 }
 
 .networkStatus.fair #networkIcon,
 .networkStatus.fair #networkQuality {
-    color: #ff9f0a;
+    color: var(--mf-orange);
 }
 
 .networkStatus.poor #networkIcon,
@@ -702,7 +702,7 @@ a {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--mf-red);
+    color: var(--mf-orange);
     font-size: 11px;
     font-weight: 700;
     white-space: nowrap;
@@ -711,7 +711,7 @@ a {
 .statusDot {
     width: 7px;
     height: 7px;
-    background: var(--mf-red);
+    background: var(--mf-orange);
     border-radius: 50%;
 }
 
@@ -795,11 +795,14 @@ a {
     font-size: clamp(11px, .8vw, 12px);
 }
 
-.meeting-timer {
+
+.meeting-timer,
+#personCount {
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
     gap: 8px;
+    cursor: default;
     padding: 9px 12px;
     color: var(--mf-text);
     background: var(--mf-btn-transp);
@@ -807,6 +810,73 @@ a {
     border-radius: 100px;
     font-size: 12px;
     font-variant-numeric: tabular-nums;
+}
+
+#personCount {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+
+    min-width: 0;
+    max-width: 50%;
+    flex-shrink: 1;
+
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#personCount .participantCount {
+    flex-shrink: 0;
+}
+
+/* .participantNames {
+    display: none;
+
+    min-width: 0;
+    flex: 1 1 auto;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+} */
+
+#personCount {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+
+    min-width: 0;
+    max-width: 100%;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+#personCount .participantCount,
+#personCount > i {
+    flex-shrink: 0;
+}
+
+.participantNames {
+    display: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#personCount.expanded .participantNames {
+    display: block;
+}
+
+.participantNames marquee {
+    display: block;
+    width: 100%;
+}
+
+.participantNames marquee span {
+    white-space: nowrap;
 }
 
 #viewAccountSectionBtn,
@@ -982,11 +1052,22 @@ a {
     position: absolute;
     background: white;
     color: var(--mf-bg-deep);
-    bottom: 4px;
-    right: 4px;
+    bottom: 5px;
+    right: 5px;
+    height: 30px;
+    display: flex;
+    align-items: center;
     font-size: clamp(10px, 1vw, 16px);
     padding: 7px;
-    border-radius: 7px;
+    border-radius: 11px;
+}
+
+.userName {
+    width: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-right: 5px;
+    text-overflow: ellipsis;
 }
 
 .video-loading {
@@ -1032,24 +1113,22 @@ a {
 }
 
 .remove-user-btn {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    padding: 5px;
-    width: 30px;
-    height: 30px;
+    padding: 1px;
+    width: 20px !important;
+    height: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 50px;
     border: none;
+    font-size: 15px;
     background: white;
     color: var(--mf-bg-deep);
     cursor: pointer;
 }
 
 .remove-user-btn:hover {
-    background: var(--mf-red);
+    background: var(--mf-orange);
     color: white;
 }
 
@@ -1114,7 +1193,7 @@ a {
 }
 
 #endBtn i {
-    color: var(--mf-red);
+    color: var(--mf-orange);
 }
 
 .controls button span {
