@@ -48,11 +48,11 @@
 }
 
 .second {
-    grid-column: 2 / 3;
+    grid-column: 1 / 3;
 }
 
 .profileCard.full {
-    grid-column: 2 / 3;
+    grid-column: 1 / 3;
 }
 
 .profileCard h2 {
@@ -159,7 +159,7 @@
     margin-top: 20px;
 }
 
-button {
+.profileCard button {
     border: none;
     border-radius: 8px;
     padding: 11px 18px;
@@ -223,10 +223,6 @@ button {
         grid-template-columns: 1fr;
     }
 
-    .profileCard.full {
-        grid-column: auto;
-    }
-
     .infoRow {
         align-items: flex-start;
         flex-direction: column;
@@ -236,6 +232,16 @@ button {
     .infoValue {
         text-align: left;
 
+    }
+}
+
+@media (max-width: 700px) {
+    .profilePictureCard {
+        grid-column: 1 / 3;
+    }
+
+    .first {
+        grid-column: 1 / 3;
     }
 }
 

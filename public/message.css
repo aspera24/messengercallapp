@@ -606,13 +606,13 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: clamp(12px, 2vh, 30px);
+    font-size: clamp(12px, 1.8vh, 30px);
     font-weight: normal;
     color: var(--mf-muted);
 }
 
 .userAddress {
-    font-size: clamp(8px, 1.5vh, 20px);
+    font-size: clamp(8px, 1.2vh, 20px);
     color: var(--mf-gray);
     margin: 0;
     font-family: 'LeeHaus';

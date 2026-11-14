@@ -1183,7 +1183,11 @@ function createRoomNow() {
 function startMeeting() {
     const participants = getSelectedUsers();
     if (participants.length === 0) {
-        alert("Please select at least one participant.");
+        showToast(
+            "warning",
+            "No Participant Selected",
+            "Please select at least one participant."
+        );
         return;
     }
     socket.emit("create-room", { admin: currentUser.firstname, participants });
@@ -3146,7 +3150,12 @@ document.getElementById("saveEmployeeBtn").addEventListener("click", async () =>
     const password = document.getElementById("empPassword").value.trim();
 
     if (!firstname || !lastname || !username || !password) {
-        return alert("Please fill in all fields.");
+        showToast(
+            "warning",
+            "Incomplete Information",
+            "Please fill in all required fields."
+        );
+        return;
     }
 
     const btn = document.getElementById("saveEmployeeBtn");
@@ -3174,7 +3183,11 @@ document.getElementById("saveEmployeeBtn").addEventListener("click", async () =>
 
         loadUsers();
     } catch (err) {
-        alert(err.message);
+        showToast(
+            "error",
+            "Failed to Add Employee",
+            err.message || "Something went wrong. Please try again."
+        );
     } finally {
         btn.disabled = false;
         btn.innerHTML = "Save";
@@ -3182,7 +3195,13 @@ document.getElementById("saveEmployeeBtn").addEventListener("click", async () =>
 });
 
 socket.on("request-error", ({ token, message }) => {
-    alert(message);
+
+    showToast(
+        "error",
+        "Meeting Request Failed",
+        message || "Unable to send meeting request."
+    );
+
     const reqBtn = document.getElementById(`req-${token}`);
     const deleteBtn = document.getElementById(`delete-${token}`);
 
@@ -3192,6 +3211,7 @@ socket.on("request-error", ({ token, message }) => {
     }
 
     if (deleteBtn) deleteBtn.disabled = false;
+
 });
 
 
@@ -3212,16 +3232,17 @@ const topbar = document.querySelector(".topbar");
 function showPage(page) {
 
     const isSettings = page === "settings";
-    const isMobile = window.innerWidth <= 600;
-
+    const isMobile = window.matchMedia("(max-width: 600px)").matches;
 
     // MEETING CONTENT
-    // topbar.style.display = isSettings ? "none" : "";
     meetingLeftView.style.display = isSettings ? "none" : "";
     accountSection.style.display = isSettings ? "none" : "";
-    topbar.style.position = isSettings && isMobile ? "fixed" : "";
-    topbar.style.top = isSettings && isMobile ? "0" : "";
-    topbar.style.right = isSettings && isMobile ? "0" : "";
+
+    // TOPBAR POSITION
+    topbar.classList.toggle(
+        "mobile-settings-fixed",
+        isSettings && isMobile
+    );
 
     // SETTINGS CONTENT
     settingsView.style.display = isSettings ? "flex" : "none";
@@ -3233,7 +3254,6 @@ function showPage(page) {
     meetingNavLink.classList.toggle("active", !isSettings);
     settingsNavLink.classList.toggle("active", isSettings);
 }
-
 
 // MEETING NAVIGATION
 meetingNavLink.addEventListener("click", (e) => {

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/message.css">
     <link rel="stylesheet" href="/dashboard-tab-mob.css">
     <link rel="stylesheet" href="/profile.css">
+    <link rel="stylesheet" href="/recordControl.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" href="data:,">
 
@@ -132,10 +133,20 @@
                         <div class="meetingHeading">
                             <div class="topLabel">
                                 <span class="eyebrow">VIDEO CONFERENCE</span>
-                                <h2 class="mr">Mtg Room</h2>
+                                <h2 class="mr">Meeting Room</h2>
                                 <p class="par">Connect face-to-face with your team.</p>
                             </div>
                             <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
+                                <div id="recordingControls">
+                                    <button id="startRecordingBtn" title="Start Recording">
+                                        <i class="fa-solid fa-circle"></i>
+                                    </button>
+
+                                    <button id="stopRecordingBtn" title="Stop Recording" disabled>
+                                        <i class="fa-solid fa-stop"></i>
+                                    </button>
+                                </div>
+
                                 <div id="personCount" title="No. of Participants" onclick="togglePersonList()">
                                     <i class="fa-solid fa-user"></i>
 
@@ -147,6 +158,7 @@
                                         </marquee>
                                     </div>
                                 </div>
+
                                 <div id="meetingTimer" class="meeting-timer" style="display:none;"><i
                                         class="fa-regular fa-clock"></i><span>00:00:00</span></div>
                                 <button type="button" id="viewAccountSectionBtn" class="viewAccountSectionBtn"
@@ -558,6 +570,8 @@
     <script src="/profile.js" defer></script>
     <script src="/app.js" defer></script>
     <script src="/message.js" defer></script>
+    <script src="/recordingStorage.js" defer></script>
+    <script src="/recording.js" defer></script>
 </body>
 
 </html>

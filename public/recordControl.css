@@ -1,0 +1,26 @@
+#startRecordingBtn i {
+    color: var(--mf-red);
+}
+
+#startRecordingBtn.recording i {
+    animation: recordingBlink 1s infinite;
+}
+
+#stopRecordingBtn {
+    display: none;
+}
+
+#stopRecordingBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+#stopRecordingBtn .fa-spinner {
+    animation: fa-spin 1s linear infinite;
+}
+
+@keyframes recordingBlink {
+    50% {
+        opacity: 0.2;
+    }
+}
