@@ -424,17 +424,20 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                 u.lastname,
                 u.acc_type,
 
-                ua.place AS address
+                (
+                    SELECT ua.place
+                    FROM user_address ua
+                    WHERE ua.user_id = u.id
+                    ORDER BY ua.date_added DESC, ua.id DESC
+                    LIMIT 1
+                ) AS address
 
             FROM users u
-
-            LEFT JOIN user_address ua
-                ON ua.user_id = u.id
 
             WHERE u.acc_type = ?
             AND u.is_active = 1
 
-            ORDER BY ua.date_added DESC
+            ORDER BY u.firstname ASC
             `,
             [targetAccType],
 
@@ -442,10 +445,7 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
 
                 if (err) {
 
-                    console.error(
-                        "GET USERS ERROR:",
-                        err
-                    );
+                    console.error("GET USERS ERROR:", err);
 
                     return res.status(500).json({
                         error: "Failed to fetch users"
@@ -467,7 +467,6 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                         : joinedEmployeeCount;
 
                 const users = result.map(user => ({
-
                     ...user,
 
                     address: user.address || "",
@@ -477,7 +476,6 @@ module.exports = (io, onlineUsers, joinedUsersInMeeting) => {
                     online: Boolean(onlineUsers[user.token]),
 
                     personCount
-
                 }));
 
                 res.json(users);

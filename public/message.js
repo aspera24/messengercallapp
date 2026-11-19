@@ -170,7 +170,7 @@ async function loadUsers() {
                                     ${data.firstname} ${data.lastname}
                                 </p>
                                 <p class="userAddress">
-                                    ${data.address ? `Based in ${data.address}` : "No address provided"}
+                                    ${data.address ? `Lived in ${data.address}` : "No address provided"}
                                 </p>
                             </div>
 
