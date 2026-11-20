@@ -1004,7 +1004,7 @@ a {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    background: var(--mf-bg-deep);
+    background: var(--mf-bg-transp);
     box-sizing: border-box;
     contain: paint;
 }
@@ -1027,6 +1027,7 @@ a {
     min-height: 0;
     aspect-ratio: auto;
     margin: 0;
+    background: var(--mf-bg-transp);
     align-self: stretch;
     justify-self: stretch;
     overflow: hidden;
@@ -1120,7 +1121,6 @@ a {
     justify-content: center;
     gap: 9px;
     color: var(--mf-text);
-    background: linear-gradient(145deg, var(--mf-bg), var(--mf-bg-deep));
     font-size: 11px;
 }
 

@@ -141,6 +141,12 @@ async function loadCurrentUser() {
             profileIcon.style.display = "flex";
         };
 
+        const localAvatar = document.getElementById("localAvatar");
+
+        if (localAvatar) {
+            localAvatar.src = `/profile/picture?v=${Date.now()}`;
+        }
+
     } catch (err) {
 
         console.error(err);
@@ -213,7 +219,17 @@ async function loadMissedCalls(reset = false) {
                 <div class="left"><i class="fa-solid fa-phone-volume"></i></div>
                 <div class="right">
                     <div class="notify-text">You missed a call from <span class="name">${call.firstname}</span></div>
-                    <div class="time">${new Date(call.created_at).toLocaleString()}</div>
+                    <div class="time">
+                        ${new Date(call.created_at).toLocaleString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            }).replace(' at ', ' | ')}
+                    </div>
                 </div>
             `;
             wrapper.appendChild(innerDiv);
@@ -1404,11 +1420,25 @@ socket.on("existing-users", (users) => {
     processUsers(users);
 });
 
+
 async function processUsers(users) {
     for (const user of users) {
-        if (user.id === myId || peers[user.id]) continue;
+        if (user.id === myId) continue;
 
         peerNames[user.id] = user.firstname;
+
+        // RESTORE EXISTING USER MEDIA STATE
+        if (user.media) {
+            userMediaStates[user.id] = {
+                camera: user.media.camera,
+                mic: user.media.mic
+            };
+        }
+
+        // Update if video-box already exists.
+        updateRemoteStatus(user.id);
+
+        if (peers[user.id]) continue;
 
         const peer = createPeer(user.id);
         if (!peer) continue;
@@ -1425,6 +1455,7 @@ async function processUsers(users) {
         });
     }
 }
+
 
 function createPeer(userId) {
     if (!stream) return null;
@@ -2721,6 +2752,19 @@ function addRemoteVideo(userId, stream) {
         loading.id = "loading-" + userId;
         loading.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Connecting...</span>`;
 
+        const avatar = document.createElement("img");
+
+        avatar.className = "video-avatar";
+        avatar.id = "avatar-" + userId;
+        avatar.alt = "Profile picture";
+
+        avatar.src =
+            `/profile/picture/${encodeURIComponent(userId)}`;
+
+        avatar.onerror = () => {
+            avatar.style.display = "none";
+        };
+
         const video = document.createElement("video");
 
         video.id = userId;
@@ -2751,6 +2795,7 @@ function addRemoteVideo(userId, stream) {
         status.id = "status-" + userId;
 
         wrapper.appendChild(loading);
+        wrapper.appendChild(avatar);
         wrapper.appendChild(video);
         wrapper.appendChild(tag);
         wrapper.appendChild(userName);
@@ -3010,6 +3055,7 @@ function toggleCamera() {
     });
 
     updateMediaStatus();
+    updateLocalCameraView();
 }
 
 function toggleMic() {
@@ -3065,6 +3111,7 @@ function applySavedMediaStatus() {
 
     // Update camera and microphone button icons
     updateMediaStatus();
+    updateLocalCameraView();
 
     console.log("[MEDIA] Applied saved status:", {
         camera: videoTrack.enabled ? 1 : 0,
@@ -3087,17 +3134,55 @@ function saveMediaPreferences() {
 }
 
 function updateRemoteStatus(userId) {
+    const wrapper = document.getElementById("wrap-" + userId);
+    if (!wrapper) return;
+
     const status = document.getElementById("status-" + userId);
-    if (!status) return;
 
     const state = userMediaStates[userId];
+
     if (!state) return;
 
-    if (!state.camera) {
-        status.style.display = "flex";
-        status.innerHTML = `<i class="fa-solid fa-video-slash"></i> Camera Off`;
-    } else {
-        status.style.display = "none";
+    const cameraEnabled =
+        state.camera === true ||
+        state.camera === 1 ||
+        state.camera === "1";
+
+    // Toggle camera-off class
+    wrapper.classList.toggle("camera-off", !cameraEnabled);
+
+    // Camera status indicator
+    if (status) {
+        if (!cameraEnabled) {
+            status.style.display = "flex";
+            status.innerHTML =
+                `<i class="fa-solid fa-video-slash"></i> Camera Off`;
+        } else {
+            status.style.display = "none";
+        }
+    }
+}
+
+// ==========================================
+// LOCAL PROFILE AVATAR
+// ==========================================
+
+function updateLocalCameraView() {
+    const localBox = document.getElementById("localBox");
+    const localAvatar = document.getElementById("localAvatar");
+
+    if (!localBox || !localAvatar) return;
+
+    const cameraEnabled = !!videoTrack?.enabled;
+
+    localBox.classList.toggle("camera-off", !cameraEnabled);
+
+    // Restore original local video when camera is ON.
+    if (cameraEnabled && stream && !activeSpeakerId) {
+        if (localVideo.srcObject !== stream) {
+            localVideo.srcObject = stream;
+            localVideo.play().catch(() => { });
+        }
     }
 }
 

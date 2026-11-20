@@ -1,0 +1,28 @@
+.video-avatar {
+    position: absolute;
+    inset: 0;
+
+    width: 30%;
+    /* height: 100%; */
+
+    object-fit: cover;
+    border-radius: 100%;
+    justify-self: center;
+    align-self: center;
+    display: none;
+    z-index: 1;
+    border: 2px solid var(--mf-orange);
+    background: #1e1e24;
+}
+
+.video-box.camera-off .video-avatar {
+    display: block;
+}
+
+.video-box.camera-off video {
+    display: none;
+}
+
+.video-box.camera-off .video-loading {
+    display: none !important;
+}
