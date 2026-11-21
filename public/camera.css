@@ -2,7 +2,7 @@
     position: absolute;
     inset: 0;
 
-    width: 30%;
+    width: 40%;
     /* height: 100%; */
 
     object-fit: cover;
@@ -11,7 +11,7 @@
     align-self: center;
     display: none;
     z-index: 1;
-    border: 2px solid var(--mf-orange);
+    border: 11px solid var(--mf-bg-deep);
     background: #1e1e24;
 }
 

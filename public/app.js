@@ -34,6 +34,13 @@ let activeSpeakerId = null;
 let activeSpeakerReturnTimer = null;
 let localIsSpeaking = false;
 
+let localMicLevel = 0;
+let remoteSpeakerLevels = {};
+
+const SPEAKER_START_THRESHOLD = 18;
+const SPEAKER_RELEASE_THRESHOLD = 10;
+const SPEAKER_SWITCH_MARGIN = 1.15;
+
 // Automatic switching ON by default
 let autoSpeakerSwitchEnabled =
     localStorage.getItem("meetflow_auto_speaker_switch") !== "false";
@@ -1132,62 +1139,85 @@ function updateMeetingButtons(active) {
     endBtn.style.display = active ? "flex" : "none";
 }
 
+
 function setupMicLevel() {
+    if (!stream) return;
+
     audioContext = new AudioContext();
+
     const source = audioContext.createMediaStreamSource(stream);
+
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 32;
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.25;
+
     source.connect(analyser);
+
     dataArray = new Uint8Array(analyser.frequencyBinCount);
+
     updateMicLevel();
 }
 
 function updateMicLevel(now = 0) {
+    if (!analyser) return;
+
     if (now - lastLocalMicUpdate < 66) {
         requestAnimationFrame(updateMicLevel);
         return;
     }
+
     lastLocalMicUpdate = now;
 
-    if (!analyser) return;
     analyser.getByteFrequencyData(dataArray);
 
-    let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+    const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
     const box = document.getElementById("localBox");
     const bars = document.querySelectorAll("#localBox .mic-level .bar");
-    const localMicEnabled = !!audioTrack?.enabled && !audioTrack?.muted;
-    const wasLocalSpeaking = localIsSpeaking;
-    // Hysteresis: higher threshold to start speaking,
-    // lower threshold to stop, para dili sige'g balik-balik.
-    if (!localMicEnabled) {
+
+    const localMicEnabled =
+        !!audioTrack?.enabled &&
+        !audioTrack?.muted;
+
+    localMicLevel = localMicEnabled ? avg : 0;
+
+    if (!localMicEnabled || avg <= SPEAKER_RELEASE_THRESHOLD) {
         localIsSpeaking = false;
-    }
-    else if (!localIsSpeaking && avg >= 30) {
+    } else if (avg >= SPEAKER_START_THRESHOLD) {
         localIsSpeaking = true;
-    } else if (localIsSpeaking && avg <= 12) {
-        localIsSpeaking = false;
     }
+
+    updateActiveSpeakerSelection();
 
     if (localIsSpeaking) {
         box?.classList.add("mic-active");
-        // Local speaker takes priority immediately; stop remote speaker switching
-        // while the local microphone is actively detecting speech.
-        if (activeSpeakerReturnTimer) {
+
+        // Local user wins only when their voice is stronger.
+        const remoteLevel = remoteSpeakerLevels[activeSpeakerId] || 0;
+
+        if (
+            activeSpeakerId !== null &&
+            localMicLevel >= remoteLevel * SPEAKER_SWITCH_MARGIN
+        ) {
             clearTimeout(activeSpeakerReturnTimer);
             activeSpeakerReturnTimer = null;
+
+            setActiveSpeaker(null);
         }
-        if (activeSpeakerId !== null) setActiveSpeaker(null);
     } else {
         box?.classList.remove("mic-active");
     }
 
-    let level = Math.min(5, Math.floor(avg / 20));
+    const level = Math.min(5, Math.floor(avg / 20));
+
     bars.forEach((bar, i) => {
-        bar.style.height = i < level ? (6 + i * 3) + "px" : "4px";
+        bar.style.height =
+            i < level ? (6 + i * 3) + "px" : "4px";
     });
 
     requestAnimationFrame(updateMicLevel);
 }
+
 
 function createRoomNow() {
     socket.emit("create-room", {
@@ -1349,6 +1379,9 @@ socket.on("user-disconnected", (userId) => {
 
     delete peerNames[userId];
     delete userMediaStates[userId];
+    delete remoteSpeakerLevels[userId];
+
+    updateActiveSpeakerSelection();
 
     if (remoteAudioNodes[userId]) {
         try { remoteAudioNodes[userId].source.disconnect(); remoteAudioNodes[userId].analyser.disconnect(); } catch (e) { }
@@ -2641,51 +2674,69 @@ if (!document.getElementById("active-speaker-transition-style")) {
     document.head.appendChild(style);
 }
 
+
 function setActiveSpeaker(userId = null) {
+
     const mainVideo = document.getElementById("local");
     const smallPreview = document.getElementById("localPreview");
-    const nextVideo = userId ? document.getElementById(userId) : null;
-    const nextStream = nextVideo?.srcObject || null;
 
-    // Do not switch if the feature is disabled.
+    // Auto Speaker must be enabled for remote switching.
     if (userId && !autoSpeakerSwitchEnabled) return;
 
-    // Do not switch if our own mic detects speech.
-    if (userId && localIsSpeaking) return;
-
-    // Do not show remote video when our local camera is OFF.
+    // Never display a remote camera if local camera is OFF.
     if (userId && !videoTrack?.enabled) return;
 
-    // Always restore the original local camera stream when userId is null.
-    const targetStream = nextStream || stream;
+    const nextVideo = userId
+        ? document.getElementById(userId)
+        : null;
+
+    const nextStream = nextVideo?.srcObject || null;
+
+    // Restore local stream when no remote speaker is active.
+    const targetStream = userId && nextStream
+        ? nextStream
+        : stream;
+
     if (!targetStream) return;
 
-    // The main #local video is the video shown inside #localBox. Keep the small
     [mainVideo, smallPreview].forEach(video => {
+
         if (!video) return;
+
         if (video.srcObject !== targetStream) {
+
             video.classList.add("speaker-switching");
+
             video.srcObject = targetStream;
             video.muted = true;
             video.autoplay = true;
             video.playsInline = true;
+
             video.play().catch(() => { });
-            window.setTimeout(() => video.classList.remove("speaker-switching"), 120);
+
+            setTimeout(() => {
+                video.classList.remove("speaker-switching");
+            }, 120);
         }
     });
 
-    activeSpeakerId = nextStream ? userId : null;
+    activeSpeakerId = userId && nextStream ? userId : null;
 
     const localBox = document.getElementById("localBox");
     const tag = localBox?.querySelector(".tag");
+
     if (tag) {
-        if (!tag.dataset.originalLabel) tag.dataset.originalLabel = tag.textContent.trim() || "You";
+
+        if (!tag.dataset.originalLabel) {
+            tag.dataset.originalLabel =
+                tag.textContent.trim() || "You";
+        }
+
         tag.textContent = activeSpeakerId
             ? (peerNames[activeSpeakerId] || activeSpeakerId)
             : tag.dataset.originalLabel;
     }
 
-    // Update local video status name
     const statusText = document.getElementById("localStatusText");
 
     if (statusText) {
@@ -2693,7 +2744,11 @@ function setActiveSpeaker(userId = null) {
             ? (peerNames[activeSpeakerId] || activeSpeakerId)
             : "You";
     }
+
+    // Restore local avatar when local camera is OFF.
+    updateLocalCameraView();
 }
+
 
 function toggleAutoSpeakerSwitch() {
     autoSpeakerSwitchEnabled = !autoSpeakerSwitchEnabled;
@@ -2858,10 +2913,68 @@ function addRemoteVideo(userId, stream) {
     updateRemoteStatus(userId);
 }
 
+
+function updateActiveSpeakerSelection() {
+
+    if (!autoSpeakerSwitchEnabled) return;
+
+    if (!videoTrack?.enabled) {
+        if (activeSpeakerId !== null) {
+            setActiveSpeaker(null);
+        }
+        return;
+    }
+
+    let strongestUser = null;
+    let strongestLevel = 0;
+
+    for (const userId in remoteSpeakerLevels) {
+
+        const state = userMediaStates[userId];
+
+        const micOff =
+            state?.mic === false ||
+            state?.mic === 0 ||
+            state?.mic === "0";
+
+        const cameraOff =
+            state?.camera === false ||
+            state?.camera === 0 ||
+            state?.camera === "0";
+
+        if (micOff || cameraOff) continue;
+
+        const level = remoteSpeakerLevels[userId] || 0;
+
+        if (level > strongestLevel) {
+            strongestLevel = level;
+            strongestUser = userId;
+        }
+    }
+
+    // Local speaker wins when their voice is stronger.
+    if (
+        localIsSpeaking &&
+        localMicLevel >= strongestLevel * SPEAKER_SWITCH_MARGIN
+    ) {
+        strongestUser = null;
+    }
+
+    // Nobody is speaking.
+    if (strongestLevel < SPEAKER_START_THRESHOLD) {
+        strongestUser = null;
+    }
+
+    if (activeSpeakerId !== strongestUser) {
+        setActiveSpeaker(strongestUser);
+    }
+}
+
+
 async function setupRemoteMicLevel(userId, remoteStream) {
+
     if (remoteAnimationFrames[userId]) {
         cancelAnimationFrame(remoteAnimationFrames[userId]);
-        delete remoteAnimationFrames[userId];
     }
 
     delete remoteLastUpdates[userId];
@@ -2877,88 +2990,106 @@ async function setupRemoteMicLevel(userId, remoteStream) {
         } catch (e) { }
     }
 
-    const source = globalAudioContext.createMediaStreamSource(remoteStream);
-    const analyser = globalAudioContext.createAnalyser();
+    const source =
+        globalAudioContext.createMediaStreamSource(remoteStream);
+
+    const analyser =
+        globalAudioContext.createAnalyser();
+
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.25;
+
     source.connect(analyser);
 
     remoteAudioNodes[userId] = { source, analyser };
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const dataArray =
+        new Uint8Array(analyser.frequencyBinCount);
+
     remoteLastUpdates[userId] = 0;
 
     async function animate(now) {
+
         if (now - (remoteLastUpdates[userId] || 0) < 66) {
-            remoteAnimationFrames[userId] = requestAnimationFrame(animate);
+            remoteAnimationFrames[userId] =
+                requestAnimationFrame(animate);
             return;
         }
 
         remoteLastUpdates[userId] = now;
 
-        const bars = document.querySelectorAll(`#mic-${userId} .bar`);
-        if (globalAudioContext.state !== "running") await globalAudioContext.resume();
+        remoteAnimationFrames[userId] =
+            requestAnimationFrame(animate);
 
-        remoteAnimationFrames[userId] = requestAnimationFrame(animate);
+        const wrapper =
+            document.getElementById("wrap-" + userId);
 
-        const wrapper = document.getElementById("wrap-" + userId);
         if (!wrapper) return;
 
         const track = remoteStream.getAudioTracks()[0];
+
         if (!track) return;
 
-        if (track.muted) {
-            bars.forEach(bar => { bar.style.height = "4px"; });
+        if (globalAudioContext.state !== "running") {
+            await globalAudioContext.resume();
+        }
+
+        const state = userMediaStates[userId];
+
+        const micOff =
+            state?.mic === false ||
+            state?.mic === 0 ||
+            state?.mic === "0";
+
+        const cameraOff =
+            state?.camera === false ||
+            state?.camera === 0 ||
+            state?.camera === "0";
+
+        if (track.muted || micOff || cameraOff) {
+
+            remoteSpeakerLevels[userId] = 0;
+
             wrapper.classList.remove("mic-active");
-            if (activeSpeakerId === userId) scheduleLocalPreviewRestore();
+
+            document.querySelectorAll(`#mic-${userId} .bar`)
+                .forEach(bar => {
+                    bar.style.height = "4px";
+                });
+
+            updateActiveSpeakerSelection();
+
             return;
         }
 
         analyser.getByteFrequencyData(dataArray);
 
-        let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-
-        const state = userMediaStates[userId];
-
-        const remoteMicOff =
-            state?.mic === false ||
-            state?.mic === 0 ||
-            state?.mic === "0";
+        const avg =
+            dataArray.reduce((a, b) => a + b, 0) /
+            dataArray.length;
 
         const isSpeaking =
-            !remoteMicOff &&
-            !track.muted &&
-            avg >= 18;
+            avg >= SPEAKER_START_THRESHOLD;
 
-        if (isSpeaking && !localIsSpeaking) {
-            wrapper.classList.add("mic-active");
+        remoteSpeakerLevels[userId] =
+            isSpeaking ? avg : 0;
 
-            if (activeSpeakerReturnTimer) {
-                clearTimeout(activeSpeakerReturnTimer);
-                activeSpeakerReturnTimer = null;
-            }
-
-            if (activeSpeakerId !== userId) {
-                setActiveSpeaker(userId);
-            }
-        } else {
-            wrapper.classList.remove("mic-active");
-
-            if (activeSpeakerId === userId && !localIsSpeaking) {
-                scheduleLocalPreviewRestore();
-            }
-        }
-
-        if (!state?.mic) {
-            bars.forEach(bar => { bar.style.height = "4px"; });
-            return;
-        }
+        wrapper.classList.toggle("mic-active", isSpeaking);
 
         const level = Math.min(5, Math.floor(avg / 20));
-        bars.forEach((bar, i) => {
-            bar.style.height = i < level ? (6 + i * 3) + "px" : "4px";
-        });
+
+        document.querySelectorAll(`#mic-${userId} .bar`)
+            .forEach((bar, i) => {
+                bar.style.height =
+                    i < level ? (6 + i * 3) + "px" : "4px";
+            });
+
+        updateActiveSpeakerSelection();
     }
 
     animate(0);
 }
+
 
 
 
@@ -3040,10 +3171,13 @@ function toggleCamera() {
 
     // Restore local preview when the camera is turned OFF.
     if (!videoTrack.enabled) {
+
         clearTimeout(activeSpeakerReturnTimer);
         activeSpeakerReturnTimer = null;
 
         setActiveSpeaker(null);
+
+        updateLocalCameraView();
     }
 
     saveMediaPreferences();
@@ -3155,8 +3289,7 @@ function updateRemoteStatus(userId) {
     if (status) {
         if (!cameraEnabled) {
             status.style.display = "flex";
-            status.innerHTML =
-                `<i class="fa-solid fa-video-slash"></i> Camera Off`;
+            // status.innerHTML = `<i class="fa-solid fa-video-slash"></i> Camera Off`;
         } else {
             status.style.display = "none";
         }
