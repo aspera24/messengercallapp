@@ -111,6 +111,29 @@ socket.io.on("reconnect", () => { console.log("Socket reconnected."); });
 socket.io.on("reconnect_attempt", () => { console.log("Trying to reconnect..."); });
 
 
+
+
+function getUserInitials(user) {
+
+    const firstname = user?.firstname?.trim() || "";
+    const lastname = user?.lastname?.trim() || "";
+
+    const firstInitial = firstname
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(name => name[0])
+        .join("");
+
+    const lastInitial = lastname
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(name => name[0])
+        .join("");
+
+    return (firstInitial + lastInitial).toUpperCase() || "?";
+}
+
+
 async function loadCurrentUser() {
     try {
 

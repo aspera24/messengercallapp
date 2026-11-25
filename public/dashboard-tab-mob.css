@@ -540,8 +540,6 @@ body {
         bottom: max(40px, env(safe-area-inset-bottom));
         border: 1px solid rgba(255, 255, 255, 0.09);
         border-radius: 150px;
-        background: var(--mf-bg-deep);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
         transform: translateX(-50%);
         /* -webkit-backdrop-filter: blur(12px);
         backdrop-filter: blur(12px); */

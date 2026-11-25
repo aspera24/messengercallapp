@@ -307,6 +307,58 @@
 
                                     </div>
 
+                                    <div class="recordingLibraryHeader">
+                                        <div>
+                                            <h2>
+                                                <i class="fa-solid fa-video"></i>
+                                                Recording Library
+                                            </h2>
+                                            <p>View and manage your saved meeting recordings.</p>
+                                        </div>
+
+                                        <button type="button" class="secondaryBtn" id="refreshRecordingsBtn">
+                                            <i class="fa-solid fa-rotate"></i>
+                                            Refresh
+                                        </button>
+                                    </div>
+
+                                    <div class="recordingFolderInfo">
+                                        <i class="fa-solid fa-folder-open"></i>
+
+                                        <div>
+                                            <strong>Recording Storage</strong>
+                                            <span id="recordingFolderStatus">
+                                                Checking recording folder...
+                                            </span>
+                                        </div>
+
+                                        <button type="button" class="secondaryBtn" id="selectRecordingFolderBtn">
+                                            Change Folder
+                                        </button>
+                                    </div>
+
+                                    <div class="recordingLibraryStats">
+                                        <div>
+                                            <span>Total Recordings</span>
+                                            <strong id="totalRecordings">0</strong>
+                                        </div>
+
+                                        <div>
+                                            <span>Total Storage</span>
+                                            <strong id="totalRecordingSize">0 MB</strong>
+                                        </div>
+                                    </div>
+
+                                    <div id="recordingList" class="recordingList">
+
+                                        <div class="recordingEmptyState">
+                                            <i class="fa-solid fa-film"></i>
+                                            <h3>No Recordings Found</h3>
+                                            <p>Your saved meeting recordings will appear here.</p>
+                                        </div>
+
+                                    </div>
+
                                 </section>
 
 
@@ -476,6 +528,7 @@
                                     </form>
 
                                 </section>
+
 
                             </div>
 

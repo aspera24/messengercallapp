@@ -431,4 +431,287 @@
         mediaRecorder.stop();
 
     });
+
+
+
+
+
+    const list = document.getElementById("recordingList");
+    const refreshBtn = document.getElementById("refreshRecordingsBtn");
+    const selectFolderBtn = document.getElementById("selectRecordingFolderBtn");
+
+    const folderStatus = document.getElementById("recordingFolderStatus");
+    const totalRecordings = document.getElementById("totalRecordings");
+    const totalSize = document.getElementById("totalRecordingSize");
+
+    if (!list || !refreshBtn || !selectFolderBtn) return;
+
+    let recordingUrls = [];
+
+    function formatSize(bytes) {
+
+        if (bytes < 1024 * 1024) {
+            return (bytes / 1024).toFixed(2) + " KB";
+        }
+
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+    }
+
+    function formatDate(timestamp) {
+
+        return new Date(timestamp).toLocaleString([], {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+
+    }
+
+    function clearRecordingUrls() {
+
+        recordingUrls.forEach(url => URL.revokeObjectURL(url));
+        recordingUrls = [];
+
+    }
+
+    async function loadRecordings() {
+
+        clearRecordingUrls();
+
+        list.innerHTML = `
+            <div class="recordingEmptyState">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>Loading recordings...</p>
+            </div>
+        `;
+
+        try {
+
+            const folder = await getRecordingFolder();
+
+            if (!folder) {
+
+                folderStatus.textContent = "No recording folder selected.";
+
+                totalRecordings.textContent = "0";
+                totalSize.textContent = "0 MB";
+
+                list.innerHTML = `
+                    <div class="recordingEmptyState">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <h3>No Recording Folder</h3>
+                        <p>Select your recording folder to view saved videos.</p>
+                    </div>
+                `;
+
+                return;
+            }
+
+            const permission = await folder.queryPermission({
+                mode: "readwrite"
+            });
+
+            if (permission !== "granted") {
+
+                folderStatus.textContent = "Folder permission required.";
+
+                list.innerHTML = `
+                    <div class="recordingEmptyState">
+                        <i class="fa-solid fa-lock"></i>
+                        <h3>Permission Required</h3>
+                        <p>Click Refresh or select the folder again to grant access.</p>
+                    </div>
+                `;
+
+                return;
+            }
+
+            folderStatus.textContent = "Connected to recording folder.";
+
+            const recordings = [];
+
+            for await (const entry of folder.values()) {
+
+                if (
+                    entry.kind !== "file" ||
+                    !/^MF-.*\.webm$/i.test(entry.name)
+                ) {
+                    continue;
+                }
+
+                const file = await entry.getFile();
+
+                recordings.push({
+                    name: file.name,
+                    size: file.size,
+                    date: file.lastModified,
+                    file,
+                    handle: entry
+                });
+
+            }
+
+            recordings.sort((a, b) => b.date - a.date);
+
+            totalRecordings.textContent = recordings.length;
+
+            const totalBytes = recordings.reduce(
+                (sum, item) => sum + item.size,
+                0
+            );
+
+            totalSize.textContent = formatSize(totalBytes);
+
+            if (!recordings.length) {
+
+                list.innerHTML = `
+                    <div class="recordingEmptyState">
+                        <i class="fa-solid fa-film"></i>
+                        <h3>No Recordings Found</h3>
+                        <p>No MF video recordings were found in this folder.</p>
+                    </div>
+                `;
+
+                return;
+            }
+
+            list.innerHTML = "";
+
+            recordings.forEach(recording => {
+
+                const url = URL.createObjectURL(recording.file);
+                recordingUrls.push(url);
+
+                const card = document.createElement("div");
+                card.className = "recordingItem";
+
+                const details = document.createElement("div");
+                details.className = "recordingDetails";
+
+                const icon = document.createElement("i");
+                icon.className = "fa-solid fa-file-video";
+
+                const info = document.createElement("div");
+
+                const name = document.createElement("strong");
+                name.textContent = recording.name;
+
+                const metadata = document.createElement("span");
+                metadata.textContent =
+                    `${formatDate(recording.date)} · ${formatSize(recording.size)}`;
+
+                info.append(name, metadata);
+                details.append(icon, info);
+
+                const actions = document.createElement("div");
+                actions.className = "recordingActions";
+
+                const playBtn = document.createElement("button");
+                playBtn.type = "button";
+                playBtn.className = "secondaryBtn";
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+
+                playBtn.addEventListener("click", () => {
+
+                    const video = document.createElement("video");
+
+                    video.src = url;
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.playsInline = true;
+
+                    const viewer = document.createElement("div");
+                    viewer.className = "recordingViewer";
+
+                    const closeBtn = document.createElement("button");
+                    closeBtn.type = "button";
+                    closeBtn.textContent = "Close";
+
+                    closeBtn.addEventListener("click", () => {
+                        video.pause();
+                        video.removeAttribute("src");
+                        video.load();
+                        viewer.remove();
+                    });
+
+                    viewer.append(video, closeBtn);
+                    document.body.appendChild(viewer);
+
+                });
+
+                const downloadBtn = document.createElement("button");
+                downloadBtn.type = "button";
+                downloadBtn.className = "secondaryBtn";
+                downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+
+                downloadBtn.addEventListener("click", () => {
+
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = recording.name;
+                    a.click();
+
+                });
+
+                actions.append(playBtn, downloadBtn);
+
+                card.append(details, actions);
+                list.appendChild(card);
+
+            });
+
+        } catch (error) {
+
+            console.error("Loading recordings failed:", error);
+
+            folderStatus.textContent = "Unable to access recording folder.";
+
+            list.innerHTML = `
+                <div class="recordingEmptyState">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <h3>Unable to Load Recordings</h3>
+                    <p>${error.message}</p>
+                </div>
+            `;
+
+        }
+
+    }
+
+    refreshBtn.addEventListener("click", async () => {
+
+        const folder = await getRecordingFolder();
+
+        if (folder && await folder.queryPermission({ mode: "readwrite" }) !== "granted") {
+
+            const permission = await folder.requestPermission({
+                mode: "readwrite"
+            });
+
+            if (permission !== "granted") return;
+
+        }
+
+        loadRecordings();
+
+    });
+
+    selectFolderBtn.addEventListener("click", async () => {
+
+        try {
+
+            await chooseRecordingFolder();
+            await loadRecordings();
+
+        } catch (error) {
+
+            console.error("Folder selection failed:", error);
+
+        }
+
+    });
+
+    window.loadMeetFlowRecordings = loadRecordings;
 })();

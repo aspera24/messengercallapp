@@ -24,3 +24,166 @@
         opacity: 0.2;
     }
 }
+
+
+
+
+
+.recordingLibraryHeader,
+.recordingFolderInfo,
+.recordingItem,
+.recordingActions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.recordingLibraryHeader {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.recordingLibraryHeader p,
+.recordingFolderInfo span {
+    display: block;
+    color: var(--text-muted, #999);
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.recordingFolderInfo {
+    padding: 16px;
+    border-radius: 12px;
+    background: #22282d;
+    margin-bottom: 18px;
+}
+
+.recordingFolderInfo>i {
+    font-size: 25px;
+    color: var(--mf-logo);
+}
+
+.recordingFolderInfo div {
+    flex: 1;
+}
+
+.recordingLibraryStats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.recordingLibraryStats>div {
+    padding: 18px;
+    border-radius: 12px;
+    background: #22282d;
+}
+
+.recordingLibraryStats span,
+.recordingLibraryStats strong {
+    display: block;
+}
+
+.recordingLibraryStats span {
+    color: var(--text-muted, #999);
+    font-size: 13px;
+}
+
+.recordingLibraryStats strong {
+    font-size: 23px;
+    margin-top: 8px;
+}
+
+.recordingList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.recordingItem {
+    padding: 15px;
+    border: 1px solid var(--border, #383842);
+    border-radius: 12px;
+    flex-wrap: wrap;
+}
+
+.recordingDetails {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+}
+
+.recordingDetails>i {
+    font-size: 25px;
+    color: var(--mf-logo);
+}
+
+.recordingDetails strong,
+.recordingDetails span {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.recordingDetails span {
+    font-size: 12px;
+    color: var(--text-muted, #999);
+    margin-top: 5px;
+}
+
+.recordingActions {
+    flex-wrap: wrap;
+}
+
+.recordingEmptyState {
+    text-align: center;
+    padding: 35px 15px;
+    color: var(--text-muted, #999);
+}
+
+.recordingEmptyState>i {
+    font-size: 35px;
+    margin-bottom: 12px;
+}
+
+.recordingViewer {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, .95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+}
+
+.recordingViewer video {
+    width: 100%;
+    max-width: 1100px;
+    max-height: 80vh;
+    background: black;
+    border-radius: 12px;
+}
+
+@media(max-width: 600px) {
+    .recordingFolderInfo {
+        flex-wrap: wrap;
+    }
+
+    .recordingFolderInfo button {
+        width: 100%;
+    }
+
+    .recordingItem {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .recordingActions {
+        width: 100%;
+    }
+}

@@ -6,7 +6,6 @@
 
 .profilePage {
     margin: 50px auto;
-    padding: 20px;
     margin: 0 auto;
     background: var(--mf-bg-deep);
     border-radius: 15px;
@@ -21,7 +20,14 @@
 
 .profileHeader h1 {
     margin: 0 0 6px;
-    font-size: 28px;
+    font-size: clamp(18px, 1.6vw, 27px);
+    line-height: 1.25;
+    letter-spacing: -.5px;
+    overflow-wrap: anywhere;
+    color: var(--mf-control);
+    font-family: 'LeeHaus';
+    font-weight: lighter;
+    letter-spacing: 1px !important;
 }
 
 .profileHeader p {
@@ -95,7 +101,8 @@
     font-weight: 600;
 }
 
-.formGroup input, .formGroup textarea {
+.formGroup input,
+.formGroup textarea {
     width: 100%;
     padding: 11px 12px;
     border: 1px solid var(--mf-border);
@@ -107,7 +114,8 @@
     transition: border-color 0.2s;
 }
 
-.formGroup input:focus, .formGroup textarea:focus {
+.formGroup input:focus,
+.formGroup textarea:focus {
     border-color: var(--mf-control);
 }
 
@@ -169,8 +177,8 @@
 }
 
 .primaryBtn {
-    background: var(--mf-btn-transp);
-    color: var(--mf-control);
+    background: var(--btn-bg);
+    border-radius: 8px;
 }
 
 .primaryBtn:hover {

@@ -29,6 +29,7 @@
     --mf-text: #ffffff;
     --mf-btn: #ffffff;
     --mf-logo: #62b6ff;
+    --btn-bg: #22282d;
     --mf-btn-transp: #ffffff0f;
     --mf-btn-border: #ffffff38;
     --mf-bg-transp: #ffffff0f;
@@ -387,7 +388,7 @@ a {
 }
 
 #userTable tr:hover {
-    background: var(--mf-bg);
+    background: var(--btn-bg);
 }
 
 #userTable td:last-of-type .actionCont {
@@ -533,7 +534,7 @@ a {
 
 .logoutBtn:hover {
     color: white;
-    background: var(--mf-bg);
+    background: var(--btn-bg);
 }
 
 .rightCont {
@@ -1186,6 +1187,8 @@ a {
     height: auto;
     min-height: 94px;
     margin-top: auto;
+    background: var(--mf-bg-deep);
+    border-radius: 15px;
     /* border-top: 1px solid var(--mf-btn-transp);
     background: rgba(36, 36, 36, .418);
     -webkit-backdrop-filter: blur(14px);
@@ -1217,7 +1220,7 @@ a {
     background: transparent;
     border: 0;
     border-radius: 10px;
-    cursor: pointer;
+    
 }
 
 .controls button i {
@@ -1229,7 +1232,12 @@ a {
     color: var(--mf-control);
     background: var(--mf-btn-transp);
     border-radius: 100px;
+    cursor: pointer;
     /* font-size: clamp(18px, 1.7vw, 25px); */
+}
+
+.controls button i:active {
+    background: var(--btn-bg);
 }
 
 #endBtn i {
