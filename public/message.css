@@ -10,7 +10,7 @@
     max-width: calc(100vw - 32px);
     max-height: calc(100dvh - 32px);
     overflow: hidden;
-    background: var(--mf-bg-deep);
+    background: #171b14d6;
     border-radius: 14px;
     border: 1px solid var(--mf-border);
     -webkit-backdrop-filter: blur(3px);
@@ -95,7 +95,7 @@
     gap: 12px;
     padding: 0 15px;
     color: #fff;
-    background: var(--mf-bg);
+    background: var(--mf-bg-deep);
     border-bottom: 1px solid var(--mf-border);
 }
 
@@ -225,7 +225,7 @@
     overflow-y: auto;
     overflow-anchor: none;
     overscroll-behavior: contain;
-    background: var(--mf-bg-deep);
+    /* background: var(--mf-bg-deep); */
 }
 
 .messageEmpty {
@@ -251,7 +251,7 @@
     gap: 8px;
     min-height: 65px;
     padding: 10px;
-    background: var(--mf-bg);
+    background: var(--mf-bg-deep);
     border-top: 1px solid var(--mf-border);
 }
 

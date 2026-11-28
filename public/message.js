@@ -23,7 +23,25 @@ async function loadUsers() {
         credentials: "include"
     });
 
+    if (res.status === 401) {
+        window.location.href = "/auth";
+        return;
+    }
+
+    if (!res.ok) {
+        console.error("LOAD USERS FAILED:", res.status);
+
+        // Preserve currently displayed users
+        return;
+    }
+
     const users = await res.json();
+
+    if (!Array.isArray(users)) {
+        console.error("Invalid users response:", users);
+        return;
+    }
+
     const isAdmin = currentUser?.acc_type === "admin";
 
     // GET UNREAD COUNT FOR EACH USER
@@ -39,6 +57,10 @@ async function loadUsers() {
                         credentials: "include"
                     }
                 );
+
+                if (!unreadRes.ok) {
+                    throw new Error(`Unread request failed: ${unreadRes.status}`);
+                }
 
                 const unreadData = await unreadRes.json();
 

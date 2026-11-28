@@ -1,15 +1,16 @@
+
 const db = require("../config/db.config");
 
 module.exports = (req, res, next) => {
 
-    console.log("Cookies:", req.cookies);
-    console.log("Token:", req.cookies.meetflow_session);
+    const token = req.cookies?.meetflow_session;
 
-    const token = req.cookies.meetflow_session;
+    // No session cookie = unauthenticated
+    if (!token) {
+        return unauthorized();
+    }
 
     function unauthorized() {
-
-        // API requests (extension, fetch, ajax)
         if (
             req.path === "/me" ||
             req.xhr ||
@@ -17,16 +18,12 @@ module.exports = (req, res, next) => {
         ) {
             return res.status(401).json({
                 success: false,
+                code: "INVALID_SESSION",
                 message: "Unauthorized"
             });
         }
 
-        // Normal browser pages
         return res.redirect("/auth");
-    }
-
-    if (!token) {
-        return unauthorized();
     }
 
     db.query(
@@ -48,19 +45,32 @@ module.exports = (req, res, next) => {
         [token],
         (err, result) => {
 
-            if (err || result.length === 0) {
+            // DATABASE ERROR: preserve the existing cookie
+            if (err) {
+                console.error("AUTH DATABASE ERROR:", err.code, err.message);
 
-                res.clearCookie("meetflow_session");
+                return res.status(503).json({
+                    success: false,
+                    code: "DATABASE_UNAVAILABLE",
+                    message: "Authentication service temporarily unavailable."
+                });
+            }
+
+            // Valid query but no matching session
+            if (!result || result.length === 0) {
+                res.clearCookie("meetflow_session", {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: "lax",
+                    path: "/"
+                });
 
                 return unauthorized();
-
             }
 
             req.user = result[0];
 
-            next();
-
+            return next();
         }
     );
-
 };

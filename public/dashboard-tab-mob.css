@@ -700,7 +700,7 @@ body {
         border: none;
         padding: 6px 10px;
         font-size: 11px;
-        background: var(--mf-bg-deep);
+        /* background: var(--mf-bg-deep); */
     }
 
     #viewAccountSectionBtn,
@@ -710,8 +710,8 @@ body {
         height: 25px;
         font-size: 10px;
         /* flex: 0 0 30px; */
-        background: var(--mf-bg-deep);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
+        background: var(--mf-control-transp);
+        /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38); */
     }
 
     .videos-container {
