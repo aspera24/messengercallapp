@@ -595,6 +595,8 @@ a {
 .topbarLeft {
     gap: 15px;
     min-width: 0;
+    background: var(--mf-control-transp);
+    border-radius: 10px;
 }
 
 #menuBtn {
